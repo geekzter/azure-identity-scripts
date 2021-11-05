@@ -2,7 +2,7 @@ name: Run Azure Login with OpenID Connect
 on: [push, workflow_dispatch]
 
 permissions:
-      id-token: write
+  id-token: write
       
 jobs: 
   build-and-deploy:
