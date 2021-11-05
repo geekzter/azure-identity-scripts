@@ -21,10 +21,7 @@ jobs:
         pip install -q --extra-index-url https://azcliprod.blob.core.windows.net/beta/simple/ azure-cli
         echo "***************installed cli beta*******************"
         echo "$CWD/oidc-venv/bin" >> $GITHUB_PATH
-        
-    - name: Terraform Plan
-      run: | 
-        echo "Azure subscription: '${{ secrets.AZURE_SUBSCRIPTIONID }}'"
+        ls -al $CWD/oidc-venv/bin
 
     - name: 'Az CLI login'
       uses: azure/login@v1.4.0
