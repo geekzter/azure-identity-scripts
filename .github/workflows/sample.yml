@@ -29,3 +29,8 @@ jobs:
         client-id: ${{ secrets.AZURE_CLIENTID }}
         tenant-id: ${{ secrets.AZURE_TENANTID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTIONID }}
+
+    - name: Run a Azure CLI command to demonstrate we're logged in
+      run: |
+        echo "Logged in, these are subscriptions that SP ${{ secrets.AZURE_CLIENTID }} has access to:"
+        az account list -o table --query "sort_by([].{Name:name, SubscriptionId:id}, &Name)"
