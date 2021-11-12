@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
         
-    - name: Installing CLI-beta for OpenID Connect
+    - name: Install Azure CLI beta for OpenID Connect
       run: |
         cd ../..
         CWD="$(pwd)"
@@ -23,7 +23,7 @@ jobs:
         echo "$CWD/oidc-venv/bin" >> $GITHUB_PATH
         ls -al $CWD/oidc-venv/bin
 
-    - name: 'Az CLI login'
+    - name: Azure CLI login
       uses: azure/login@v1.4.0
       with:
         client-id: ${{ secrets.AZURE_CLIENTID }}
@@ -34,3 +34,6 @@ jobs:
       run: |
         echo "Logged in, these are subscriptions that SP ${{ secrets.AZURE_CLIENTID }} has access to:"
         az account list -o table --query "sort_by([].{Name:name, SubscriptionId:id}, &Name)"
+
+        echo "Resource groups SP ${{ secrets.AZURE_CLIENTID }} has access to in '$(az account show --query name -o tsv)':"
+        az group list -o table --query "sort_by([].{Name:name, ResourceId:id}, &Name)"   
