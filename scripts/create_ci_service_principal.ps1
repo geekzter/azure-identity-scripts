@@ -17,9 +17,10 @@
 param ( 
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")][string]$TenantId=$env:AZURE_TENANT_ID ?? $env:ARM_TENANT_ID,
     [parameter(Mandatory=$false,HelpMessage="Azure subscription ID")][string]$SubscriptionId=$env:AZURE_SUBSCRIPTION_ID ?? $env:ARM_SUBSCRIPTION_ID,
-    [parameter(Mandatory=$false,HelpMessage="Azure resource group name")][string]$ResourceGroupName,
+    [parameter(Mandatory=$false,HelpMessage="Azure resource group name")][string]$ResourceGroupName=$env:AZURE_RESOURCE_GROUP,
+    [parameter(Mandatory=$false,HelpMessage="Azure RBAC role to assign to the Service Principal")][string]$AzureRole="Contributor",
     [parameter(Mandatory=$false,HelpMessage="GitHub repository in <owner>/<name> format")][string]$RepositoryName,
-    [parameter(Mandatory=$false,HelpMessage="Branches to add federation subjects for")][System.Collections.Specialized.StringCollection]$BranchNames=@("main","master"),
+    [parameter(Mandatory=$false,HelpMessage="Branches to add federation subjects for")][string[]]$BranchNames=@("main","master"),
     [parameter(Mandatory=$false,HelpMessage="Tags to add federation subjects for")][string[]]$TagNames=@("azure"),
     [parameter(Mandatory=$false,HelpMessage="Whether to set AZURE_CLIENT_SECRET as repository secret")][switch]$CreateServicePrincipalPassword,
     [parameter(Mandatory=$false,HelpMessage="Whether to skip federation configuration")][switch]$SkipServicePrincipalFederation,
@@ -85,8 +86,9 @@ $scope = "/subscriptions/${SubscriptionId}"
 if ($ResourceGroupName) {
     $scope += "/resourceGroups/${ResourceGroupName}"
 }
+$AzureRole ??= "Contributor"
 az ad sp create-for-rbac --name $servicePrincipalName `
-                         --role Owner `
+                         --role $AzureRole `
                          --scopes $scope | ConvertFrom-Json | Set-Variable servicePrincipal
 az ad sp list --display-name $servicePrincipalName --query "[0]" | ConvertFrom-Json | Set-Variable servicePrincipalData
 # Capture Service Principal information
@@ -120,14 +122,14 @@ if (!$SkipServicePrincipalFederation) {
     # Prepare federation subjects
     Write-Host "Preparing federation subjects..."
     $subjects = [System.Collections.ArrayList]@("repo:${RepositoryName}:pull_request")
+    foreach ($branch in $BranchNames) {
+        $subjects.Add("repo:${RepositoryName}:ref:refs/heads/${branch}") | Out-Null
+    }
     if ($inRepository) {
         $currentBranch = $(git rev-parse --abbrev-ref HEAD)
         if ($BranchNames -and !$BranchNames.Contains($currentBranch)) {
-            $BranchNames.Add($currentBranch) | Out-Null
+            $subjects.Add("repo:${RepositoryName}:ref:refs/heads/${currentBranch}") | Out-Null
         }
-    }
-    foreach ($branch in $BranchNames) {
-        $subjects.Add("repo:${RepositoryName}:ref:refs/heads/${branch}") | Out-Null
     }
     foreach ($tag in $TagNames) {
         $subjects.Add("repo:${RepositoryName}:ref:refs/tags/${tag}") | Out-Null
