@@ -1,0 +1,9 @@
+{
+    "name": "Name",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "subject": "Claim",
+    "description": "Generated with create_ci_service_principal.ps1",
+    "audiences": [
+        "api://AzureADTokenExchange"
+    ]
+}
