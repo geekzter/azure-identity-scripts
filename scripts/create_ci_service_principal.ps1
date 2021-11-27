@@ -15,11 +15,13 @@
 #>
 #Requires -Version 7.2
 param ( 
-    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")][string]$TenantId=$env:ARM_TENANT_ID,
-    [parameter(Mandatory=$false,HelpMessage="Azure subscription ID")][string]$SubscriptionId=$env:ARM_SUBSCRIPTION_ID,
+    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")][string]$TenantId=$env:AZURE_TENANT_ID ?? $env:ARM_TENANT_ID,
+    [parameter(Mandatory=$false,HelpMessage="Azure subscription ID")][string]$SubscriptionId=$env:AZURE_SUBSCRIPTION_ID ?? $env:ARM_SUBSCRIPTION_ID,
     [parameter(Mandatory=$false,HelpMessage="Azure resource group name")][string]$ResourceGroupName,
     [parameter(Mandatory=$false,HelpMessage="GitHub repository in <owner>/<name> format")][string]$RepositoryName,
-    [parameter(Mandatory=$false,HelpMessage="Whether to set ARM_CLIENT_SECRET as repository secret")][switch]$CreateServicePrincipalPassword,
+    [parameter(Mandatory=$false,HelpMessage="Branches to add federation subjects for")][System.Collections.Specialized.StringCollection]$BranchNames=@("main","master"),
+    [parameter(Mandatory=$false,HelpMessage="Tags to add federation subjects for")][string[]]$TagNames=@("azure"),
+    [parameter(Mandatory=$false,HelpMessage="Whether to set AZURE_CLIENT_SECRET as repository secret")][switch]$CreateServicePrincipalPassword,
     [parameter(Mandatory=$false,HelpMessage="Whether to skip federation configuration")][switch]$SkipServicePrincipalFederation,
     [parameter(Mandatory=$false,HelpMessage="Whether to set AZURE_CREDENTIALS as repository secret")][switch]$ConfigureAzureCredentialsJson
 ) 
@@ -40,6 +42,7 @@ switch -regex ($RepositoryName) {
         break
     }
     "^\w+/[\w\-]+$" {
+        # Looks good
         break
     }
     "^.+$" {
@@ -116,16 +119,18 @@ Write-Debug $sdkCredentialsJSONMasked
 if (!$SkipServicePrincipalFederation) {
     # Prepare federation subjects
     Write-Host "Preparing federation subjects..."
-    $subjects = [System.Collections.ArrayList]@("repo:${RepositoryName}:ref:refs/heads/main",`
-                "repo:${RepositoryName}:ref:refs/heads/master",`
-                "repo:${RepositoryName}:pull_request",`
-                "repo:${RepositoryName}:ref:refs/tags/azure"`
-    )
+    $subjects = [System.Collections.ArrayList]@("repo:${RepositoryName}:pull_request")
     if ($inRepository) {
         $currentBranch = $(git rev-parse --abbrev-ref HEAD)
-        if ($currentBranch -notmatch "main|master") {
-            $subjects.Add("repo:${RepositoryName}:ref:refs/heads/${currentBranch}") | Out-Null
+        if ($BranchNames -and !$BranchNames.Contains($currentBranch)) {
+            $BranchNames.Add($currentBranch) | Out-Null
         }
+    }
+    foreach ($branch in $BranchNames) {
+        $subjects.Add("repo:${RepositoryName}:ref:refs/heads/${branch}") | Out-Null
+    }
+    foreach ($tag in $TagNames) {
+        $subjects.Add("repo:${RepositoryName}:ref:refs/tags/${tag}") | Out-Null
     }
 
     # Retrieve existing federation subjects
@@ -176,32 +181,33 @@ if (!$SkipServicePrincipalFederation) {
 }
 
 if (Get-Command gh -ErrorAction SilentlyContinue) {
-    Write-Host "Setting GitHub $RepositoryName secrets ARM_CLIENT_ID, ARM_TENANT_ID & ARM_SUBSCRIPTION_ID..."
+    Write-Host "Setting GitHub $RepositoryName secrets AZURE_CLIENT_ID, AZURE_TENANT_ID & AZURE_SUBSCRIPTION_ID..."
     gh auth login -h $gitHost
-    Write-Debug "Setting GitHub workflow secret ARM_CLIENT_ID='$appId'..."
-    gh secret set ARM_CLIENT_ID -b $appId --repo $RepositoryName
+    Write-Debug "Setting GitHub workflow secret AZURE_CLIENT_ID='$appId'..."
+    gh secret set AZURE_CLIENT_ID -b $appId --repo $RepositoryName
     if ($CreateServicePrincipalPassword) {
-        Write-Debug "Setting GitHub workflow secret ARM_CLIENT_SECRET='$spPasswordMasked'..."
-        gh secret set ARM_CLIENT_SECRET -b $spPassword --repo $RepositoryName
+        Write-Debug "Setting GitHub workflow secret AZURE_CLIENT_SECRET='$spPasswordMasked'..."
+        gh secret set AZURE_CLIENT_SECRET -b $spPassword --repo $RepositoryName
     }
-    Write-Debug "Setting GitHub workflow secret ARM_TENANT_ID='$TenantId'..."
-    gh secret set ARM_TENANT_ID -b $TenantId --repo $RepositoryName
-    Write-Debug "Setting GitHub workflow secret ARM_SUBSCRIPTION_ID='$SubscriptionId'..."
-    gh secret set ARM_SUBSCRIPTION_ID -b $SubscriptionId --repo $RepositoryName
     if ($ConfigureAzureCredentialsJson) {
         Write-Debug "Setting GitHub workflow secret AZURE_CREDENTIALS='$sdkCredentialsJSONMasked'..."
         $sdkCredentialsJSON | gh secret set AZURE_CREDENTIALS --repo $RepositoryName
     }
+    Write-Debug "Setting GitHub workflow secret AZURE_TENANT_ID='$TenantId'..."
+    gh secret set AZURE_TENANT_ID -b $TenantId --repo $RepositoryName
+    Write-Debug "Setting GitHub workflow secret AZURE_SUBSCRIPTION_ID='$SubscriptionId'..."
+    gh secret set AZURE_SUBSCRIPTION_ID -b $SubscriptionId --repo $RepositoryName
 } else {
     # Show workflow configuration information
     Write-Warning "GitHub CLI not found, configure secrets manually"
-    Write-Host "Set GitHub workflow secret ARM_CLIENT_ID='$appId' in $RepositoryName"
+    Write-Host "Set GitHub workflow secret AZURE_CLIENT_ID='$appId' in $RepositoryName"
     if ($CreateServicePrincipalPassword) {
-        Write-Host "Set GitHub workflow secret ARM_CLIENT_SECRET='$spPasswordMasked' in $RepositoryName"
+        Write-Host "Set GitHub workflow secret AZURE_CLIENT_SECRET='$spPasswordMasked' in $RepositoryName"
     }
-    Write-Host "Set GitHub workflow secret ARM_TENANT_ID='$TenantId' in $RepositoryName"
-    Write-Host "Set GitHub workflow secret ARM_SUBSCRIPTION_ID='$SubscriptionId' in $RepositoryName"
     if ($ConfigureAzureCredentialsJson) {
         Write-Host "Set GitHub workflow secret AZURE_CREDENTIALS='$sdkCredentialsJSONMasked' in $RepositoryName"
     }
+    Write-Host "Set GitHub workflow secret AZURE_TENANT_ID='$TenantId' in $RepositoryName"
+    Write-Host "Set GitHub workflow secret AZURE_SUBSCRIPTION_ID='$SubscriptionId' in $RepositoryName"
 }
+Write-Host "Configure workflow YAML as per the azure/login action documentation: https://github.com/marketplace/actions/azure-login"
