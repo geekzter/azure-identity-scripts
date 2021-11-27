@@ -1,5 +1,19 @@
 name: Run Azure Login with OpenID Connect
-on: [push, workflow_dispatch]
+
+on:
+  push:
+    paths-ignore:
+    - '**/README.md'
+    - '**/LICENSE'
+    - 'visuals/**'
+  pull_request:
+    paths-ignore:
+    - '**/README.md'
+    - '**/LICENSE'
+    - 'visuals/**'
+  schedule:
+  - cron:  '0 3 * * *'
+  workflow_dispatch:
 
 permissions:
   id-token: write
