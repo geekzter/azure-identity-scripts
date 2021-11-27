@@ -85,9 +85,10 @@ if ($ResourceGroupName) {
 az ad sp create-for-rbac --name $servicePrincipalName `
                          --role Owner `
                          --scopes $scope | ConvertFrom-Json | Set-Variable servicePrincipal
-
+az ad sp list --display-name $servicePrincipalName --query "[0]" | ConvertFrom-Json | Set-Variable servicePrincipalData
 # Capture Service Principal information
 $servicePrincipal | Select-Object -ExcludeProperty password | Format-List | Out-String | Write-Debug
+$servicePrincipalData | Format-List | Out-String | Write-Debug
 $appId = $servicePrincipal.appId 
 $appObjectId = $(az ad app show --id $appId --query objectId -o tsv)
 $spPassword = $servicePrincipal.password
@@ -98,10 +99,11 @@ Write-Debug "appObjectId: $appObjectId"
 # Create Azure SDK formatted JSON which the GitHub azure/login@v1 action can consume
 $sdkCredentials = @{
     clientId = $servicePrincipal.appId
+    objectId = $servicePrincipalData.objectId
     subscriptionId = $SubscriptionId
     tenantId = $servicePrincipal.tenant
 }
-$sdkCredentialsMasked = $sdkCredentials
+$sdkCredentialsMasked = $sdkCredentials.Clone()
 if ($CreateServicePrincipalPassword) {
     $sdkCredentials["clientSecret"] = $spPassword
     $sdkCredentialsMasked["clientSecret"] = $spPasswordMasked
