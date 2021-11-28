@@ -34,14 +34,11 @@ jobs:
 
     - name: Run Azure CLI commands to demonstrate we're logged in
       run: |
-        # echo "Application object of AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}':"
-        # az ad app show --id ${{ secrets.AZURE_CLIENT_ID }}
-
         echo "Service Principal object of AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}':"
-        az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]"
+        az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json
 
         echo "These are subscriptions that AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}' has access to:"
-        az account list -o table --query "sort_by([].{Name:name, SubscriptionId:id}, &Name)"
+        az account list --query "sort_by([].{Name:name, SubscriptionId:id}, &Name)" -o table
 
         echo "These are resource groups that AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}' has access to in '$(az account show --query name -o tsv)':"
-        az group list -o table --query "sort_by([].{Name:name, ResourceId:id}, &Name)"   
+        az group list --query "sort_by([].{Name:name, ResourceId:id}, &Name)" -o table
