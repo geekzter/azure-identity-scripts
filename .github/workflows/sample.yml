@@ -34,8 +34,8 @@ jobs:
 
     - name: Run Azure CLI commands to demonstrate we're logged in
       run: |
-        echo "Application object of AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}':"
-        az ad app show --id ${{ secrets.AZURE_CLIENT_ID }}
+        # echo "Application object of AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}':"
+        # az ad app show --id ${{ secrets.AZURE_CLIENT_ID }}
 
         echo "Service Principal object of AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}':"
         az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]"
