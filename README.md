@@ -1,13 +1,13 @@
 # github-action-azure-oidc
 
-This repo demonstrates the use of [Workload identity federation][2] to configure a Service Principal without password secrets to act as the identity to access Azure from GitHub-hosted runners. There are 'howto' articles on both [GitHub Docs][3] and [Microsoft Docs][1], and the configuration is also documented on the [azure/login action][4].    
+This repo demonstrates the use of a pattern called [Workload identity federation][2] to configure a Service Principal without password secrets to act as the identity to access Azure from GitHub-hosted runners. There are 'howto' articles on both [GitHub Docs][3] and [Microsoft Docs][1], and the configuration is also documented on the [azure/login action][4].    
 To set this up, configuration is required in 3 distinct services:
 - Azure Active Directory: Service Principal configuration
 - Azure: An RBAC role must be granted to a resource in Azure 
 - GitHub: Service Principal information (excluding the key/password) must be configured as secrets
 - GitHub: The action workflow YAML needs to be configured accordingly
 
-To make life easier, this repo contains a [script](scripts/create_sp_for_github_actions.ps1) that configures the first 3 steps. In it most simple form it configures federation subjects for the repo where the script is executed from (e.g. geekzter/github-action-azure-oidc) for pull request, common branch names, the current branch, and the tag 'azure'.
+To make life easier, this repo contains a [script](scripts/create_sp_for_github_actions.ps1) that configures the first 3 steps. In its most simple form it configures federation subjects for the repo where the script is executed from (e.g. geekzter/github-action-azure-oidc) for pull request, common branch names, the current branch, and the tag 'azure'.
 ```powershell
 ./create_sp_for_github_actions.ps1
 ```
@@ -19,7 +19,7 @@ You can specify another repo and override common parameters e.g.
                                    -BranchNames mybranch 
 ```
 
-You can also adapt the behavior to still create a password:
+You can also adapt the behavior to still create a password, and skip federation configuration:
 ```powershell
 ./create_sp_for_github_actions.ps1 -CreateServicePrincipalPassword `
                                    -ConfigureAzureCredentialsJson `
