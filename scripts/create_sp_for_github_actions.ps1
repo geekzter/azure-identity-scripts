@@ -15,8 +15,8 @@
 #>
 #Requires -Version 7.2
 param ( 
-    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")][string]$TenantId=$env:AZURE_TENANT_ID ?? $env:ARM_TENANT_ID,
-    [parameter(Mandatory=$false,HelpMessage="Azure subscription ID")][string]$SubscriptionId=$env:AZURE_SUBSCRIPTION_ID ?? $env:ARM_SUBSCRIPTION_ID,
+    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")][guid]$TenantId=$env:AZURE_TENANT_ID ?? $env:ARM_TENANT_ID,
+    [parameter(Mandatory=$false,HelpMessage="Azure subscription ID")][guid]$SubscriptionId=$env:AZURE_SUBSCRIPTION_ID ?? $env:ARM_SUBSCRIPTION_ID,
     [parameter(Mandatory=$false,HelpMessage="Azure resource group name")][string]$ResourceGroupName=$env:AZURE_RESOURCE_GROUP,
     [parameter(Mandatory=$false,HelpMessage="Azure RBAC role to assign to the Service Principal")][string]$AzureRole="Contributor",
     [parameter(Mandatory=$false,HelpMessage="GitHub repository in <owner>/<name> format")][string]$RepositoryName,
@@ -87,10 +87,16 @@ if ($ResourceGroupName) {
     $scope += "/resourceGroups/${ResourceGroupName}"
 }
 $AzureRole ??= "Contributor"
+$preSPCreationSnapshot = (get-date).ToUniversalTime().ToString("o") # Save timestamp before SP creation, so we can clean up secrets created
 az ad sp create-for-rbac --name $servicePrincipalName `
                          --role $AzureRole `
                          --scopes $scope | ConvertFrom-Json | Set-Variable servicePrincipal
 az ad sp list --display-name $servicePrincipalName --query "[0]" | ConvertFrom-Json | Set-Variable servicePrincipalData
+# Clean up Service Principal secrets we did not ask for 
+if (!$CreateServicePrincipalPassword) {
+    $keyToDelete = $(az ad sp credential list --id $servicePrincipalData.objectId --query "[?startDate >= '$preSPCreationSnapshot'].keyId" -o tsv)
+    az ad sp credential delete --id $servicePrincipalData.objectId --key-id $keyToDelete | Write-Debug
+}
 # Capture Service Principal information
 $servicePrincipal | Select-Object -ExcludeProperty password | Format-List | Out-String | Write-Debug
 $servicePrincipalData | Format-List | Out-String | Write-Debug
@@ -127,7 +133,7 @@ if (!$SkipServicePrincipalFederation) {
     }
     if ($inRepository) {
         $currentBranch = $(git rev-parse --abbrev-ref HEAD)
-        if ($BranchNames -and !$BranchNames.Contains($currentBranch)) {
+        if (!$BranchNames -or !$BranchNames.Contains($currentBranch)) {
             $subjects.Add("repo:${RepositoryName}:ref:refs/heads/${currentBranch}") | Out-Null
         }
     }
@@ -183,7 +189,7 @@ if (!$SkipServicePrincipalFederation) {
 }
 
 if (Get-Command gh -ErrorAction SilentlyContinue) {
-    Write-Host "Setting GitHub $RepositoryName secrets AZURE_CLIENT_ID, AZURE_TENANT_ID & AZURE_SUBSCRIPTION_ID..."
+    Write-Host "`nSetting GitHub $RepositoryName secrets AZURE_CLIENT_ID, AZURE_TENANT_ID & AZURE_SUBSCRIPTION_ID..."
     gh auth login -h $gitHost
     Write-Debug "Setting GitHub workflow secret AZURE_CLIENT_ID='$appId'..."
     gh secret set AZURE_CLIENT_ID -b $appId --repo $RepositoryName
@@ -201,7 +207,7 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
     gh secret set AZURE_SUBSCRIPTION_ID -b $SubscriptionId --repo $RepositoryName
 } else {
     # Show workflow configuration information
-    Write-Warning "GitHub CLI not found, configure secrets manually"
+    Write-Warning "`nGitHub CLI not found, configure secrets manually"
     Write-Host "Set GitHub workflow secret AZURE_CLIENT_ID='$appId' in $RepositoryName"
     if ($CreateServicePrincipalPassword) {
         Write-Host "Set GitHub workflow secret AZURE_CLIENT_SECRET='$spPasswordMasked' in $RepositoryName"
@@ -212,4 +218,8 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
     Write-Host "Set GitHub workflow secret AZURE_TENANT_ID='$TenantId' in $RepositoryName"
     Write-Host "Set GitHub workflow secret AZURE_SUBSCRIPTION_ID='$SubscriptionId' in $RepositoryName"
 }
-Write-Host "Configure workflow YAML as per the azure/login action documentation: https://github.com/marketplace/actions/azure-login"
+Write-Host "`nConfigure workflow YAML as per the azure/login action documentation:`nhttps://github.com/marketplace/actions/azure-login"
+Write-Host "`nService Principal in Azure Portal:`nhttps://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Credentials/appId/${appId}/isMSAApp/"
+Write-Host "`nAccess Control list on scope '$scope' in Azure Portal:`nhttps://portal.azure.com/#@${TenantId}/resource${scope}/users"
+Write-Host "`nSecrets on GitHub web:`nhttps://github.com/${RepositoryName}/settings/secrets/actions"
+Write-Host "`n"
