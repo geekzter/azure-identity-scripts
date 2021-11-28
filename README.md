@@ -7,28 +7,28 @@ To set this up, configuration is required in 3 distinct services:
 - GitHub: Service Principal information (excluding the key/password) must be configured as secrets
 - GitHub: The action workflow YAML needs to be configured accordingly
 
-To make life easier, this repo contains a [script](scripts/create_ci_service_principal.ps1) that configures the first 3 steps. In it most simple form it configures federation subjects for the repo where the script is executed from (e.g. geekzter/github-action-azure-oidc) for pull request, common branch names, the current branch, and the tag 'azure'.
+To make life easier, this repo contains a [script](scripts/create_sp_for_github_actions.ps1) that configures the first 3 steps. In it most simple form it configures federation subjects for the repo where the script is executed from (e.g. geekzter/github-action-azure-oidc) for pull request, common branch names, the current branch, and the tag 'azure'.
 ```powershell
-./create_ci_service_principal.ps1
+./create_sp_for_github_actions.ps1
 ```
 
 You can specify another repo and override common parameters e.g.
 ```powershell
-./create_ci_service_principal.ps1 -RepositoryName someowner/somereponame `
-                                  -AzureRole Owner `
-                                  -BranchNames mybranch 
+./create_sp_for_github_actions.ps1 -RepositoryName someowner/somereponame `
+                                   -AzureRole Owner `
+                                   -BranchNames mybranch 
 ```
 
 You can also adapt the behavior to still create a password:
 ```powershell
-./create_ci_service_principal.ps1 -CreateServicePrincipalPassword `
-                                  -ConfigureAzureCredentialsJson `
-                                  -SkipServicePrincipalFederation 
+./create_sp_for_github_actions.ps1 -CreateServicePrincipalPassword `
+                                   -ConfigureAzureCredentialsJson `
+                                   -SkipServicePrincipalFederation 
 ```
 
 Sample output:
 ```
-~/src/github/geekzter/github-action-azure-oidc/scripts> ./create_ci_service_principal.ps1 -AzureRule Owner
+~/src/github/geekzter/github-action-azure-oidc/scripts> ./create_sp_for_github_actions.ps1 -AzureRule Owner
 Logging into Azure...
 Creating Service Principal with name 'geekzter-github-action-azure-oidc-cicd'...
 WARNING: Found an existing application instance of "00000000-0000-0000-0000-000000000000". We will patch it
