@@ -81,7 +81,7 @@ if (!$SubscriptionId) {
 
 # Create Service Principal
 $servicePrincipalName = "$($RepositoryName -replace '/','-')-cicd"
-Write-Host "Creating Service Principal with name '$servicePrincipalName'..."
+Write-Host "`nCreating Service Principal with name '$servicePrincipalName'..."
 $scope = "/subscriptions/${SubscriptionId}"
 if ($ResourceGroupName) {
     $scope += "/resourceGroups/${ResourceGroupName}"
@@ -163,6 +163,7 @@ if (!$SkipServicePrincipalFederation) {
         $federationName = ($subject -replace ":|/|_","-")
 
         Get-Content (Join-Path $PSScriptRoot "federated-identity-request-template.jsonc") | ConvertFrom-Json | Set-Variable request
+        $request.description = "Created with $($MyInvocation.MyCommand.Name)"
         $request.name = $federationName
         $request.subject = $subject
         $request | Format-List | Out-String | Write-Debug
@@ -175,7 +176,7 @@ if (!$SkipServicePrincipalFederation) {
 
         $postUrl = "https://graph.microsoft.com/beta/applications/${appObjectId}/federatedIdentityCredentials"
         Write-Debug "postUrl: $postUrl"
-        Write-Host "Adding federation for ${subject}..."
+        Write-Host "Adding federation subject for ${subject}..."
         az rest --method POST `
                 --headers '{\""Content-Type\"": \""application/json\""}' `
                 --uri "$postUrl" `
