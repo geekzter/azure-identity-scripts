@@ -71,6 +71,8 @@ switch -regex ($RepositoryName) {
 }
 $gitHost ??= "github.com" # Assume as default
 Write-Verbose "Using repository '$RepositoryName'"
+$repositoryUrl = "https://${gitHost}/${RepositoryName}"
+Write-Debug "repositoryUrl: $repositoryUrl"
 
 # Login to Azure CLI
 Write-Host "Logging into Azure..."
@@ -81,7 +83,7 @@ if (!$SubscriptionId) {
 
 # Create Service Principal
 $servicePrincipalName = "$($RepositoryName -replace '/','-')-cicd"
-Write-Host "Creating Service Principal with name '$servicePrincipalName'..."
+Write-Host "`nCreating Service Principal with name '$servicePrincipalName'..."
 $scope = "/subscriptions/${SubscriptionId}"
 if ($ResourceGroupName) {
     $scope += "/resourceGroups/${ResourceGroupName}"
@@ -92,11 +94,13 @@ az ad sp create-for-rbac --name $servicePrincipalName `
                          --role $AzureRole `
                          --scopes $scope | ConvertFrom-Json | Set-Variable servicePrincipal
 az ad sp list --display-name $servicePrincipalName --query "[0]" | ConvertFrom-Json | Set-Variable servicePrincipalData
+
 # Clean up Service Principal secrets we did not ask for 
 if (!$CreateServicePrincipalPassword) {
     $keyToDelete = $(az ad sp credential list --id $servicePrincipalData.objectId --query "[?startDate >= '$preSPCreationSnapshot'].keyId" -o tsv)
     az ad sp credential delete --id $servicePrincipalData.objectId --key-id $keyToDelete | Write-Debug
 }
+
 # Capture Service Principal information
 $servicePrincipal | Select-Object -ExcludeProperty password | Format-List | Out-String | Write-Debug
 $servicePrincipalData | Format-List | Out-String | Write-Debug
@@ -106,6 +110,10 @@ $spPassword = $servicePrincipal.password
 $spPasswordMasked = $spPassword -replace ".","*"
 Write-Debug "appId: $appId"
 Write-Debug "appObjectId: $appObjectId"
+
+# Update App object with repository information
+Write-Host "`nUpdating application '$appId'..."
+az ad app update --id $appId --homepage $repositoryUrl --identifier-uris $repositoryUrl
 
 # Create Azure SDK formatted JSON which the GitHub azure/login@v1 action can consume
 $sdkCredentials = @{
@@ -163,6 +171,7 @@ if (!$SkipServicePrincipalFederation) {
         $federationName = ($subject -replace ":|/|_","-")
 
         Get-Content (Join-Path $PSScriptRoot "federated-identity-request-template.jsonc") | ConvertFrom-Json | Set-Variable request
+        $request.description = "Created with $($MyInvocation.MyCommand.Name)"
         $request.name = $federationName
         $request.subject = $subject
         $request | Format-List | Out-String | Write-Debug
@@ -175,7 +184,7 @@ if (!$SkipServicePrincipalFederation) {
 
         $postUrl = "https://graph.microsoft.com/beta/applications/${appObjectId}/federatedIdentityCredentials"
         Write-Debug "postUrl: $postUrl"
-        Write-Host "Adding federation for ${subject}..."
+        Write-Host "Adding federation subject for ${subject}..."
         az rest --method POST `
                 --headers '{\""Content-Type\"": \""application/json\""}' `
                 --uri "$postUrl" `
@@ -218,8 +227,9 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
     Write-Host "Set GitHub workflow secret AZURE_TENANT_ID='$TenantId' in $RepositoryName"
     Write-Host "Set GitHub workflow secret AZURE_SUBSCRIPTION_ID='$SubscriptionId' in $RepositoryName"
 }
+Write-Host "`nGitHub repository:`n${repositoryUrl}"
 Write-Host "`nConfigure workflow YAML as per the azure/login action documentation:`nhttps://github.com/marketplace/actions/azure-login"
 Write-Host "`nService Principal in Azure Portal:`nhttps://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Credentials/appId/${appId}/isMSAApp/"
 Write-Host "`nAccess Control list on scope '$scope' in Azure Portal:`nhttps://portal.azure.com/#@${TenantId}/resource${scope}/users"
-Write-Host "`nSecrets on GitHub web:`nhttps://github.com/${RepositoryName}/settings/secrets/actions"
+Write-Host "`nSecrets on GitHub web:`n${repositoryUrl}/settings/secrets/actions"
 Write-Host "`n"
