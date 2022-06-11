@@ -84,11 +84,7 @@ switch -regex ($IdOrName) {
     "(?im)^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$" {
 
         Find-ServicePrincipalByGUID -Id $IdOrName | Set-Variable sp
-        if ($sp) {
-            if ($sp.servicePrincipalType -ine "ManagedIdentity") {
-                az ad app show --id $sp.appId | ConvertFrom-Json | Set-Variable app
-            }
-        } else {
+        if (!$sp) {
             Find-ApplicationByGUID -Id $IdOrName | Set-Variable app
             if ($app) {
                 az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
@@ -116,6 +112,8 @@ switch -regex ($IdOrName) {
         Find-ApplicationByName -Name $IdOrName | Set-Variable app
         if ($app) {
             az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
+        } else {
+            Find-ServicePrincipalByName -Name $IdOrName | Set-Variable sp
         }
         break
     }
@@ -129,6 +127,9 @@ switch -regex ($IdOrName) {
     }
 }
 
+if (!$app -and $sp -and ($sp.servicePrincipalType -ieq "Application")) {
+    az ad app show --id $sp.appId | ConvertFrom-Json | Set-Variable app
+}
 if ($app) {
     Write-Host "Found Application '$($app.displayName)' with ID '$($app.appId)'"
     $app
