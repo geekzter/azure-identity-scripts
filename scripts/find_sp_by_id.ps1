@@ -86,7 +86,7 @@ switch -regex ($IdOrName) {
         break
     }
     "^.+$" {
-        Write-Output "$($PSStyle.Formatting.Error)'$RepositoryName' is not a valid repository name (<owner>/<name>), exiting$($PSStyle.Reset)" | Write-Warning
+        Write-Output "$($PSStyle.Formatting.Error)'$RepositoryName' is not a valid ID, exiting$($PSStyle.Reset)" | Write-Warning
         exit
     }
     "" {
