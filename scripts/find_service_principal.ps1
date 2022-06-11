@@ -73,9 +73,14 @@ function Find-ServicePrincipalByName (
         Write-Verbose "'$Name' is name or ID"
         return $sp
     } 
-    az ad sp list --filter "displayName eq 'pipeline-agents-hkiw-windows-agents'" --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
+    az ad sp list --filter "displayName eq '$Name'" --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
     if ($sp) {
         Write-Verbose "'$Name' is display name"
+        return $sp
+    } 
+    az ad sp show --spn $Name 2>$null | ConvertFrom-Json | Set-Variable sp
+    if ($sp) {
+        Write-Verbose "'$Name' is service principal name"
         return $sp
     } 
     az ad sp list --show-mine --query "[?contains(servicePrincipalNames,'$Name')]|[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
