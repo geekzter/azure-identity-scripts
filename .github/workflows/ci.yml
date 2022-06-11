@@ -61,17 +61,17 @@ jobs:
         az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | ConvertFrom-Json | Set-Variable sp
 
         Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
-        ./find_service_principal.ps1 $sp.id -$FindApplication:$false
+        ./find_service_principal.ps1 $sp.id -FindApplication:$false
 
         Write-Host "`nFind Service Principal using app/client ID '$($sp.appId)'"
-        ./find_service_principal.ps1 $sp.appId -$FindApplication:$false
+        ./find_service_principal.ps1 $sp.appId -FindApplication:$false
 
         Write-Host "`nFind Service Principal using displayName '$($sp.displayName)'"
-        ./find_service_principal.ps1 $sp.displayName -$FindApplication:$false
+        ./find_service_principal.ps1 $sp.displayName -FindApplication:$false
         
         Write-Host "`nFind Service Principal using servicePrincipalNames[]"
         foreach ($servicePrincipalName in $sp.servicePrincipalNames) {
           Write-Host "`nFind Service Principal using servicePrincipalName '$servicePrincipalName'"
-          ./find_service_principal.ps1 $servicePrincipalName -$FindApplication:$false
+          ./find_service_principal.ps1 $servicePrincipalName -FindApplication:$false
         }
       shell: pwsh
