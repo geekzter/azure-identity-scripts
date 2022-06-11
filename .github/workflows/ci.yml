@@ -50,7 +50,7 @@ jobs:
     - name: Test find_service_principal.ps1
       run: |
         Get-Location
-        Get-ChildItem -Recurse | Select-Object -ExpandProperty FullName  
+        Get-ChildItem .. -Recurse | Select-Object -ExpandProperty FullName  
 
         az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | Set-Variable sp
 
