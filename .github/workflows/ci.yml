@@ -1,0 +1,74 @@
+name: azure-cli-ci
+
+on:
+  pull_request:
+    paths-ignore:
+    - '**/README.md'
+    - '**/LICENSE'
+    - 'visuals/**'
+  schedule:
+  - cron:  '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+      
+jobs: 
+  ci:
+    defaults:
+      run:
+        working-directory: scripts
+    env:
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+
+    - name: Print environment variables
+      run: | 
+        Get-ChildItem -Path Env: -Recurse -Include AZURE_*,GITHUB_* | Sort-Object -Property Name | Format-Table -AutoSize | Out-String -Width 512
+      shell: pwsh
+
+    - name: Use Azure CLI
+      uses: azure/login@v1
+      with:
+        # Using OpenID Connect / Workload Identity
+        # Create credential with create_ci_service_principal.ps1
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Run Azure CLI commands to demonstrate we're logged in
+      run: |
+        echo "Service Principal object of AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}':"
+        az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json
+
+        echo "These are subscriptions that AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}' has access to:"
+        az account list --query "sort_by([].{Name:name, SubscriptionId:id}, &Name)" -o table
+
+        echo "These are resource groups that AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}' has access to in '$(az account show --query name -o tsv)':"
+        az group list --query "sort_by([].{Name:name, ResourceId:id}, &Name)" -o table
+
+    - name: Test find_service_principal.ps1
+      run: |
+        Set-PSDebug -Trace 0
+
+        az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | ConvertFrom-Json | Set-Variable sp
+
+        Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
+        ./find_service_principal.ps1 $sp.id -FindApplication:$false
+
+        Write-Host "`nFind Service Principal using app/client ID '$($sp.appId)'"
+        ./find_service_principal.ps1 $sp.appId -FindApplication:$false
+
+        Write-Host "`nFind Service Principal using displayName '$($sp.displayName)'"
+        ./find_service_principal.ps1 $sp.displayName -FindApplication:$false
+        
+        Write-Host "`nFind Service Principal using servicePrincipalNames[]"
+        foreach ($servicePrincipalName in $sp.servicePrincipalNames) {
+          Write-Host "`nFind Service Principal using servicePrincipalName '$servicePrincipalName'"
+          ./find_service_principal.ps1 $servicePrincipalName -FindApplication:$false
+        }
+      shell: pwsh

@@ -95,25 +95,29 @@ az ad sp create-for-rbac --name $servicePrincipalName `
                          --scopes $scope | ConvertFrom-Json | Set-Variable servicePrincipal
 az ad sp list --display-name $servicePrincipalName --query "[0]" | ConvertFrom-Json | Set-Variable servicePrincipalData
 
-# Clean up Service Principal secrets we did not ask for 
-if (!$CreateServicePrincipalPassword) {
-    $keyToDelete = $(az ad sp credential list --id $servicePrincipalData.objectId --query "[?startDate >= '$preSPCreationSnapshot'].keyId" -o tsv)
-    az ad sp credential delete --id $servicePrincipalData.objectId --key-id $keyToDelete | Write-Debug
-}
-
 # Capture Service Principal information
 $servicePrincipal | Select-Object -ExcludeProperty password | Format-List | Out-String | Write-Debug
 $servicePrincipalData | Format-List | Out-String | Write-Debug
 $appId = $servicePrincipal.appId 
 $appObjectId = $(az ad app show --id $appId --query objectId -o tsv)
-$spPassword = $servicePrincipal.password
-$spPasswordMasked = $spPassword -replace ".","*"
 Write-Debug "appId: $appId"
 Write-Debug "appObjectId: $appObjectId"
 
+if ($CreateServicePrincipalPassword) {
+    $spPassword = $servicePrincipal.password
+    $spPasswordMasked = $spPassword -replace ".","*"
+
+    Write-Host "Service Principal password created is ${spPassword}"
+} else {
+    # Clean up Service Principal secrets we did not ask for 
+    #BUG: Unable to list credentials https://github.com/Azure/azure-cli/issues/21195
+    $keyToDelete = $(az ad sp credential list --id $servicePrincipalData.objectId --query "[?startDate >= '$preSPCreationSnapshot'].keyId" -o tsv)
+    az ad sp credential delete --id $servicePrincipalData.objectId --key-id $keyToDelete | Write-Debug
+}
+
 # Update App object with repository information
 Write-Host "`nUpdating application '$appId'..."
-az ad app update --id $appId --homepage $repositoryUrl --identifier-uris $repositoryUrl
+az ad app update --id $appId --web-home-page-url $repositoryUrl --identifier-uris $repositoryUrl
 
 # Create Azure SDK formatted JSON which the GitHub azure/login@v1 action can consume
 $sdkCredentials = @{
