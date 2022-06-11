@@ -18,29 +18,34 @@
 #Requires -Version 7
 param ( 
     [parameter(Mandatory=$true,HelpMessage="Application/Client/Object/Principal ID/Resource ID")][string]$IdOrName,
+    [parameter(Mandatory=$false)][bool]$FindApplication=$true,
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")][guid]$TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) 
 
 function Find-ApplicationByGUID (
     [parameter(Mandatory=$true)][guid]$Id
 ) {
-    az ad app show --id $Id 2>$null | ConvertFrom-Json | Set-Variable app
-    if ($app) {
-        Write-Verbose "'$Id' is an Application Object ID"
-        return $app
-    } else {
-        return $null
+    if ($FindApplication) {
+        az ad app show --id $Id 2>$null | ConvertFrom-Json | Set-Variable app
+        if ($app) {
+            Write-Verbose "'$Id' is an Application Object ID"
+            return $app
+        } else {
+            return $null
+        }    
     }
 }
 function Find-ApplicationByName (
     [parameter(Mandatory=$true)][string]$Name
 ) {
-    az ad app list --display-name $Name --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable app
-    if ($app) {
-        Write-Verbose "'$Name' is an Application Display Name"
-        return $app
-    } else {
-        return $null
+    if ($FindApplication) {
+        az ad app list --display-name $Name --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable app
+        if ($app) {
+            Write-Verbose "'$Name' is an Application Display Name"
+            return $app
+        } else {
+            return $null
+        }            
     }
 }
 function Find-ManagedIdentityByResourceID (
@@ -158,7 +163,7 @@ switch -regex ($IdOrName) {
     }
 }
 
-if (!$app -and $sp -and ($sp.servicePrincipalType -ieq "Application")) {
+if ($FindApplication -and !$app -and $sp -and ($sp.servicePrincipalType -ieq "Application")) {
     az ad app show --id $sp.appId | ConvertFrom-Json | Set-Variable app
 }
 if ($app) {
