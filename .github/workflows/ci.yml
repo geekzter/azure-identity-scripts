@@ -49,9 +49,8 @@ jobs:
 
     - name: Test find_service_principal.ps1
       run: |
-        pwd
-        ls -R
-
+        Get-Location
+        Get-ChildItem -Recurse | Select-Object -ExpandProperty FullName  
 
         az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | Set-Variable sp
 
@@ -69,3 +68,4 @@ jobs:
           echo "Find Service Principal using servicePrincipalName '$servicePrincipalName'"
           ./find_service_principal.ps1 $servicePrincipalName
         }
+      shell: pwsh
