@@ -168,10 +168,10 @@ if ($FindApplication -and !$app -and $sp -and ($sp.servicePrincipalType -ieq "Ap
 }
 if ($app) {
     Write-Host "Found Application '$($app.displayName)' with ID '$($app.appId)'"
-    $app | Format-List | Format-Table -AutoSize | Out-String -Width $Host.UI.RawUI.WindowSize.Width
+    $app | Format-List
 }
 if ($sp) {
     Write-Host "Found Service Principal '$($sp.displayName)' of type '$($sp.servicePrincipalType)' with ID '$($sp.appId)'"
-    $sp | Format-List | Format-Table -AutoSize | Out-String -Width $Host.UI.RawUI.WindowSize.Width
+    $sp | Format-List
     #BUG: Unable to list credentials https://github.com/Azure/azure-cli/issues/21195
 }
