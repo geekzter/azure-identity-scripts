@@ -53,7 +53,9 @@ jobs:
         Get-Location
         Get-ChildItem -Recurse | Select-Object -ExpandProperty FullName  
 
+        echo "Service Principal object of AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}':"
         az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | Set-Variable sp
+        $sp
 
         echo "Find Service Principal using object/principal ID '$($sp.id)'"
         ./find_service_principal.ps1 $sp.id
