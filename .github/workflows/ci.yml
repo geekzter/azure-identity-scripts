@@ -50,6 +50,9 @@ jobs:
     - name: Test find_service_principal.ps1
       run: |
         pwd
+        ls -d "$PWD"/*
+
+
         az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | Set-Variable sp
 
         echo "Find Service Principal using object/principal ID '$($sp.id)'"
