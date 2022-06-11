@@ -1,9 +1,17 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS 
-    TODO
+    Find a Service Principal
 .DESCRIPTION 
-    TODO
+    Find a Service Principal by (object/principal) id, service principal name, application/client id, application name, user assigned identity resource id, etc
+.EXAMPLE
+    ./find_sp_by_id.ps1 12345678-1234-1234-abcd-1234567890ab
+.EXAMPLE
+    ./find_sp_by_id.ps1 my-service-principal-name
+.EXAMPLE
+    ./find_sp_by_id.ps1 /subscriptions/12345678-1234-1234-abcd-1234567890ab/resourcegroups/my-resource-group/providers/Microsoft.ManagedIdentity/userAssignedIdentities/my-user-assigned-identity
+.EXAMPLE
+    ./find_sp_by_id.ps1 "https://identity.azure.net/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
 #>
 #Requires -Version 7
 param ( 
