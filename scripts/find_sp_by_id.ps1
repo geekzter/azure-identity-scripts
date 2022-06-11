@@ -22,6 +22,17 @@ function Find-ApplicationByGUID (
         return $null
     }
 }
+function Find-ApplicationByName (
+    [parameter(Mandatory=$true)][string]$Name
+) {
+    az ad app list --display-name $Name --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable app
+    if ($app) {
+        Write-Host "'$Name' is an Application Display Name"
+        return $app
+    } else {
+        return $null
+    }
+}
 function Find-ManagedIdentityByResourceID (
     [parameter(Mandatory=$true)][string]$Id
 ) {
@@ -39,6 +50,21 @@ function Find-ServicePrincipalByGUID (
         az ad sp show --id $Id 2>$null | ConvertFrom-Json | Set-Variable sp
         if ($sp) {
             Write-Host "'$Id' is a Service Principal Object ID"
+        }
+    }
+
+    return $sp
+}
+function Find-ServicePrincipalByName (
+    [parameter(Mandatory=$true)][string]$Name
+) {
+    az ad sp show --id $Name 2>$null | ConvertFrom-Json | Set-Variable sp
+    if ($sp) {
+        Write-Host "'$Name' is name or ID"
+    } else {
+        az ad sp list --show-mine --query "[?contains(servicePrincipalNames,'$Name')]" --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
+        if ($sp) {
+            Write-Host "'$Name' is in servicePrincipalNames[]"
         }
     }
 
@@ -85,9 +111,13 @@ switch -regex ($IdOrName) {
         }
         break
     }
+    # Match Name
     "^.+$" {
-        Write-Output "$($PSStyle.Formatting.Error)'$IdOrName' is not a valid ID, exiting$($PSStyle.Reset)" | Write-Warning
-        exit
+        Find-ApplicationByName -Name $IdOrName | Set-Variable app
+        if ($app) {
+            az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
+        }
+        break
     }
     "" {
         Write-Output "$($PSStyle.Formatting.Error)'$IdOrName' is empty, exiting$($PSStyle.Reset)" | Write-Warning
