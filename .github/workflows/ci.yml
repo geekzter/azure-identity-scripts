@@ -19,7 +19,7 @@ jobs:
       run:
         working-directory: scripts
     env:
-      AZURE_TENANT_ID: '{{ secrets.AZURE_TENANT_ID }}'
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
     runs-on: ubuntu-latest
 
     steps:
