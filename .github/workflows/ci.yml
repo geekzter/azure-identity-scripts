@@ -17,9 +17,15 @@ jobs:
   ci:
     defaults:
       run:
-        working-directory: ./scripts
+        working-directory: ../scripts
     runs-on: ubuntu-latest
     steps:
+
+    - name: Print environment variables
+      run: | 
+        Get-ChildItem -Path Env: -Recurse -Include ARM_*,AZURE_*,GITHUB_*,INPUT_*,TF_* | Sort-Object -Property Name | Format-Table -AutoSize | Out-String -Width 512
+        pwd
+      shell: pwsh
 
     - name: Use Azure CLI
       uses: azure/login@v1
