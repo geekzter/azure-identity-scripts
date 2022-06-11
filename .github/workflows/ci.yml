@@ -49,12 +49,12 @@ jobs:
         ./find_service_principal.ps1 $sp.id
 
         echo "Find Service Principal using app/client ID"
-        ./find_service_principal.ps1 $sp.AppId
+        ./find_service_principal.ps1 $sp.appId
 
-        echo "Find Service Principal using display name"
+        echo "Find Service Principal using displayName"
         ./find_service_principal.ps1 $sp.displayName
         
-        echo "Find Service Principal using display names"
-        foreach ($displayName in $sp.servicePrincipalNames) {
-          ./find_service_principal.ps1 $displayName
+        echo "Find Service Principal using servicePrincipalNames"
+        foreach ($servicePrincipalName in $sp.servicePrincipalNames) {
+          ./find_service_principal.ps1 $servicePrincipalName
         }

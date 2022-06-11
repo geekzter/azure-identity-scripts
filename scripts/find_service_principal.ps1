@@ -12,6 +12,8 @@
     ./find_service_principal.ps1 /subscriptions/12345678-1234-1234-abcd-1234567890ab/resourcegroups/my-resource-group/providers/Microsoft.ManagedIdentity/userAssignedIdentities/my-user-assigned-identity
 .EXAMPLE
     ./find_service_principal.ps1 "https://identity.azure.net/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
+.EXAMPLE
+    ./find_service_principal.ps1 "https://VisualStudio/SPN12345678-1234-1234-abcd-1234567890ab"
 #>
 #Requires -Version 7
 param ( 
@@ -24,7 +26,7 @@ function Find-ApplicationByGUID (
 ) {
     az ad app show --id $Id 2>$null | ConvertFrom-Json | Set-Variable app
     if ($app) {
-        Write-Host "'$Id' is an Application Object ID"
+        Write-Verbose "'$Id' is an Application Object ID"
         return $app
     } else {
         return $null
@@ -35,7 +37,7 @@ function Find-ApplicationByName (
 ) {
     az ad app list --display-name $Name --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable app
     if ($app) {
-        Write-Host "'$Name' is an Application Display Name"
+        Write-Verbose "'$Name' is an Application Display Name"
         return $app
     } else {
         return $null
@@ -53,11 +55,11 @@ function Find-ServicePrincipalByGUID (
 ) {
     az ad sp list --filter "appId eq '$Id'" --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
     if ($sp) {
-        Write-Host "'$Id' is an Application ID"
+        Write-Verbose "'$Id' is an Application ID"
     } else {
         az ad sp show --id $Id 2>$null | ConvertFrom-Json | Set-Variable sp
         if ($sp) {
-            Write-Host "'$Id' is a Service Principal Object ID"
+            Write-Verbose "'$Id' is a Service Principal Object ID"
         }
     }
 
@@ -68,22 +70,26 @@ function Find-ServicePrincipalByName (
 ) {
     az ad sp show --id $Name 2>$null | ConvertFrom-Json | Set-Variable sp
     if ($sp) {
-        Write-Host "'$Name' is name or ID"
-    } else {
-        az ad sp list --show-mine --query "[?contains(servicePrincipalNames,'$Name')]" --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
-        if ($sp) {
-            Write-Host "'$Name' is in servicePrincipalNames[]"
-        }
+        Write-Verbose "'$Name' is name or ID"
+        return $sp
+    } 
+    az ad sp list --filter "displayName eq 'pipeline-agents-hkiw-windows-agents'" --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
+    if ($sp) {
+        Write-Verbose "'$Name' is display name"
+        return $sp
+    } 
+    az ad sp list --show-mine --query "[?contains(servicePrincipalNames,'$Name')]|[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
+    if ($sp) {
+        Write-Verbose "'$Name' is in servicePrincipalNames[]"
+        return $sp
     }
-
-    return $sp
 }
-Write-Debug $MyInvocation.line
 
+Write-Debug $MyInvocation.line
 . (Join-Path $PSScriptRoot functions.ps1)
 
 # Login to Azure CLI
-Write-Host "Logging into Azure..."
+Write-Verbose "Logging into Azure..."
 Login-Az -Tenant ([ref]$TenantId)
 
 # Parse input
@@ -134,6 +140,10 @@ switch -regex ($IdOrName) {
             az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
         } else {
             Find-ServicePrincipalByName -Name $IdOrName | Set-Variable sp
+        }
+        if (!$sp) {
+            Write-Warning "Could not find Service Principal with name '$IdOrName'"
+            exit
         }
         break
     }
