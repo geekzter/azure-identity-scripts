@@ -1,5 +1,5 @@
 function Login-Az (
-    [parameter(Mandatory=$false)][ref]$TenantId=$env:ARM_TENANT_ID
+    [parameter(Mandatory=$false)][ref]$TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) {
 
     # Are we logged in? If so, is it the right tenant?
