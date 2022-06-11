@@ -5,13 +5,13 @@
 .DESCRIPTION 
     Find a Service Principal by (object/principal) id, service principal name, application/client id, application name, user assigned identity resource id, etc
 .EXAMPLE
-    ./find_sp_by_id.ps1 12345678-1234-1234-abcd-1234567890ab
+    ./find_service_principal.ps1 12345678-1234-1234-abcd-1234567890ab
 .EXAMPLE
-    ./find_sp_by_id.ps1 my-service-principal-name
+    ./find_service_principal.ps1 my-service-principal-name
 .EXAMPLE
-    ./find_sp_by_id.ps1 /subscriptions/12345678-1234-1234-abcd-1234567890ab/resourcegroups/my-resource-group/providers/Microsoft.ManagedIdentity/userAssignedIdentities/my-user-assigned-identity
+    ./find_service_principal.ps1 /subscriptions/12345678-1234-1234-abcd-1234567890ab/resourcegroups/my-resource-group/providers/Microsoft.ManagedIdentity/userAssignedIdentities/my-user-assigned-identity
 .EXAMPLE
-    ./find_sp_by_id.ps1 "https://identity.azure.net/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
+    ./find_service_principal.ps1 "https://identity.azure.net/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
 #>
 #Requires -Version 7
 param ( 
@@ -90,33 +90,45 @@ Login-Az -Tenant ([ref]$TenantId)
 switch -regex ($IdOrName) {
     # Match GUID
     "(?im)^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$" {
-
+        Write-Verbose "'$IdOrName' is a GUID"
         Find-ServicePrincipalByGUID -Id $IdOrName | Set-Variable sp
         if (!$sp) {
             Find-ApplicationByGUID -Id $IdOrName | Set-Variable app
             if ($app) {
                 az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
             } else {
-                Write-Warning "Could not find Application or Service Principal objects with Application or Object ID '$Id'"
+                Write-Warning "Could not find Application or Service Principal objects with Application or Object ID '$IdOrName'"
                 exit
             }
         }
         break
     }
-    # Match Resource ID
+    # Match User-assigned Identity Resource ID
     "/subscriptions/(.)+/resourcegroups/(.)+/providers/Microsoft.ManagedIdentity/userAssignedIdentities/(.)+" {
-        Write-Host "'$IdOrName' is a Resource ID"
+        Write-Verbose "'$IdOrName' is a User-assigned Identity Resource ID"
         Find-ManagedIdentityByResourceID -Id $IdOrName | Set-Variable mi
         if ($mi) {
             Find-ServicePrincipalByGUID -Id $mi.clientId | Set-Variable sp
         } else {
-            Write-Warning "Could not find Managed Identity with Resource ID '$Id'"
+            Write-Warning "Could not find Managed Identity with Resource ID '$IdOrName'"
             exit
         }
         break
     }
-    # Match Name
-    "^.+$" {
+    # Match generic Resource ID (System-assigned Identity)
+    "/subscriptions/(.)+/resourcegroups/(.)+/(.)+/(.)+" {
+        Write-Verbose "'$IdOrName' is a Resource ID"
+        az resource show --ids $IdOrName --query "identity.principalId" -o tsv 2>$null | Set-Variable principalId
+        if ($principalId) {
+            Find-ServicePrincipalByGUID -Id $principalId | Set-Variable sp
+        } else {
+            Write-Warning "Could not find System-assigned Identity with Resource ID '$IdOrName'"
+            exit
+        }
+        break
+    }
+    # Match Name or URL
+    "^[\w\-\/\:\.]+$" {
         Find-ApplicationByName -Name $IdOrName | Set-Variable app
         if ($app) {
             az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
@@ -125,12 +137,8 @@ switch -regex ($IdOrName) {
         }
         break
     }
-    "" {
-        Write-Output "$($PSStyle.Formatting.Error)'$IdOrName' is empty, exiting$($PSStyle.Reset)" | Write-Warning
-        exit
-    }
     default {
-        Write-Output "$($PSStyle.Formatting.Error)'$IdOrName' is not a valid GUID or Resource ID, exiting$($PSStyle.Reset)" | Write-Warning
+        Write-Output "$($PSStyle.Formatting.Error)'$IdOrName' is not a valid GUID, Name or Resource ID, exiting$($PSStyle.Reset)" | Write-Warning
         exit
     }
 }

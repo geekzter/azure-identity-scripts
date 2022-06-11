@@ -14,7 +14,10 @@ permissions:
   id-token: write
       
 jobs: 
-  build-and-deploy:
+  ci:
+    defaults:
+      run:
+        working-directory: scripts
     runs-on: ubuntu-latest
     steps:
 
@@ -37,3 +40,21 @@ jobs:
 
         echo "These are resource groups that AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}' has access to in '$(az account show --query name -o tsv)':"
         az group list --query "sort_by([].{Name:name, ResourceId:id}, &Name)" -o table
+
+    - name: Test find_service_principal.ps1
+      run: |
+        az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | Set-Variable sp
+
+        echo "Find Service Principal using object/principal ID"
+        ./find_service_principal.ps1 $sp.id
+
+        echo "Find Service Principal using app/client ID"
+        ./find_service_principal.ps1 $sp.AppId
+
+        echo "Find Service Principal using display name"
+        ./find_service_principal.ps1 $sp.displayName
+        
+        echo "Find Service Principal using display names"
+        foreach ($displayName in $sp.servicePrincipalNames) {
+          ./find_service_principal.ps1 $displayName
+        }
