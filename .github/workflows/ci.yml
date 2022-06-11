@@ -56,7 +56,7 @@ jobs:
         Get-Location
         Get-ChildItem -Recurse | Select-Object -ExpandProperty FullName  
 
-        Set-PSDebug -Trace 2
+        Set-PSDebug -Trace 0
 
         az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | ConvertFrom-Json | Set-Variable sp
 
