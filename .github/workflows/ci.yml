@@ -15,9 +15,9 @@ permissions:
       
 jobs: 
   ci:
-    defaults:
-      run:
-        working-directory: ../scripts
+    # defaults:
+    #   run:
+    #     working-directory: ../scripts
     runs-on: ubuntu-latest
     steps:
 
