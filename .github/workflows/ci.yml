@@ -18,7 +18,10 @@ jobs:
     defaults:
       run:
         working-directory: scripts
+    env:
+      AZURE_TENANT_ID: {{ secrets.AZURE_TENANT_ID }}
     runs-on: ubuntu-latest
+    
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
