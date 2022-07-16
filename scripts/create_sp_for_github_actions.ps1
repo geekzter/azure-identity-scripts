@@ -99,7 +99,7 @@ az ad sp list --display-name $servicePrincipalName --query "[0]" | ConvertFrom-J
 $servicePrincipal | Select-Object -ExcludeProperty password | Format-List | Out-String | Write-Debug
 $servicePrincipalData | Format-List | Out-String | Write-Debug
 $appId = $servicePrincipal.appId 
-$appObjectId = $(az ad app show --id $appId --query objectId -o tsv)
+$appObjectId = $(az ad app show --id $appId --query id -o tsv)
 Write-Debug "appId: $appId"
 Write-Debug "appObjectId: $appObjectId"
 
@@ -111,18 +111,22 @@ if ($CreateServicePrincipalPassword) {
 } else {
     # Clean up Service Principal secrets we did not ask for 
     #BUG: Unable to list credentials https://github.com/Azure/azure-cli/issues/21195
-    $keyToDelete = $(az ad sp credential list --id $servicePrincipalData.objectId --query "[?startDate >= '$preSPCreationSnapshot'].keyId" -o tsv)
-    az ad sp credential delete --id $servicePrincipalData.objectId --key-id $keyToDelete | Write-Debug
+    Write-Debug "az ad sp credential list --id $($servicePrincipalData.id)..."
+    $keyToDelete = $(az ad sp credential list --id $servicePrincipalData.id --query "[?startDate >= '$preSPCreationSnapshot'].keyId" -o tsv)
+    if ($keyToDelete) {
+        Write-Debug "Deleting credential key '$keyToDelete'..."
+        az ad sp credential delete --id $servicePrincipalData.id --key-id $keyToDelete | Write-Debug
+    }   
 }
 
 # Update App object with repository information
 Write-Host "`nUpdating application '$appId'..."
-az ad app update --id $appId --web-home-page-url $repositoryUrl --identifier-uris $repositoryUrl
+az ad app update --id $appId --web-home-page-url $repositoryUrl
 
 # Create Azure SDK formatted JSON which the GitHub azure/login@v1 action can consume
 $sdkCredentials = @{
     clientId = $servicePrincipal.appId
-    objectId = $servicePrincipalData.objectId
+    objectId = $servicePrincipalData.id
     subscriptionId = $SubscriptionId
     tenantId = $servicePrincipal.tenant
 }
