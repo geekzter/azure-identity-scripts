@@ -189,13 +189,7 @@ if (!$SkipServicePrincipalFederation) {
         $request | ConvertTo-Json | Out-File $requestBodyFile
         Write-Debug "requestBodyFile: $requestBodyFile"
 
-        $postUrl = "https://graph.microsoft.com/beta/applications/${appObjectId}/federatedIdentityCredentials"
-        Write-Debug "postUrl: $postUrl"
-        Write-Host "Adding federation subject for ${subject}..."
-        az rest --method POST `
-                --headers '{\""Content-Type\"": \""application/json\""}' `
-                --uri "$postUrl" `
-                --body "@${requestBodyFile}" | Set-Variable result
+        az ad app federated-credential create --id $appObjectId --parameters $requestBodyFile
         if ($lastexitcode -ne 0) {
             Write-Error "Request to add subject '$subject' failed, exiting"
             exit
