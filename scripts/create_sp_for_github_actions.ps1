@@ -109,13 +109,12 @@ if ($CreateServicePrincipalPassword) {
 
     Write-Host "Service Principal password created is ${spPassword}"
 } else {
-    # Clean up Service Principal secrets we did not ask for 
-    #BUG: Unable to list credentials https://github.com/Azure/azure-cli/issues/21195
-    Write-Debug "az ad sp credential list --id $($servicePrincipalData.id)..."
-    $keyToDelete = $(az ad sp credential list --id $servicePrincipalData.id --query "[?startDate >= '$preSPCreationSnapshot'].keyId" -o tsv)
+    # Clean up secrets we did not ask for 
+    Write-Debug "az ad app credential list --id ${appId}..."
+    $keyToDelete = $(az ad app credential list --id $appId --query "[?startDateTime >= '$preSPCreationSnapshot'].keyId" -o tsv)
     if ($keyToDelete) {
         Write-Debug "Deleting credential key '$keyToDelete'..."
-        az ad sp credential delete --id $servicePrincipalData.id --key-id $keyToDelete | Write-Debug
+        az ad app credential delete --id $appId --key-id $keyToDelete | Write-Debug
     }   
 }
 
