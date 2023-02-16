@@ -7,7 +7,7 @@
 .EXAMPLE
     ./find_managed_identities.ps1 mmyalias
 .EXAMPLE
-    ./find_managed_identities.ps1 -Search mmyalias -ManagedIdentityType UserCreated
+    ./find_managed_identities.ps1 -Search term -ManagedIdentityType UserCreated
 #>
 #Requires -Version 7
 param ( 
