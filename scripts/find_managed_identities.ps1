@@ -16,8 +16,8 @@ param (
     [string]$Search,
 
     [parameter(Mandatory=$false)]
-    [ValidateSet("UserCreated", "SystemCreated", "All")]
-    [string]$ManagedIdentityType="All",
+    [ValidateSet("UserCreated", "SystemCreated", "Any")]
+    [string]$ManagedIdentityType="Any",
 
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")]
     [ValidateNotNull()]
@@ -82,6 +82,7 @@ if (!$Search) {
         exit 1
     }
 }
+Write-Host "Searching for Managed Identities of type '${ManagedIdentityType}' matching '${Search}'..."
 
 Write-Verbose "Microsoft Graph API results starting with '${Search}':"
 Find-ManagedIdentityByNameMicrosoftGraph -StartsWith $Search | Set-Variable msftGraphObjects
