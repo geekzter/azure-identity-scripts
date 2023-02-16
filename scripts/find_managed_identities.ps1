@@ -11,6 +11,10 @@ param (
     [ValidateNotNull()]
     [string]$Search,
 
+    [parameter(Mandatory=$false)]
+    [ValidateSet("UserCreated", "SystemCreated", "All")]
+    [string]$ManagedIdentityType="UserCreated",
+
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")]
     [ValidateNotNull()]
     [guid]
@@ -20,11 +24,19 @@ param (
 function Find-ManagedIdentityByNameMicrosoftGraph (
     [parameter(Mandatory=$true)][string]$StartsWith
 ) {
+    if ($ManagedIdentityType -eq "UserCreated") {
+        $jmesPathQuery = "?contains(alternativeNames[1],'Microsoft.ManagedIdentity')"
+    } elseif ($ManagedIdentityType -eq "SystemCreated") {
+        $jmesPathQuery = "?!contains(alternativeNames[1],'Microsoft.ManagedIdentity')"
+    } else {
+        $jmesPathQuery = ""
+    }
+
     Write-Debug "az rest --method get --url `"https://graph.microsoft.com/v1.0/servicePrincipals?```$count=true&```$filter=startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'&```$select=appId,displayName,alternativeNames&```$orderBy=displayName`" --headers ConsistencyLevel=eventual --query `"value[?contains(alternativeNames[1],'Microsoft.ManagedIdentity')] | [].{name:displayName,appId:appId,resourceId:alternativeNames[1]}`""
     az rest --method get `
             --url "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'&`$select=appId,displayName,alternativeNames&`$orderBy=displayName" `
             --headers ConsistencyLevel=eventual `
-            --query "value[?contains(alternativeNames[1],'Microsoft.ManagedIdentity')] | [].{name:displayName,appId:appId,resourceId:alternativeNames[1]}" `
+            --query "value[${jmesPathQuery}] | [].{name:displayName,appId:appId,resourceId:alternativeNames[1]}" `
             -o json `
             | ConvertFrom-Json `
             | Select-Object -Property name,appId,resourceId
@@ -33,7 +45,17 @@ function Find-ManagedIdentityByNameMicrosoftGraph (
 function Find-ManagedIdentityByNameAzureResourceGraph (
     [parameter(Mandatory=$true)][string]$Search
 ) {
-    az graph query -q "Resources | where type =~ 'Microsoft.ManagedIdentity/userAssignedIdentities' and name contains '${Search}' | extend sp = parse_json(properties) | project name=name,appId=sp.clientId,resourceId=id | order by name asc" `
+    $userAssignedGraphQuery = "Resources | where type =~ 'Microsoft.ManagedIdentity/userAssignedIdentities' and name contains '${Search}' | extend sp = parse_json(properties) | project name=name,appId=sp.clientId,resourceId=id | order by name asc"
+    $systemGraphQuery = "Resources | where name contains '${Search}' | where isnotempty(parse_json(identity).principalId) | project name=name,appId='',resourceId=id | order by name asc"
+    if ($ManagedIdentityType -eq "UserCreated") {
+        $resourceGraphQuery = $userAssignedGraphQuery
+    } elseif ($ManagedIdentityType -eq "SystemCreated") {
+        $resourceGraphQuery = $systemGraphQuery
+    } else {
+        $resourceGraphQuery = "${userAssignedGraphQuery} | union (${systemGraphQuery}) | order by name asc"
+    }
+    Write-Debug "az graph query -q `"${resourceGraphQuery}`" -a --query `"data`""
+    az graph query -q $resourceGraphQuery `
                    -a `
                    --query "data" `
                    -o json `
@@ -51,6 +73,10 @@ Login-Az -Tenant ([ref]$TenantId)
 if (!$Search) {
     # Take users alias as search term
     (az account show --query "user.name" -o tsv) -split '@' | Select-Object -First 1 | Set-Variable Search
+    if (!$Search) {
+        Write-Warning "Search term not provided, exiting"
+        exit 1
+    }
 }
 
 Write-Verbose "Microsoft Graph API results:"
@@ -74,5 +100,3 @@ if ($armResources -is [array]) {
 }
 Write-Host "User-created Managed Identities matching search term '${Search}':"
 $allObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
-
-
