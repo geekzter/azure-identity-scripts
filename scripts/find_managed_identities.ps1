@@ -36,7 +36,7 @@ function Find-ManagedIdentityByNameMicrosoftGraph (
         $jmesPathQuery = ""
     }
 
-    Write-Debug "az rest --method get --url `"https://graph.microsoft.com/v1.0/servicePrincipals?```$count=true&```$filter=startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'&```$select=appId,displayName,alternativeNames&```$orderBy=displayName`" --headers ConsistencyLevel=eventual --query `"value[?contains(alternativeNames[1],'Microsoft.ManagedIdentity')] | [].{name:displayName,appId:appId,resourceId:alternativeNames[1]}`""
+    Write-Debug "az rest --method get --url `"https://graph.microsoft.com/v1.0/servicePrincipals?```$count=true&```$filter=startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'&```$select=appId,displayName,alternativeNames&```$orderBy=displayName`" --headers ConsistencyLevel=eventual --query `"value[${jmesPathQuery}] | [].{name:displayName,appId:appId,resourceId:alternativeNames[1]}`""
     az rest --method get `
             --url "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'&`$select=appId,displayName,alternativeNames&`$orderBy=displayName" `
             --headers ConsistencyLevel=eventual `
