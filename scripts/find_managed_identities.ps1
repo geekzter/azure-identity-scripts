@@ -49,6 +49,11 @@ function Find-ManagedIdentityByNameMicrosoftGraph (
 function Find-ManagedIdentityByNameAzureResourceGraph (
     [parameter(Mandatory=$true)][string]$Search
 ) {
+    if (!(az extension list --query "[?name=='resource-graph'].version" -o tsv)) {
+        Write-Host "Adding Azure CLI extension 'resource-graph'..."
+        az extension add -n resource-graph -y
+    }
+    
     $userAssignedGraphQuery = "Resources | where type =~ 'Microsoft.ManagedIdentity/userAssignedIdentities' and name contains '${Search}' | extend sp = parse_json(properties) | project name=name,appId=sp.clientId,resourceId=id | order by name asc"
     $systemGraphQuery = "Resources | where name contains '${Search}' | where isnotempty(parse_json(identity).principalId) | project name=name,appId='',resourceId=id | order by name asc"
     if ($ManagedIdentityType -eq "UserCreated") {
