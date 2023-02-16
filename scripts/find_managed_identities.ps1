@@ -20,9 +20,9 @@ param (
 function Find-ManagedIdentityByNameMicrosoftGraph (
     [parameter(Mandatory=$true)][string]$StartsWith
 ) {
-# az rest --method get --url "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=startswith(displayName,'ericvan') and servicePrincipalType eq 'ManagedIdentity'&`$select=appId,displayName,alternativeNames&`$orderBy=displayName" --headers ConsistencyLevel=eventual --query "value[?contains(alternativeNames[1],'Microsoft.ManagedIdentity')] | [].{name:displayName,appId:appId,resourceId:alternativeNames[1]}" | ConvertFrom-Json
-az rest --method get `
-            --url "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=startswith(displayName,'ericvan') and servicePrincipalType eq 'ManagedIdentity'&`$select=appId,displayName,alternativeNames&`$orderBy=displayName" `
+    Write-Debug "az rest --method get --url `"https://graph.microsoft.com/v1.0/servicePrincipals?```$count=true&```$filter=startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'&```$select=appId,displayName,alternativeNames&```$orderBy=displayName`" --headers ConsistencyLevel=eventual --query `"value[?contains(alternativeNames[1],'Microsoft.ManagedIdentity')] | [].{name:displayName,appId:appId,resourceId:alternativeNames[1]}`""
+    az rest --method get `
+            --url "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'&`$select=appId,displayName,alternativeNames&`$orderBy=displayName" `
             --headers ConsistencyLevel=eventual `
             --query "value[?contains(alternativeNames[1],'Microsoft.ManagedIdentity')] | [].{name:displayName,appId:appId,resourceId:alternativeNames[1]}" `
             -o json `
