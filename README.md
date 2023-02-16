@@ -11,3 +11,4 @@ This repo contains a few [PowerShell](https://github.com/PowerShell/PowerShell) 
   - (Display) Name
   - Resource ID of a resource with a System-assigned Identity
   - Resource ID or name of a User-assigned Identity
+- Find Managed Identities using Microsoft Graph and Azure Resource Graph with [find_managed_identities.ps1](scripts/find_managed_identities.ps1)
