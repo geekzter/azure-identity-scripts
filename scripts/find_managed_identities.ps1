@@ -53,16 +53,16 @@ if (!$Search) {
     (az account show --query "user.name" -o tsv) -split '@' | Select-Object -First 1 | Set-Variable Search
 }
 
-Write-Host "Microsoft Graph API results"
+Write-Verbose "Microsoft Graph API results:"
 Find-ManagedIdentityByNameMicrosoftGraph -StartsWith $Search | Set-Variable msftGraphObjects
-$msftGraphObjects | Format-Table -AutoSize
+$msftGraphObjects | Format-Table -AutoSize | Out-String | Write-Verbose
 
-Write-Host "Azure Resource Graph results"
+Write-Verbose "Azure Resource Graph results:"
 Find-ManagedIdentityByNameAzureResourceGraph -Search $Search | Set-Variable armResources
-$armResources | Format-Table -AutoSize
+$armResources | Format-Table -AutoSize | Out-String | Write-Verbose
 
 $allObjects = $msftGraphObjects + $armResources
-Write-Host "All results"
+Write-Host "User-created Managed Identities matching search term '${Search}':"
 $allObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
 
 
