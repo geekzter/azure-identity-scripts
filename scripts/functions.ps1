@@ -1,6 +1,10 @@
 function Login-Az (
     [parameter(Mandatory=$false)][ref]$TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) {
+    if (!(Get-Command az)) {
+        Write-Error "Azure CLI is not installed, get it at http://aka.ms/azure-cli"
+        exit 1
+    }
 
     # Are we logged in? If so, is it the right tenant?
     $azureAccount = $null
