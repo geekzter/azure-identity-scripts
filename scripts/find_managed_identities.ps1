@@ -83,11 +83,11 @@ if (!$Search) {
     }
 }
 
-Write-Verbose "Microsoft Graph API results:"
+Write-Verbose "Microsoft Graph API results starting with '${Search}':"
 Find-ManagedIdentityByNameMicrosoftGraph -StartsWith $Search | Set-Variable msftGraphObjects
 $msftGraphObjects | Format-Table -AutoSize | Out-String | Write-Verbose
 
-Write-Verbose "Azure Resource Graph results:"
+Write-Verbose "Azure Resource Graph results matching '${Search}':"
 Find-ManagedIdentityByNameAzureResourceGraph -Search $Search | Set-Variable armResources
 $armResources | Format-Table -AutoSize | Out-String | Write-Verbose
 
