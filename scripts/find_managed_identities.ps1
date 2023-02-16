@@ -61,7 +61,17 @@ Write-Verbose "Azure Resource Graph results:"
 Find-ManagedIdentityByNameAzureResourceGraph -Search $Search | Set-Variable armResources
 $armResources | Format-Table -AutoSize | Out-String | Write-Verbose
 
-$allObjects = $msftGraphObjects + $armResources
+[system.collections.arraylist]$allObjects = @()
+if ($msftGraphObjects -is [array]) {
+    $allObjects = $msftGraphObjects
+} else {
+    $allObjects = @($msftGraphObjects)
+}
+if ($armResources -is [array]) {
+    $allObjects.AddRange($armResources)
+} else {
+    $allObjects.Add($armResources) | Out-Null
+}
 Write-Host "User-created Managed Identities matching search term '${Search}':"
 $allObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
 
