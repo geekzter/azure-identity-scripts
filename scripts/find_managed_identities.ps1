@@ -4,6 +4,10 @@
     Find a Managed Identities
 .DESCRIPTION 
     Find a Managed Identities using Microsoft Graph API
+.EXAMPLE
+    ./find_managed_identities.ps1 mmyalias
+.EXAMPLE
+    ./find_managed_identities.ps1 -Search mmyalias -ManagedIdentityType UserCreated
 #>
 #Requires -Version 7
 param ( 
@@ -13,7 +17,7 @@ param (
 
     [parameter(Mandatory=$false)]
     [ValidateSet("UserCreated", "SystemCreated", "All")]
-    [string]$ManagedIdentityType="UserCreated",
+    [string]$ManagedIdentityType="All",
 
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")]
     [ValidateNotNull()]
