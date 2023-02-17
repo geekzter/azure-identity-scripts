@@ -58,13 +58,13 @@ function Find-ManagedIdentityByResourceID (
 function Find-ServicePrincipalByGUID (
     [parameter(Mandatory=$true)][guid]$Id
 ) {
-    az ad sp list --filter "appId eq '$Id'" --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
+    az ad sp show --id $Id 2>$null | ConvertFrom-Json | Set-Variable sp
     if ($sp) {
-        Write-Verbose "'$Id' is an Application ID"
+        Write-Verbose "'$Id' is a Service Principal (Object) ID"
     } else {
-        az ad sp show --id $Id 2>$null | ConvertFrom-Json | Set-Variable sp
+        az ad sp list --filter "appId eq '$Id'" --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
         if ($sp) {
-            Write-Verbose "'$Id' is a Service Principal Object ID"
+            Write-Verbose "'$Id' is an Application ID"
         }
     }
 
@@ -124,7 +124,7 @@ switch -regex ($IdOrName) {
         Write-Verbose "'$IdOrName' is a User-assigned Identity Resource ID"
         Find-ManagedIdentityByResourceID -Id $IdOrName | Set-Variable mi
         if ($mi) {
-            Find-ServicePrincipalByGUID -Id $mi.clientId | Set-Variable sp
+            Find-ServicePrincipalByGUID -Id $mi.principalId | Set-Variable sp
         } else {
             Write-Warning "Could not find Managed Identity with Resource ID '$IdOrName'"
             exit
