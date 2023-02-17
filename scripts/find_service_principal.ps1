@@ -173,5 +173,4 @@ if ($app) {
 if ($sp) {
     Write-Host "Found Service Principal '$($sp.displayName)' of type '$($sp.servicePrincipalType)' with appId '$($sp.appId)'"
     $sp | Format-List
-    #BUG: Unable to list credentials https://github.com/Azure/azure-cli/issues/21195
 }
