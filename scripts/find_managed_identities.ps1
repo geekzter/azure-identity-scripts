@@ -38,12 +38,12 @@ function Find-ManagedIdentityByNameMicrosoftGraph (
 
     Write-Debug "az rest --method get --url `"https://graph.microsoft.com/v1.0/servicePrincipals?```$count=true&```$filter=startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'&```$select=appId,displayName,alternativeNames&```$orderBy=displayName`" --headers ConsistencyLevel=eventual --query `"value[${jmesPathQuery}] | [].{name:displayName,appId:appId,resourceId:alternativeNames[1]}`""
     az rest --method get `
-            --url "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'&`$select=appId,displayName,alternativeNames&`$orderBy=displayName" `
+            --url "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'&`$select=appId,displayName,id,alternativeNames&`$orderBy=displayName" `
             --headers ConsistencyLevel=eventual `
-            --query "value[${jmesPathQuery}] | [].{name:displayName,appId:appId,resourceId:alternativeNames[1]}" `
+            --query "value[${jmesPathQuery}] | [].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" `
             -o json `
             | ConvertFrom-Json `
-            | Select-Object -Property name,appId,resourceId
+            | Select-Object -Property name,appId,principalId,resourceId
 }
 
 function Find-ManagedIdentityByNameAzureResourceGraph (
@@ -54,8 +54,8 @@ function Find-ManagedIdentityByNameAzureResourceGraph (
         az extension add -n resource-graph -y
     }
     
-    $userAssignedGraphQuery = "Resources | where type =~ 'Microsoft.ManagedIdentity/userAssignedIdentities' and name contains '${Search}' | extend sp = parse_json(properties) | project name=name,appId=sp.clientId,resourceId=id | order by name asc"
-    $systemGraphQuery = "Resources | where name contains '${Search}' | where isnotempty(parse_json(identity).principalId) | project name=name,appId='',resourceId=id | order by name asc"
+    $userAssignedGraphQuery = "Resources | where type =~ 'Microsoft.ManagedIdentity/userAssignedIdentities' and name contains '${Search}' | extend sp = parse_json(properties) | project name=name,appId=sp.clientId,principalId=sp.principalId,resourceId=id | order by name asc"
+    $systemGraphQuery = "Resources | where name contains '${Search}' | extend principalId=parse_json(identity).principalId | where isnotempty(principalId) | project name=name,appId='',principalId,resourceId=id | order by name asc"
     if ($ManagedIdentityType -eq "UserCreated") {
         $resourceGraphQuery = $userAssignedGraphQuery
     } elseif ($ManagedIdentityType -eq "SystemCreated") {
@@ -69,7 +69,7 @@ function Find-ManagedIdentityByNameAzureResourceGraph (
                    --query "data" `
                    -o json `
                    | ConvertFrom-Json `
-                   | Select-Object -Property name,appId,resourceId
+                   | Select-Object -Property name,appId,principalId,resourceId
 }
 
 Write-Debug $MyInvocation.line
