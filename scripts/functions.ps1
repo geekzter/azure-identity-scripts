@@ -125,6 +125,27 @@ function Find-ManagedIdentitiesByNameAzureResourceGraph (
     }
 }
 
+function Find-ManagedIdentitiesBySubscription (
+    [parameter(Mandatory=$true)][guid]$SubscriptionId,
+    [parameter(Mandatory=$false)][string]$ResourceGroupNameOrPrefix
+)
+{
+    $resourcePrefix = "/subscriptions/${SubscriptionId}"
+    if ($ResourceGroupNameOrPrefix) {
+        $resourcePrefix += "/resourcegroups/${ResourceGroupNameOrPrefix}"
+    }
+
+    Create-ManagedIdentityTypeJmesPathQuery -ManagedIdentityType $ManagedIdentityType | Set-Variable jmesPathQuery
+    $graphUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))&`$select=displayName,id,appId,alternativeNames"
+
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" | Set-Variable mis
+    if ($mis) {
+        Write-Verbose "Found $(($mis | Measure-Object).Count) Managed Identities with resourceId starting with '${resourcePrefix}' using Microsoft Graph query:"
+        Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
+        return $mis
+    }
+}
+
 function Find-ManagedIdentityByResourceID (
     [parameter(Mandatory=$true)][string]$Id
 ) {
@@ -181,27 +202,6 @@ function Find-ManagedIdentityByResourceID (
             Write-JsonResponse -Json $jsonResponse
             return $mi
         }
-    }
-}
-
-function Find-ManagedIdentitiesBySubscription (
-    [parameter(Mandatory=$true)][guid]$SubscriptionId,
-    [parameter(Mandatory=$false)][string]$ResourceGroupNameOrPrefix
-)
-{
-    $resourcePrefix = "/subscriptions/${SubscriptionId}"
-    if ($ResourceGroupNameOrPrefix) {
-        $resourcePrefix += "/resourceGroups/${ResourceGroupNameOrPrefix}"
-    }
-
-    Create-ManagedIdentityTypeJmesPathQuery -ManagedIdentityType $ManagedIdentityType | Set-Variable jmesPathQuery
-    $graphUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))&`$select=displayName,id,appId,alternativeNames"
-
-    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" | Set-Variable mis
-    if ($mis) {
-        Write-Verbose "Found $(($mis | Measure-Object).Count) Managed Identities with resourceId starting with '${resourcePrefix}' using Microsoft Graph query:"
-        Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
-        return $mis
     }
 }
 
