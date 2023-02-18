@@ -1,19 +1,20 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS 
-    Find a Service Principal
+    Find a Service Principal or Managed Identity
 .DESCRIPTION 
-    Find a Service Principal by (object/principal) id, service principal name, application/client id, application name, user assigned identity resource id, etc
+    Workload Identity is the umbrella term for both Service Principal and Managed Identity. This script will find a Service Principal or Managed Identity by various means.
+    Find an identity by (object/principal) id, service principal name, application/client id, application name, user assigned identity resource id, etc
 .EXAMPLE
-    ./find_service_principal.ps1 12345678-1234-1234-abcd-1234567890ab
+    ./find_workload_identity.ps1 12345678-1234-1234-abcd-1234567890ab
 .EXAMPLE
-    ./find_service_principal.ps1 my-service-principal-name
+    ./find_workload_identity.ps1 my-service-principal-name
 .EXAMPLE
-    ./find_service_principal.ps1 /subscriptions/12345678-1234-1234-abcd-1234567890ab/resourcegroups/my-resource-group/providers/Microsoft.ManagedIdentity/userAssignedIdentities/my-user-assigned-identity
+    ./find_workload_identity.ps1 /subscriptions/12345678-1234-1234-abcd-1234567890ab/resourcegroups/my-resource-group/providers/Microsoft.ManagedIdentity/userAssignedIdentities/my-user-assigned-identity
 .EXAMPLE
-    ./find_service_principal.ps1 "https://identity.azure.net/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
+    ./find_workload_identity.ps1 "https://identity.azure.net/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
 .EXAMPLE
-    ./find_service_principal.ps1 "https://VisualStudio/SPN12345678-1234-1234-abcd-1234567890ab"
+    ./find_workload_identity.ps1 "https://VisualStudio/SPN12345678-1234-1234-abcd-1234567890ab"
 #>
 #Requires -Version 7
 param ( 
@@ -21,79 +22,6 @@ param (
     [parameter(Mandatory=$false)][bool]$FindApplication=$true,
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")][guid]$TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) 
-
-function Find-ApplicationByGUID (
-    [parameter(Mandatory=$true)][guid]$Id
-) {
-    if ($FindApplication) {
-        az ad app show --id $Id 2>$null | ConvertFrom-Json | Set-Variable app
-        if ($app) {
-            Write-Verbose "'$Id' is an Application Object ID"
-            return $app
-        } else {
-            return $null
-        }    
-    }
-}
-function Find-ApplicationByName (
-    [parameter(Mandatory=$true)][string]$Name
-) {
-    if ($FindApplication) {
-        az ad app list --display-name $Name --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable app
-        if ($app) {
-            Write-Verbose "'$Name' is an Application Display Name"
-            return $app
-        } else {
-            return $null
-        }            
-    }
-}
-function Find-ManagedIdentityByResourceID (
-    [parameter(Mandatory=$true)][string]$Id
-) {
-    az identity show --ids $id 2>$null | ConvertFrom-Json | Set-Variable mi
-
-    return $mi
-}
-function Find-ServicePrincipalByGUID (
-    [parameter(Mandatory=$true)][guid]$Id
-) {
-    az ad sp show --id $Id 2>$null | ConvertFrom-Json | Set-Variable sp
-    if ($sp) {
-        Write-Verbose "'$Id' is a Service Principal (Object) ID"
-    } else {
-        az ad sp list --filter "appId eq '$Id'" --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
-        if ($sp) {
-            Write-Verbose "'$Id' is an Application ID"
-        }
-    }
-
-    return $sp
-}
-function Find-ServicePrincipalByName (
-    [parameter(Mandatory=$true)][string]$Name
-) {
-    az ad sp show --id $Name 2>$null | ConvertFrom-Json | Set-Variable sp
-    if ($sp) {
-        Write-Verbose "'$Name' is name or ID"
-        return $sp
-    } 
-    az ad sp list --filter "displayName eq '$Name'" --query "[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
-    if ($sp) {
-        Write-Verbose "'$Name' is display name"
-        return $sp
-    } 
-    az ad sp show --spn $Name 2>$null | ConvertFrom-Json | Set-Variable sp
-    if ($sp) {
-        Write-Verbose "'$Name' is service principal name"
-        return $sp
-    } 
-    az ad sp list --show-mine --query "[?contains(servicePrincipalNames,'$Name')]|[0]" 2>$null | ConvertFrom-Json | Set-Variable sp
-    if ($sp) {
-        Write-Verbose "'$Name' is in servicePrincipalNames[]"
-        return $sp
-    }
-}
 
 Write-Debug $MyInvocation.line
 . (Join-Path $PSScriptRoot functions.ps1)
@@ -134,9 +62,9 @@ switch -regex ($IdOrName) {
     # Match generic Resource ID (System-assigned Identity)
     "/subscriptions/(.)+/resourcegroups/(.)+/(.)+/(.)+" {
         Write-Verbose "'$IdOrName' is a Resource ID"
-        az resource show --ids $IdOrName --query "identity.principalId" -o tsv 2>$null | Set-Variable principalId
-        if ($principalId) {
-            Find-ServicePrincipalByGUID -Id $principalId | Set-Variable sp
+        Find-ManagedIdentityByResourceID -Id $IdOrName | Set-Variable mi
+        if ($mi) {
+            Find-ServicePrincipalByGUID -Id $mi.principalId | Set-Variable sp
         } else {
             Write-Warning "Could not find System-assigned Identity with Resource ID '$IdOrName'"
             exit

@@ -25,51 +25,6 @@ param (
     $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) 
 
-function Find-ManagedIdentityByNameMicrosoftGraph (
-    [parameter(Mandatory=$true)][string]$StartsWith
-) {
-    if ($ManagedIdentityType -eq "UserCreated") {
-        $jmesPathQuery = "?contains(alternativeNames[1],'Microsoft.ManagedIdentity')"
-    } elseif ($ManagedIdentityType -eq "SystemCreated") {
-        $jmesPathQuery = "?!contains(alternativeNames[1],'Microsoft.ManagedIdentity')"
-    } else {
-        $jmesPathQuery = ""
-    }
-
-    Write-Debug "az ad sp list --filter `"startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
-    az ad sp list --filter "startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'" `
-                  --query "[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" `
-                  -o json `
-                  | ConvertFrom-Json `
-                  | Select-Object -Property name,appId,principalId,resourceId
-}
-
-function Find-ManagedIdentityByNameAzureResourceGraph (
-    [parameter(Mandatory=$true)][string]$Search
-) {
-    if (!(az extension list --query "[?name=='resource-graph'].version" -o tsv)) {
-        Write-Host "Adding Azure CLI extension 'resource-graph'..."
-        az extension add -n resource-graph -y
-    }
-    
-    $userAssignedGraphQuery = "Resources | where type =~ 'Microsoft.ManagedIdentity/userAssignedIdentities' and name contains '${Search}' | extend sp = parse_json(properties) | project name=name,appId=sp.clientId,principalId=sp.principalId,resourceId=id | order by name asc"
-    $systemGraphQuery = "Resources | where name contains '${Search}' | extend principalId=parse_json(identity).principalId | where isnotempty(principalId) | project name=name,appId='',principalId,resourceId=id | order by name asc"
-    if ($ManagedIdentityType -eq "UserCreated") {
-        $resourceGraphQuery = $userAssignedGraphQuery
-    } elseif ($ManagedIdentityType -eq "SystemCreated") {
-        $resourceGraphQuery = $systemGraphQuery
-    } else {
-        $resourceGraphQuery = "${userAssignedGraphQuery} | union (${systemGraphQuery}) | order by name asc"
-    }
-    Write-Debug "az graph query -q `"${resourceGraphQuery}`" -a --query `"data`""
-    az graph query -q $resourceGraphQuery `
-                   -a `
-                   --query "data" `
-                   -o json `
-                   | ConvertFrom-Json `
-                   | Select-Object -Property name,appId,principalId,resourceId
-}
-
 Write-Debug $MyInvocation.line
 . (Join-Path $PSScriptRoot functions.ps1)
 
@@ -87,13 +42,13 @@ if (!$Search) {
 }
 Write-Host "Searching for Managed Identities of type '${ManagedIdentityType}' matching '${Search}'..."
 
-Write-Verbose "Microsoft Graph API results starting with '${Search}':"
-Find-ManagedIdentityByNameMicrosoftGraph -StartsWith $Search | Set-Variable msftGraphObjects
-$msftGraphObjects | Format-Table -AutoSize | Out-String | Write-Verbose
+# Write-Verbose "Microsoft Graph API results starting with '${Search}':"
+Find-ManagedIdentitiesByNameMicrosoftGraph -StartsWith $Search | Set-Variable msftGraphObjects
+# $msftGraphObjects | Format-Table -AutoSize | Out-String | Write-Verbose
 
-Write-Verbose "Azure Resource Graph results matching '${Search}':"
-Find-ManagedIdentityByNameAzureResourceGraph -Search $Search | Set-Variable armResources
-$armResources | Format-Table -AutoSize | Out-String | Write-Verbose
+# Write-Verbose "Azure Resource Graph results matching '${Search}':"
+Find-ManagedIdentitiesByNameAzureResourceGraph -Search $Search | Set-Variable armResources
+# $armResources | Format-Table -AutoSize | Out-String | Write-Verbose
 
 [system.collections.arraylist]$allObjects = @()
 if ($msftGraphObjects -is [array]) {
