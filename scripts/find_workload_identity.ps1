@@ -18,14 +18,14 @@
 #>
 #Requires -Version 7
 param ( 
-    [parameter(Mandatory=$true,HelpMessage="Application/Client/Object/Principal ID/Resource ID")]
+    [parameter(Mandatory=$true,HelpMessage="Application/Client/Object/Principal ID/Resource ID/Name/Service Principal Name")]
     [ValidateNotNullOrEmpty()]
     [string]
     $IdOrName,
 
     [parameter(Mandatory=$false)]
-    [bool]
-    $FindApplication=$true,
+    [switch]
+    $SkipApplication=$false,
     
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")]
     [guid]
@@ -92,7 +92,9 @@ switch -regex ($IdOrName) {
     }
     # Match Name or URL
     "^[\w\-\/\:\.]+" {
-        Find-ApplicationByName -Name $IdOrName | Set-Variable app
+        if (!$SkipApplication) {
+            Find-ApplicationByName -Name $IdOrName | Set-Variable app
+        }
         if ($app) {
             az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
         } else {
@@ -110,7 +112,7 @@ switch -regex ($IdOrName) {
     }
 }
 
-if ($FindApplication -and !$app -and $sp -and ($sp.servicePrincipalType -ieq "Application")) {
+if (!$SkipApplication -and !$app -and $sp -and ($sp.servicePrincipalType -ieq "Application")) {
     az ad app show --id $sp.appId | ConvertFrom-Json | Set-Variable app
 }
 if ($app) {

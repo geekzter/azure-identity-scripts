@@ -1,7 +1,7 @@
 function Find-ApplicationByGUID (
     [parameter(Mandatory=$true)][guid]$Id
 ) {
-    if ($FindApplication) {
+    if (!$SkipApplication) {
         az ad app show --id $Id 2>$null | Set-Variable jsonResponse
         if ($jsonResponse) {
             $jsonResponse | ConvertFrom-Json | Set-Variable app
@@ -17,7 +17,7 @@ function Find-ApplicationByGUID (
 function Find-ApplicationByName (
     [parameter(Mandatory=$true)][string]$Name
 ) {
-    if ($FindApplication) {
+    if (!$SkipApplication) {
         az ad app list --display-name $Name --query "[0]" 2>$null | Set-Variable jsonResponse
         if ($jsonResponse) {
             $jsonResponse | ConvertFrom-Json | Set-Variable app
