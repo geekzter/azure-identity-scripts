@@ -80,8 +80,18 @@ switch -regex ($IdOrName) {
         }
         break
     }
+    # Match identity URL (servicePrincipalName)
+    "https://identity.azure.net/\w+" {
+        Write-Verbose "'$IdOrName' is a Service Principal Name"
+        Find-ServicePrincipalByName -Name $IdOrName | Set-Variable sp
+        if (!$sp) {
+            Write-Warning "Could not find Service Principal with Service Principal Name '$IdOrName'"
+            exit
+        }
+        break
+    }
     # Match Name or URL
-    "^[\w\-\/\:\.]+$" {
+    "^[\w\-\/\:\.]+" {
         Find-ApplicationByName -Name $IdOrName | Set-Variable app
         if ($app) {
             az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
