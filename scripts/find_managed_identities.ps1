@@ -18,7 +18,7 @@ param (
     [parameter(Mandatory=$true,ParameterSetName="AzureScope")]
     [ValidateNotNullOrEmpty()]
     [guid]
-    $SubscriptionId,
+    $SubscriptionId=($env:ARM_SUBSCRIPTION_ID ?? $env:AZURE_SUBSCRIPTION_ID),
 
     [parameter(Mandatory=$false,ParameterSetName="AzureScope")]
     [string]
@@ -73,7 +73,10 @@ Write-Debug $MyInvocation.line
 Write-Verbose "Logging into Azure..."
 Login-Az -Tenant ([ref]$TenantId)
 
-if ($SubscriptionId) {
+
+if ($Search) {
+    $allObjects = Find-IdentitiesBySearchTerm -Search $Search    
+} elseif ($SubscriptionId) {
     $topic = "Managed Identities in subscription '${SubscriptionId}'"
     if ($ResourceGroupNameOrPrefix) {
         $topic += " and resource group (prefix) '${ResourceGroupNameOrPrefix}'"
@@ -87,15 +90,12 @@ if ($SubscriptionId) {
 
     Write-Host "${topic}:"
 } else {
+    # Take users alias as search term
+    (az account show --query "user.name" -o tsv) -split '@' | Select-Object -First 1 | Set-Variable Search
     if (!$Search) {
-        # Take users alias as search term
-        (az account show --query "user.name" -o tsv) -split '@' | Select-Object -First 1 | Set-Variable Search
-        if (!$Search) {
-            Write-Warning "Search term not provided, exiting"
-            exit 1
-        }
+        Write-Warning "Neither 'Search' or 'SubscriptionId' provided, exiting"
+        exit 1
     }
-    
     $allObjects = Find-IdentitiesBySearchTerm -Search $Search    
 }
 $allObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
