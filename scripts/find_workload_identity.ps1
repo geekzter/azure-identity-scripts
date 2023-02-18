@@ -18,9 +18,18 @@
 #>
 #Requires -Version 7
 param ( 
-    [parameter(Mandatory=$true,HelpMessage="Application/Client/Object/Principal ID/Resource ID")][string]$IdOrName,
-    [parameter(Mandatory=$false)][bool]$FindApplication=$true,
-    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")][guid]$TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
+    [parameter(Mandatory=$true,HelpMessage="Application/Client/Object/Principal ID/Resource ID")]
+    [ValidateNotNullOrEmpty()]
+    [string]
+    $IdOrName,
+
+    [parameter(Mandatory=$false)]
+    [bool]
+    $FindApplication=$true,
+    
+    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")]
+    [guid]
+    $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) 
 
 Write-Debug $MyInvocation.line

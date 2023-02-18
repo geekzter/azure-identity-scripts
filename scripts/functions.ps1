@@ -30,26 +30,43 @@ function Find-ApplicationByName (
     }
 }
 
+function Find-DirectoryObjectByGraphUrl (
+    [parameter(Mandatory=$true)][string]$GraphUrl
+) {
+    Write-Debug "az rest --method get --url `"${graphUrl}`" --headers ConsistencyLevel=eventual"
+    az rest --method get `
+            --url $GraphUrl `
+            --headers ConsistencyLevel=eventual `
+            --query "value[0]" `
+            -o json `
+            | Set-Variable jsonResponse
+    if ($jsonResponse) {
+        $jsonResponse | ConvertFrom-Json `
+                      | Set-Variable directoryObject
+        Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
+        return $directoryObject
+    }
+
+    return $null
+}
+
 function Find-ServicePrincipalByGUID (
     [parameter(Mandatory=$true)][guid]$Id
 ) {
-    az ad sp show --id $Id 2>$null | Set-Variable jsonResponse
+    az ad sp list --filter "appId eq '$Id' or id eq '$Id'" --query "[0]" 2>$null | Set-Variable jsonResponse
     if ($jsonResponse) {
         $jsonResponse | ConvertFrom-Json | Set-Variable sp
-        Write-Verbose "Found Service Principal with Object ID '$Id' using:`naz ad sp show --id ${Id}"
+        if ($sp.id -eq $Id) {
+            Write-Verbose "Found Service Principal with id '$Id' using:"
+        } elseif ($sp.appId -eq $Id) {
+            Write-Verbose "Found Service Principal with appId '$Id' using:"
+        }
+        Write-Verbose "az ad sp list --filter `"appId eq '${Id}' or id eq '${Id}'`" --query `"[0]`""
         Write-JsonResponse -Json $jsonResponse
         return $sp
-    } else {
-        az ad sp list --filter "appId eq '$Id'" --query "[0]" 2>$null | Set-Variable jsonResponse
-        if ($jsonResponse) {
-            $jsonResponse | ConvertFrom-Json | Set-Variable sp
-            Write-Verbose "Found Service Principal with Application ID '$Id' using:`naz ad sp list --filter `"appId eq '${Id}'`" --query `"[0]`""
-            Write-JsonResponse -Json $jsonResponse
-            return $sp
-        }
     }    
 
-    return $sp
+    return $null
 }
 
 function Find-ManagedIdentitiesByNameMicrosoftGraph (
@@ -77,16 +94,6 @@ function Find-ManagedIdentitiesByNameMicrosoftGraph (
         Write-Verbose "az ad sp list --filter `"startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
         Write-JsonResponse -Json $jsonResponse
         return $sps
-    }
-}
-
-function Write-JsonResponse (
-    [parameter(Mandatory=$true)]$Json
-) {
-    if (Get-Command jq -ErrorAction SilentlyContinue) {
-        $Json | jq -C | Write-Debug
-    } else {
-        Write-Debug $Json
     }
 }
 
@@ -150,19 +157,10 @@ function Find-ManagedIdentityByResourceID (
     }
     # Try Microsoft Graph
     $graphUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=alternativeNames/any(p:p eq '${Id}')"
-    az rest --method get `
-            --url $graphUrl `
-            --headers ConsistencyLevel=eventual `
-            --query "value[0]" `
-            -o json `
-            | Set-Variable jsonResponse
-    if ($jsonResponse) {
-        $jsonResponse | ConvertFrom-Json `
-                      | Set-Variable sp
+    Find-DirectoryObjectByGraphUrl -GraphUrl $graphUrl | Set-Variable sp
+    if ($sp) {
         $sp | Add-Member -NotePropertyName principalId -NotePropertyValue $sp.id
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
-        Write-Verbose "az rest --method get --url `"${graphUrl}`" --headers ConsistencyLevel=eventual"
-        Write-JsonResponse -Json $jsonResponse
         return $sp
     }
 
@@ -196,38 +194,19 @@ function Find-ManagedIdentityByResourceID (
 function Find-ServicePrincipalByName (
     [parameter(Mandatory=$true)][string]$Name
 ) {
-    az ad sp show --id $Name 2>$null | Set-Variable jsonResponse
-    if ($jsonResponse) {
-        $jsonResponse | ConvertFrom-Json | Set-Variable sp
-        Write-Verbose "Found Service Principal with Application ID '$Name' using:"
-        Write-Verbose "az ad sp show --id $Name"
-        Write-JsonResponse -Json $jsonResponse
+    $graphUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=displayName eq '$Name' or servicePrincipalNames/any(c:c eq '${Name}')"
+    Find-DirectoryObjectByGraphUrl -GraphUrl $graphUrl | Set-Variable sp
+    if ($sp) {
+        $sp | Add-Member -NotePropertyName principalId -NotePropertyValue $sp.id
+        if ($sp.displayName -eq $Name) {
+            Write-Verbose "Found Service Principal with name '$Name' using Microsoft Graph query:"
+        } else {
+            Write-Verbose "Found Service Principal with servicePrincipalName '$Name' using Microsoft Graph query:"
+        }
         return $sp
     }
-    az ad sp list --filter "displayName eq '$Name'" --query "[0]" 2>$null | Set-Variable jsonResponse
-    if ($jsonResponse) {
-        $jsonResponse | ConvertFrom-Json | Set-Variable sp
-        Write-Verbose "Found Service Principal with Display Name '$Name' using:"
-        Write-Verbose "az ad sp list --filter `"displayName eq '$Name'`""
-        Write-JsonResponse -Json $jsonResponse
-        return $sp
-    }
-    az ad sp show --spn $Name 2>$null | Set-Variable jsonResponse
-    if ($jsonResponse) {
-        $jsonResponse | ConvertFrom-Json | Set-Variable sp
-        Write-Verbose "Found Service Principal with Service Principal Name (SPN) '$Name' using:"
-        Write-Verbose "az ad sp show --spn $Name"
-        Write-JsonResponse -Json $jsonResponse
-        return $sp
-    }
-    az ad sp list --show-mine --query "[?contains(servicePrincipalNames,'$Name')]|[0]" 2>$null | Set-Variable jsonResponse
-    if ($jsonResponse) {
-        $jsonResponse | ConvertFrom-Json | Set-Variable sp
-        Write-Verbose "Found my Service Principal with '$Name' using Azure CLI JMESPath:"
-        Write-Verbose "az ad sp list --show-mine --query `[?contains(servicePrincipalNames,'$Name')]|[0]`""
-        Write-JsonResponse -Json $jsonResponse
-        return $sp
-    }
+
+    return $null
 }
 
 function Login-Az (
@@ -259,5 +238,17 @@ function Login-Az (
             az account show 2>$null | ConvertFrom-Json | Set-Variable azureAccount
             $TenantId.Value = $azureAccount.tenantId
         }
+    }
+}
+
+function Write-JsonResponse (
+    [parameter(Mandatory=$true)]
+    [ValidateNotNull()]
+    $Json
+) {
+    if (Get-Command jq -ErrorAction SilentlyContinue) {
+        $Json | jq -C | Write-Debug
+    } else {
+        Write-Debug $Json
     }
 }

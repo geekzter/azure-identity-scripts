@@ -20,7 +20,6 @@ param (
     [string]$ManagedIdentityType="Any",
 
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")]
-    [ValidateNotNull()]
     [guid]
     $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) 
