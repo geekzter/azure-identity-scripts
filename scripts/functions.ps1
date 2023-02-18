@@ -200,7 +200,7 @@ function Find-ManagedIdentitiesBySubscription (
     Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" | Set-Variable mis
     if ($mis) {
         Write-Verbose "Found $(($mis | Measure-Object).Count) Managed Identities with resourceId starting with '${resourcePrefix}' using Microsoft Graph query:"
-        Write-Verbose $graphUrl
+        Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
         return $mis
     }
 }
