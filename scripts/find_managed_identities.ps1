@@ -8,19 +8,23 @@
     ./find_managed_identities.ps1 mmyalias
 .EXAMPLE
     ./find_managed_identities.ps1 -Search term -ManagedIdentityType UserCreated
+.EXAMPLE
+    ./find_managed_identities.ps1 -SubscriptionId 12345678-1234-1234-abcd-1234567890ab
+.EXAMPLE
+    ./find_managed_identities.ps1 -SubscriptionId 12345678-1234-1234-abcd-1234567890ab -ResourceGroupNameOrPrefix myalias
 #>
 #Requires -Version 7
 param ( 
-    [parameter(Mandatory=$false,ParameterSetName="Search")]
+    [parameter(Mandatory=$false,ParameterSetName="Search",HelpMessage="Name or prefix of Managed Identity")]
     [ValidateNotNull()]
     [string]$Search,
 
-    [parameter(Mandatory=$true,ParameterSetName="AzureScope")]
+    [parameter(Mandatory=$true,ParameterSetName="AzureScope",HelpMessage="Azure subscription id")]
     [ValidateNotNullOrEmpty()]
     [guid]
     $SubscriptionId=($env:ARM_SUBSCRIPTION_ID ?? $env:AZURE_SUBSCRIPTION_ID),
 
-    [parameter(Mandatory=$false,ParameterSetName="AzureScope")]
+    [parameter(Mandatory=$false,ParameterSetName="AzureScope",HelpMessage="Name or prefix of Azure resource group")]
     [string]
     $ResourceGroupNameOrPrefix,
 
@@ -29,7 +33,7 @@ param (
     [string]
     $ManagedIdentityType="UserCreated",
 
-    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")]
+    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
     $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) 
