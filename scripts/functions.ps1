@@ -1,3 +1,20 @@
+function Create-ManagedIdentityTypeJmesPathQuery (
+    [parameter(Mandatory=$false)]
+    [ValidateSet("UserCreated", "SystemCreated", "Any")]
+    [string]
+    $ManagedIdentityType
+) {
+    if ($ManagedIdentityType -eq "UserCreated") {
+        $jmesPathQuery = "?contains(alternativeNames[1],'Microsoft.ManagedIdentity')"
+    } elseif ($ManagedIdentityType -eq "SystemCreated") {
+        $jmesPathQuery = "?!contains(alternativeNames[1],'Microsoft.ManagedIdentity')"
+    } else {
+        $jmesPathQuery = ""
+    }
+
+    return $jmesPathQuery
+}
+
 function Find-ApplicationByGUID (
     [parameter(Mandatory=$true)][guid]$Id
 ) {
@@ -30,41 +47,24 @@ function Find-ApplicationByName (
     }
 }
 
-function Find-DirectoryObjectByGraphUrl (
-    [parameter(Mandatory=$true)][string]$GraphUrl
+function Find-DirectoryObjectsByGraphUrl (
+    [parameter(Mandatory=$true)][string]$GraphUrl,
+    [parameter(Mandatory=$true)][string]$JmesPath="value"
 ) {
     Write-Debug "az rest --method get --url `"${graphUrl}`" --headers ConsistencyLevel=eventual"
     az rest --method get `
             --url $GraphUrl `
             --headers ConsistencyLevel=eventual `
-            --query "value[0]" `
+            --query $JmesPath  `
             -o json `
             | Set-Variable jsonResponse
     if ($jsonResponse) {
         $jsonResponse | ConvertFrom-Json `
                       | Set-Variable directoryObject
         Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
+        Write-JsonResponse -Json $jsonResponse
         return $directoryObject
     }
-
-    return $null
-}
-
-function Find-ServicePrincipalByGUID (
-    [parameter(Mandatory=$true)][guid]$Id
-) {
-    az ad sp list --filter "appId eq '$Id' or id eq '$Id'" --query "[0]" 2>$null | Set-Variable jsonResponse
-    if ($jsonResponse) {
-        $jsonResponse | ConvertFrom-Json | Set-Variable sp
-        if ($sp.id -eq $Id) {
-            Write-Verbose "Found Service Principal with id '$Id' using:"
-        } elseif ($sp.appId -eq $Id) {
-            Write-Verbose "Found Service Principal with appId '$Id' using:"
-        }
-        Write-Verbose "az ad sp list --filter `"appId eq '${Id}' or id eq '${Id}'`" --query `"[0]`""
-        Write-JsonResponse -Json $jsonResponse
-        return $sp
-    }    
 
     return $null
 }
@@ -72,14 +72,7 @@ function Find-ServicePrincipalByGUID (
 function Find-ManagedIdentitiesByNameMicrosoftGraph (
     [parameter(Mandatory=$true)][string]$StartsWith
 ) {
-    if ($ManagedIdentityType -eq "UserCreated") {
-        $jmesPathQuery = "?contains(alternativeNames[1],'Microsoft.ManagedIdentity')"
-    } elseif ($ManagedIdentityType -eq "SystemCreated") {
-        $jmesPathQuery = "?!contains(alternativeNames[1],'Microsoft.ManagedIdentity')"
-    } else {
-        $jmesPathQuery = ""
-    }
-
+    Create-ManagedIdentityTypeJmesPathQuery -ManagedIdentityType $ManagedIdentityType | Set-Variable jmesPathQuery
     Write-Debug "az ad sp list --filter `"startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
     az ad sp list --filter "startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'" `
                   --query "[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" `
@@ -157,7 +150,7 @@ function Find-ManagedIdentityByResourceID (
     }
     # Try Microsoft Graph
     $graphUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=alternativeNames/any(p:p eq '${Id}')"
-    Find-DirectoryObjectByGraphUrl -GraphUrl $graphUrl | Set-Variable sp
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[0]" | Set-Variable sp
     if ($sp) {
         $sp | Add-Member -NotePropertyName principalId -NotePropertyValue $sp.id
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
@@ -191,11 +184,51 @@ function Find-ManagedIdentityByResourceID (
     }
 }
 
+function Find-ManagedIdentitiesBySubscription (
+    [parameter(Mandatory=$true)][guid]$SubscriptionId,
+    [parameter(Mandatory=$false)][string]$ResourceGroupNameOrPrefix
+)
+{
+    $resourcePrefix = "/subscriptions/${SubscriptionId}"
+    if ($ResourceGroupNameOrPrefix) {
+        $resourcePrefix += "/resourceGroups/${ResourceGroupNameOrPrefix}"
+    }
+
+    Create-ManagedIdentityTypeJmesPathQuery -ManagedIdentityType $ManagedIdentityType | Set-Variable jmesPathQuery
+    $graphUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))&`$select=displayName,id,appId,alternativeNames"
+
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" | Set-Variable mis
+    if ($mis) {
+        Write-Verbose "Found $(($mis | Measure-Object).Count) Managed Identities with resourceId starting with '${resourcePrefix}' using Microsoft Graph query:"
+        Write-Verbose $graphUrl
+        return $mis
+    }
+}
+
+function Find-ServicePrincipalByGUID (
+    [parameter(Mandatory=$true)][guid]$Id
+) {
+    az ad sp list --filter "appId eq '$Id' or id eq '$Id'" --query "[0]" 2>$null | Set-Variable jsonResponse
+    if ($jsonResponse) {
+        $jsonResponse | ConvertFrom-Json | Set-Variable sp
+        if ($sp.id -eq $Id) {
+            Write-Verbose "Found Service Principal with id '$Id' using:"
+        } elseif ($sp.appId -eq $Id) {
+            Write-Verbose "Found Service Principal with appId '$Id' using:"
+        }
+        Write-Verbose "az ad sp list --filter `"appId eq '${Id}' or id eq '${Id}'`" --query `"[0]`""
+        Write-JsonResponse -Json $jsonResponse
+        return $sp
+    }    
+
+    return $null
+}
+
 function Find-ServicePrincipalByName (
     [parameter(Mandatory=$true)][string]$Name
 ) {
     $graphUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=displayName eq '$Name' or servicePrincipalNames/any(c:c eq '${Name}')"
-    Find-DirectoryObjectByGraphUrl -GraphUrl $graphUrl | Set-Variable sp
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[0]" | Set-Variable sp
     if ($sp) {
         $sp | Add-Member -NotePropertyName principalId -NotePropertyValue $sp.id
         if ($sp.displayName -eq $Name) {
