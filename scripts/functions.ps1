@@ -19,6 +19,7 @@ function Find-ApplicationByGUID (
     [parameter(Mandatory=$true)][guid]$Id
 ) {
     if (!$SkipApplication) {
+        Write-Debug "az ad app show --id ${Id}"
         az ad app show --id $Id 2>$null | Set-Variable jsonResponse
         if ($jsonResponse) {
             $jsonResponse | ConvertFrom-Json | Set-Variable app
@@ -35,6 +36,7 @@ function Find-ApplicationByName (
     [parameter(Mandatory=$true)][string]$Name
 ) {
     if (!$SkipApplication) {
+        Write-Debug "az ad app list --display-name $Name --query `"[0]`""
         az ad app list --display-name $Name --query "[0]" 2>$null | Set-Variable jsonResponse
         if ($jsonResponse) {
             $jsonResponse | ConvertFrom-Json | Set-Variable app
@@ -175,11 +177,13 @@ function Find-ManagedIdentityByResourceID (
     if ($sp) {
         $sp | Add-Member -NotePropertyName principalId -NotePropertyValue $sp.id
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
+        Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
         return $sp
     }
 
     # Use ARM API for User-assigned Identity
     if ($IsUserIdentity) {
+        Write-Debug "az identity show --ids $Id"
         az identity show --ids $Id -o json 2>$null | Set-Variable jsonResponse
         if ($jsonResponse) {
             $jsonResponse | ConvertFrom-Json `
@@ -193,6 +197,7 @@ function Find-ManagedIdentityByResourceID (
 
     # Use ARM API for System-assigned Identity
     if ($IsSysytemIdentity) {
+        Write-Debug "az resource show --ids $Id --query `"{id:id, principalId:identity.principalId, tenantId:tenantId}`""
         az resource show --ids $Id --query "{id:id, principalId:identity.principalId, tenantId:tenantId}" -o json 2>$null | Set-Variable jsonResponse
         if ($jsonResponse) {
             $jsonResponse | ConvertFrom-Json `
@@ -208,6 +213,7 @@ function Find-ManagedIdentityByResourceID (
 function Find-ServicePrincipalByGUID (
     [parameter(Mandatory=$true)][guid]$Id
 ) {
+    Write-Debug "az ad sp list --filter `"appId eq '${Id}' or id eq '${Id}'`" --query `"[0]`""
     az ad sp list --filter "appId eq '$Id' or id eq '$Id'" --query "[0]" 2>$null | Set-Variable jsonResponse
     if ($jsonResponse) {
         $jsonResponse | ConvertFrom-Json | Set-Variable sp
@@ -236,6 +242,7 @@ function Find-ServicePrincipalByName (
         } else {
             Write-Verbose "Found Service Principal with servicePrincipalName '$Name' using Microsoft Graph query:"
         }
+        Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
         return $sp
     }
 
@@ -265,6 +272,7 @@ function Login-Az (
             $azLoginSwitches = "--use-device-code"
         }
         if ($TenantId.Value -and ($TenantId.Value -ne [guid]::Empty.ToString())) {
+            Write-Debug "az login -t $TenantId.Value $($azLoginSwitches)"
             az login -t $TenantId.Value -o none $($azLoginSwitches)
         } else {
             az login $($azLoginSwitches) -o none
