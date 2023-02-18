@@ -138,12 +138,19 @@ function Find-ManagedIdentitiesBySubscription (
     }
 
     Create-ManagedIdentityTypeJmesPathQuery -ManagedIdentityType $ManagedIdentityType | Set-Variable jmesPathQuery
-    $graphUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))&`$select=displayName,id,appId,alternativeNames"
-
-    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" | Set-Variable mis
-    if ($mis) {
+    Write-Debug "az ad sp list --filter `"servicePrincipalType eq 'ManagedIdentity' and alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
+    az ad sp list --filter "servicePrincipalType eq 'ManagedIdentity' and alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))" `
+                  --query "[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" `
+                  -o json `
+                  | Set-Variable jsonResponse
+    if ($jsonResponse) {
+        $jsonResponse | ConvertFrom-Json `
+                      | Select-Object -Property name,appId,principalId,resourceId `
+                      | Sort-Object -Property name `
+                      | Set-Variable mis
         Write-Verbose "Found $(($mis | Measure-Object).Count) Managed Identities with resourceId starting with '${resourcePrefix}' using Microsoft Graph query:"
-        Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
+        Write-Verbose "az ad sp list --filter `"servicePrincipalType eq 'ManagedIdentity' and alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
+        Write-JsonResponse -Json $jsonResponse
         return $mis
     }
 }
