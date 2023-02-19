@@ -53,18 +53,24 @@ function Find-DirectoryObjectsByGraphUrl (
     [parameter(Mandatory=$true)][string]$GraphUrl,
     [parameter(Mandatory=$true)][string]$JmesPath="value"
 ) {
-    Write-Debug "az rest --method get --url `"${graphUrl}`" --headers ConsistencyLevel=eventual"
+    $GraphUrl -replace "\$","```$" | Set-Variable graphUrlToDisplay
+    Write-Debug "az rest --method get --url `"${graphUrlToDisplay}`" --headers ConsistencyLevel=eventual --query `"${JmesPath}`""
     az rest --method get `
             --url $GraphUrl `
             --headers ConsistencyLevel=eventual `
-            --query $JmesPath  `
+            --query $JmesPath `
             -o json `
             | Set-Variable jsonResponse
     if ($jsonResponse) {
         $jsonResponse | ConvertFrom-Json `
                       | Set-Variable directoryObject
-        Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
+        Write-Verbose "az rest --method get --url `"${graphUrlToDisplay}`" --headers ConsistencyLevel=eventual --query `"${JmesPath}`""
         Write-JsonResponse -Json $jsonResponse
+        if ($directoryObject -is [array]) {
+            $directoryObject | Format-Table -AutoSize | Out-String | Write-Debug
+        } else {
+            $directoryObject | Format-List | Out-String | Write-Debug
+        }
         return $directoryObject
     }
 
@@ -149,7 +155,7 @@ function Find-ManagedIdentitiesBySubscription (
                       | Sort-Object -Property name `
                       | Set-Variable mis
         Write-Verbose "Found $(($mis | Measure-Object).Count) Managed Identities with resourceId starting with '${resourcePrefix}' using Microsoft Graph query:"
-        Write-Verbose "az ad sp list --filter `"servicePrincipalType eq 'ManagedIdentity' and alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
+        "az ad sp list --filter `"servicePrincipalType eq 'ManagedIdentity' and alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table" | Write-Verbose
         Write-JsonResponse -Json $jsonResponse
         return $mis
     }
@@ -184,7 +190,7 @@ function Find-ManagedIdentityByResourceID (
     if ($sp) {
         $sp | Add-Member -NotePropertyName principalId -NotePropertyValue $sp.id
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
-        Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
+        "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual" -replace "\$","```$" | Write-Verbose
         return $sp
     }
 
@@ -249,7 +255,7 @@ function Find-ServicePrincipalByName (
         } else {
             Write-Verbose "Found Service Principal with servicePrincipalName '$Name' using Microsoft Graph query:"
         }
-        Write-Verbose "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual"
+        "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual" -replace "\$","```$" | Write-Verbose
         return $sp
     }
 
