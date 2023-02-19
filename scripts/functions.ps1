@@ -1,12 +1,12 @@
-function Create-ManagedIdentityTypeJmesPathQuery (
+function Create-IdentityTypeJmesPathQuery (
     [parameter(Mandatory=$false)]
-    [ValidateSet("UserCreated", "SystemCreated", "Any")]
+    [ValidateSet("UserCreatedManagedIdentity", "SystemCreatedManagedIdentity", "Any")]
     [string]
-    $ManagedIdentityType
+    $IdentityType
 ) {
-    if ($ManagedIdentityType -eq "UserCreated") {
+    if ($IdentityType -eq "UserCreatedManagedIdentity") {
         $jmesPathQuery = "?contains(alternativeNames[1],'Microsoft.ManagedIdentity')"
-    } elseif ($ManagedIdentityType -eq "SystemCreated") {
+    } elseif ($IdentityType -eq "SystemCreatedManagedIdentity") {
         $jmesPathQuery = "?!contains(alternativeNames[1],'Microsoft.ManagedIdentity')"
     } else {
         $jmesPathQuery = ""
@@ -77,10 +77,52 @@ function Find-DirectoryObjectsByGraphUrl (
     return $null
 }
 
+function Find-IdentitiesByNameMicrosoftGraph (
+    [parameter(Mandatory=$true)]
+    [string]
+    $StartsWith,
+
+    [parameter(Mandatory=$false)]
+    [ValidateSet("Any", "ServicePrincipal", "SystemCreatedManagedIdentity", "UserCreatedManagedIdentity")]
+    [string]
+    $IdentityType="Any"
+) {
+    switch ($IdentityType) {
+        "Any" {
+            $filter = "startswith(displayName,'${StartsWith}')"
+            $jmesPathQuery = $null
+        }
+        "ServicePrincipal" {
+            $filter = "startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ServicePrincipal'"
+            $jmesPathQuery = $null
+        }
+        default {
+            $filter = "startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'"
+            Create-IdentityTypeJmesPathQuery -IdentityType $IdentityType | Set-Variable jmesPathQuery
+        } 
+    }   
+
+    Write-Debug "az ad sp list --filter `"${filter}`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
+    az ad sp list --filter "${filter}" `
+                  --query "[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" `
+                  -o json `
+                  | Set-Variable jsonResponse
+    if ($jsonResponse) {
+        $jsonResponse | ConvertFrom-Json `
+                      | Select-Object -Property name,appId,principalId,resourceId `
+                      | Sort-Object -Property name `
+                      | Set-Variable sps
+        Write-Verbose "Found $(($sps | Measure-Object).Count) Identities of type '${Type}' and with name starting with '$StartsWith' using:"
+        Write-Verbose "az ad sp list --filter `"${filter}`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
+        Write-JsonResponse -Json $jsonResponse
+        return $sps
+    }
+}
+
 function Find-ManagedIdentitiesByNameMicrosoftGraph (
     [parameter(Mandatory=$true)][string]$StartsWith
 ) {
-    Create-ManagedIdentityTypeJmesPathQuery -ManagedIdentityType $ManagedIdentityType | Set-Variable jmesPathQuery
+    Create-IdentityTypeJmesPathQuery -IdentityType $IdentityType | Set-Variable jmesPathQuery
     Write-Debug "az ad sp list --filter `"startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
     az ad sp list --filter "startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'" `
                   --query "[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" `
@@ -108,9 +150,9 @@ function Find-ManagedIdentitiesByNameAzureResourceGraph (
     
     $userAssignedGraphQuery = "Resources | where type =~ 'Microsoft.ManagedIdentity/userAssignedIdentities' and name contains '${Search}' | extend sp = parse_json(properties) | project name=name,appId=sp.clientId,principalId=sp.principalId,resourceId=id | order by name asc"
     $systemGraphQuery = "Resources | where name contains '${Search}' | extend principalId=parse_json(identity).principalId | where isnotempty(principalId) | project name=name,appId='',principalId,resourceId=id | order by name asc"
-    if ($ManagedIdentityType -eq "UserCreated") {
+    if ($IdentityType -eq "UserCreatedManagedIdentity") {
         $resourceGraphQuery = $userAssignedGraphQuery
-    } elseif ($ManagedIdentityType -eq "SystemCreated") {
+    } elseif ($IdentityType -eq "SystemCreatedManagedIdentity") {
         $resourceGraphQuery = $systemGraphQuery
     } else {
         $resourceGraphQuery = "${userAssignedGraphQuery} | union (${systemGraphQuery}) | order by name asc"
@@ -143,7 +185,7 @@ function Find-ManagedIdentitiesBySubscription (
         $resourcePrefix += "/resourcegroups/${ResourceGroupNameOrPrefix}"
     }
 
-    Create-ManagedIdentityTypeJmesPathQuery -ManagedIdentityType $ManagedIdentityType | Set-Variable jmesPathQuery
+    Create-IdentityTypeJmesPathQuery -IdentityType $IdentityType | Set-Variable jmesPathQuery
     Write-Debug "az ad sp list --filter `"servicePrincipalType eq 'ManagedIdentity' and alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
     az ad sp list --filter "servicePrincipalType eq 'ManagedIdentity' and alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))" `
                   --query "[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}" `

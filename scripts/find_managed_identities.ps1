@@ -1,13 +1,13 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS 
-    Find a Managed Identities
+    Find Managed Identities
 .DESCRIPTION 
-    Find a Managed Identities using Microsoft Graph API
+    Find Managed Identities using Microsoft Graph API
 .EXAMPLE
     ./find_managed_identities.ps1 mmyalias
 .EXAMPLE
-    ./find_managed_identities.ps1 -Search term -ManagedIdentityType UserCreated
+    ./find_managed_identities.ps1 -Search term -IdentityType UserCreatedManagedIdentity
 .EXAMPLE
     ./find_managed_identities.ps1 -SubscriptionId 12345678-1234-1234-abcd-1234567890ab
 .EXAMPLE
@@ -17,7 +17,8 @@
 param ( 
     [parameter(Mandatory=$false,ParameterSetName="Search",HelpMessage="Name or prefix of Managed Identity")]
     [ValidateNotNull()]
-    [string]$Search,
+    [string]
+    $Search,
 
     [parameter(Mandatory=$true,ParameterSetName="AzureScope",HelpMessage="Azure subscription id")]
     [ValidateNotNullOrEmpty()]
@@ -29,9 +30,9 @@ param (
     $ResourceGroupNameOrPrefix,
 
     [parameter(Mandatory=$false)]
-    [ValidateSet("UserCreated", "SystemCreated", "Any")]
+    [ValidateSet("UserCreatedManagedIdentity", "SystemCreatedManagedIdentity", "Any")]
     [string]
-    $ManagedIdentityType="UserCreated",
+    $IdentityType="UserCreatedManagedIdentity",
 
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
@@ -44,7 +45,7 @@ function Find-IdentitiesBySearchTerm (
     [string]
     $Search
 ) {
-    Write-Host "Searching for Managed Identities of type '${ManagedIdentityType}' matching '${Search}'..."
+    Write-Host "Searching for Managed Identities of type '${IdentityType}' matching '${Search}'..."
     
     # Write-Verbose "Microsoft Graph API results starting with '${Search}':"
     Find-ManagedIdentitiesByNameMicrosoftGraph -StartsWith $Search | Set-Variable msftGraphObjects
@@ -67,7 +68,7 @@ function Find-IdentitiesBySearchTerm (
     }   
     
     return $allObjects
-    Write-Host "Managed Identities of type '${ManagedIdentityType}' matching '${Search}':"
+    Write-Host "Managed Identities of type '${IdentityType}' matching '${Search}':"
 }
 
 Write-Debug $MyInvocation.line
@@ -85,7 +86,7 @@ if ($Search) {
     if ($ResourceGroupNameOrPrefix) {
         $topic += " and resource group (prefix) '${ResourceGroupNameOrPrefix}'"
     }
-    $topic += " of type '${ManagedIdentityType}'"
+    $topic += " of type '${IdentityType}'"
 
     Write-Host "Searching ${topic}..."
     Find-ManagedIdentitiesBySubscription -SubscriptionId $SubscriptionId `
