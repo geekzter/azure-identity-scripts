@@ -72,11 +72,3 @@ jobs:
           ./find_workload_identity.ps1 $servicePrincipalName -SkipApplication
         }
       shell: pwsh
-
-
-    - name: Test find_managed_identities.ps1
-      run: |
-        Set-PSDebug -Trace 0
-
-        ./find_managed_identities.ps1 -SubscriptionId ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      shell: pwsh
