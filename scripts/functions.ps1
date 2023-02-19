@@ -49,6 +49,24 @@ function Find-ApplicationByName (
     }
 }
 
+function Find-ApplicationsByName (
+    [parameter(Mandatory=$true)]
+    [string]
+    $StartsWith
+) {
+    $graphUrl = "https://graph.microsoft.com/v1.0/applications?$count=true&`$filter=startswith(displayName,'${StartsWith}')&`$expand=federatedIdentityCredentials&`$select=id,appId,displayName,federatedIdentityCredentials"
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[].{name:displayName,appId:appId,id:id,federationSubjects:join(',',federatedIdentityCredentials[].subject)}" | Set-Variable apps
+
+    if ($apps) {
+        $apps | Select-Object -Property name,appId,id,federationSubjects `
+              | Sort-Object -Property name `
+              | Set-Variable apps
+        Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
+        "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual" -replace "\$","```$" | Write-Verbose
+        return $apps
+    }
+}
+
 function Find-DirectoryObjectsByGraphUrl (
     [parameter(Mandatory=$true)][string]$GraphUrl,
     [parameter(Mandatory=$true)][string]$JmesPath="value"

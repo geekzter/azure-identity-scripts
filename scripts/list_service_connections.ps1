@@ -17,10 +17,10 @@ param (
     [string]
     $Project,
 
-    [parameter(Mandatory=$false)]
-    [ValidateSet("ServicePrincipal", "UserCreatedManagedIdentity", "Any")]
-    [string]
-    $IdentityType="Any",
+    # [parameter(Mandatory=$false)]
+    # [ValidateSet("ServicePrincipal", "UserCreatedManagedIdentity", "Any")]
+    # [string]
+    # $IdentityType="Any",
 
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
@@ -40,7 +40,8 @@ if ($Project) {
 }
 
 Write-Host "Searching for Identities of type '${IdentityType}' with prefix '${prefix}'..."
-Find-IdentitiesByNameMicrosoftGraph -StartsWith $prefix -IdentityType $IdentityType | Set-Variable msftGraphObjects
+# Find-IdentitiesByNameMicrosoftGraph -StartsWith $prefix -IdentityType $IdentityType | Set-Variable msftGraphObjects
+Find-ApplicationsByName -StartsWith $prefix | Set-Variable msftGraphObjects
 
 # Filter out objects not using a GUID as suffix
 $msftGraphObjects = $msftGraphObjects | Where-Object { $_.name -match "${Organization}-\w+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" }
