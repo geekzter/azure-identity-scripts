@@ -58,13 +58,18 @@ Find-ApplicationsByName -StartsWith $prefix | Set-Variable msftGraphObjects
 $msftGraphObjects | Where-Object { 
     # Filter out objects not using a GUID as suffix
     $_.name -match "${Organization}-\w+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
-} | Where-Object { 
-    !$HasCertificates -or $_.certificates -gt 0
-} | Where-Object { 
-    !$HasFederation -or $_.federationSubjects -ne $null
-} | Where-Object { 
-    !$HasSecrets -or $_.secrets -gt 0
-} | Set-Variable msftGraphObjects
+} | Set-Variable msftGraphObjects -Scope global
+if ($HasCertificates) {
+    $msftGraphObjects | Where-Object {$_.keyCredentials -gt 0} | Set-Variable msftGraphObjects
+}
+if ($HasFederation) {
+    $msftGraphObjects | Where-Object {![string]::IsNullOrEmpty($_.federationSubjects)} | Set-Variable msftGraphObjects
+}
+if ($HasSecrets) {
+    $msftGraphObjects | Where-Object {$_.passwordCredentials -gt 0} | Set-Variable msftGraphObjects
+}
+
 
 Write-Host "Identities of type '${IdentityType}' with prefix '${prefix}':"
-$msftGraphObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
+# $msftGraphObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
+$msftGraphObjects | Format-Table -AutoSize
