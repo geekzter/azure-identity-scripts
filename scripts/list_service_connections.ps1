@@ -12,7 +12,7 @@ param (
     [string]
     $Organization=($env:AZDO_ORG_SERVICE_URL -split '/' | Select-Object -Skip 3),
 
-    [parameter(Mandatory=$true,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Project")]
+    [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Project")]
     [ValidateNotNull()]
     [string]
     $Project,
@@ -41,6 +41,9 @@ if ($Project) {
 
 Write-Host "Searching for Identities of type '${IdentityType}' with prefix '${prefix}'..."
 Find-IdentitiesByNameMicrosoftGraph -StartsWith $prefix -IdentityType $IdentityType | Set-Variable msftGraphObjects
+
+# Filter out objects not using a GUID as suffix
+$msftGraphObjects = $msftGraphObjects | Where-Object { $_.name -match "${Organization}-\w+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" }
 
 Write-Host "Identities of type '${IdentityType}' with prefix '${prefix}':"
 $msftGraphObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
