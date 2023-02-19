@@ -47,11 +47,13 @@ Write-Verbose "Logging into Azure..."
 Login-Az -Tenant ([ref]$TenantId)
 
 $prefix = "${Organization}-"
+$message = "Identities of type 'Application' in Azure DevOps organization '${Organization}'"
 if ($Project) {
     $prefix += "${Project}-"
+    $message += " and project '${Project}'"
 }
 
-Write-Host "Searching for Identities of type '${IdentityType}' with prefix '${prefix}'..."
+Write-Host "Searching for ${message}..."
 # Find-IdentitiesByNameMicrosoftGraph -StartsWith $prefix -IdentityType $IdentityType | Set-Variable msftGraphObjects
 Find-ApplicationsByName -StartsWith $prefix | Set-Variable msftGraphObjects
 
@@ -69,7 +71,5 @@ if ($HasSecrets) {
     $msftGraphObjects | Where-Object {$_.passwordCredentials -gt 0} | Set-Variable msftGraphObjects
 }
 
-
-Write-Host "Identities of type '${IdentityType}' with prefix '${prefix}':"
-# $msftGraphObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
-$msftGraphObjects | Format-Table -AutoSize
+Write-Host "${message}:"
+$msftGraphObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
