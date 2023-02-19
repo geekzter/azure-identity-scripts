@@ -57,19 +57,14 @@ Write-Host "Searching for ${message}..."
 # Find-IdentitiesByNameMicrosoftGraph -StartsWith $prefix -IdentityType $IdentityType | Set-Variable msftGraphObjects
 Find-ApplicationsByName -StartsWith $prefix | Set-Variable msftGraphObjects
 
+Write-Host "${message}:"
 $msftGraphObjects | Where-Object { 
     # Filter out objects not using a GUID as suffix
     $_.name -match "${Organization}-\w+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
-} | Set-Variable msftGraphObjects -Scope global
-if ($HasCertificates) {
-    $msftGraphObjects | Where-Object {$_.keyCredentials -gt 0} | Set-Variable msftGraphObjects
-}
-if ($HasFederation) {
-    $msftGraphObjects | Where-Object {![string]::IsNullOrEmpty($_.federationSubjects)} | Set-Variable msftGraphObjects
-}
-if ($HasSecrets) {
-    $msftGraphObjects | Where-Object {$_.passwordCredentials -gt 0} | Set-Variable msftGraphObjects
-}
-
-Write-Host "${message}:"
-$msftGraphObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
+} | Where-Object { 
+    $_.keyCredentials -ge ($HasCertificates ? 1 : 0)
+} | Where-Object { 
+    !$HasFederation -or ![string]::IsNullOrEmpty($_.federationSubjects)
+} | Where-Object { 
+    $_.passwordCredentials -ge ($HasSecrets ? 1 : 0)
+} | Sort-Object -Property name -Unique | Format-Table -AutoSize
