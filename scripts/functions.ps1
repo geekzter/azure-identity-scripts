@@ -93,7 +93,7 @@ function Find-IdentitiesByNameMicrosoftGraph (
             $jmesPathQuery = $null
         }
         "ServicePrincipal" {
-            $filter = "startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ServicePrincipal'"
+            $filter = "startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'Application'"
             $jmesPathQuery = $null
         }
         default {
