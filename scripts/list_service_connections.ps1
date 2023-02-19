@@ -55,8 +55,8 @@ Write-Host "Searching for Identities of type '${IdentityType}' with prefix '${pr
 # Find-IdentitiesByNameMicrosoftGraph -StartsWith $prefix -IdentityType $IdentityType | Set-Variable msftGraphObjects
 Find-ApplicationsByName -StartsWith $prefix | Set-Variable msftGraphObjects
 
-# Filter out objects not using a GUID as suffix
 $msftGraphObjects | Where-Object { 
+    # Filter out objects not using a GUID as suffix
     $_.name -match "${Organization}-\w+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
 } | Where-Object { 
     !$HasCertificates -or $_.certificates -gt 0
