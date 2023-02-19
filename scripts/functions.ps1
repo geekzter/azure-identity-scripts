@@ -54,11 +54,11 @@ function Find-ApplicationsByName (
     [string]
     $StartsWith
 ) {
-    $graphUrl = "https://graph.microsoft.com/v1.0/applications?$count=true&`$filter=startswith(displayName,'${StartsWith}')&`$expand=federatedIdentityCredentials&`$select=id,appId,displayName,federatedIdentityCredentials,passwordCredentials"
-    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[].{name:displayName,appId:appId,id:id,federationSubjects:join(',',federatedIdentityCredentials[].subject),passwordCredentials:length(passwordCredentials[])}" | Set-Variable apps
+    $graphUrl = "https://graph.microsoft.com/v1.0/applications?$count=true&`$filter=startswith(displayName,'${StartsWith}')&`$expand=federatedIdentityCredentials&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[].{name:displayName,appId:appId,id:id,federationSubjects:join(',',federatedIdentityCredentials[].subject),secrets:length(passwordCredentials[]),certificates:length(keyCredentials[])}" | Set-Variable apps
 
     if ($apps) {
-        $apps | Select-Object -Property name,appId,id,federationSubjects,passwordCredentials `
+        $apps | Select-Object -Property name,appId,id,federationSubjects,keyCredentials,secrets,certificates `
               | Sort-Object -Property name `
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"

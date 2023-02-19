@@ -17,6 +17,18 @@ param (
     [string]
     $Project,
 
+    [parameter(Mandatory=$false)]
+    [switch]
+    $HasCertificates=$false,
+
+    [parameter(Mandatory=$false)]
+    [switch]
+    $HasFederation=$false,
+
+    [parameter(Mandatory=$false)]
+    [switch]
+    $HasSecrets=$false,
+
     # [parameter(Mandatory=$false)]
     # [ValidateSet("ServicePrincipal", "UserCreatedManagedIdentity", "Any")]
     # [string]
@@ -44,7 +56,15 @@ Write-Host "Searching for Identities of type '${IdentityType}' with prefix '${pr
 Find-ApplicationsByName -StartsWith $prefix | Set-Variable msftGraphObjects
 
 # Filter out objects not using a GUID as suffix
-$msftGraphObjects = $msftGraphObjects | Where-Object { $_.name -match "${Organization}-\w+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" }
+$msftGraphObjects | Where-Object { 
+    $_.name -match "${Organization}-\w+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
+} | Where-Object { 
+    !$HasCertificates -or $_.certificates -gt 0
+} | Where-Object { 
+    !$HasFederation -or $_.federationSubjects -ne $null
+} | Where-Object { 
+    !$HasSecrets -or $_.secrets -gt 0
+} | Set-Variable msftGraphObjects
 
 Write-Host "Identities of type '${IdentityType}' with prefix '${prefix}':"
 $msftGraphObjects | Sort-Object -Property name -Unique | Format-Table -AutoSize
