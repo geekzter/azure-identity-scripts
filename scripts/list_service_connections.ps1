@@ -8,7 +8,7 @@
 #Requires -Version 7
 param ( 
     [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Organization")]
-    [ValidateNotNull()]
+    [ValidateNotNullOrEmpty()]
     [string]
     $Organization=($env:AZDO_ORG_SERVICE_URL -split '/' | Select-Object -Skip 3),
 
@@ -72,15 +72,15 @@ Find-ApplicationsByName -StartsWith $prefix | Set-Variable msftGraphObjects
 Write-Host "${message}:"
 $msftGraphObjects | Where-Object { 
     # Filter out objects not using a GUID as suffix
-    $_.name -match "${Organization}-\w+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
+    $_.name -match "${Organization}-[^-]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
 } | Where-Object { 
     $_.keyCredentials -ge ($HasCertificates ? 1 : 0)
 } | Where-Object { 
     !$HasNoCertificates -or $_.keyCredentials -eq 0
 } | Where-Object { 
-    !$HasFederation -or ![string]::IsNullOrEmpty($_.federationSubjects)
+    !$HasFederation -or ![string]::IsNullOrEmpty($_.federatedIdentityCredentials)
 } | Where-Object { 
-    !$HasNoFederation -or [string]::IsNullOrEmpty($_.federationSubjects)
+    !$HasNoFederation -or [string]::IsNullOrEmpty($_.federatedIdentityCredentials)
 } | Where-Object { 
     $_.passwordCredentials -ge ($HasSecrets ? 1 : 0)
 } | Where-Object { 

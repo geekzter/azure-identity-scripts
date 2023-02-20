@@ -5,13 +5,13 @@
 .DESCRIPTION 
     Find Managed Identities using Microsoft Graph API
 .EXAMPLE
-    ./find_managed_identities.ps1 mmyalias
+    ./list_managed_identities.ps1 mmyalias
 .EXAMPLE
-    ./find_managed_identities.ps1 -Search term -IdentityType UserCreatedManagedIdentity
+    ./list_managed_identities.ps1 -Search term -IdentityType UserCreatedManagedIdentity
 .EXAMPLE
-    ./find_managed_identities.ps1 -SubscriptionId 12345678-1234-1234-abcd-1234567890ab
+    ./list_managed_identities.ps1 -SubscriptionId 12345678-1234-1234-abcd-1234567890ab
 .EXAMPLE
-    ./find_managed_identities.ps1 -SubscriptionId 12345678-1234-1234-abcd-1234567890ab -ResourceGroupNameOrPrefix myalias
+    ./list_managed_identities.ps1 -SubscriptionId 12345678-1234-1234-abcd-1234567890ab -ResourceGroupNameOrPrefix myalias
 #>
 #Requires -Version 7
 param ( 

@@ -9,9 +9,9 @@ This repo contains a few [PowerShell](https://github.com/PowerShell/PowerShell) 
   - Object/Principal id
   - (Display) Name
   - Service Principal Name
-  - Resource ID of a resource with a System-assigned Identity
-  - Resource ID or name of a User-assigned Identity
-- Use Microsoft Graph to list Managed Identities with [find_managed_identities.ps1](scripts/find_managed_identities.ps1), using:
+  - Resource id of a resource with a System-assigned Identity
+  - Resource id or name of a User-assigned Identity
+- Use Microsoft Graph to list Managed Identities with [list_managed_identities.ps1](scripts/list_managed_identities.ps1), using:
   - Azure subscription and optional resource group
   - Name (pattern)
 - List identities for Azure Pipeline Service Connections by Azure DevOps organization and (optionally) project: [list_service_connections.ps1](scripts/list_service_connections.ps1)

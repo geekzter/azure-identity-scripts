@@ -15,8 +15,8 @@
 #>
 #Requires -Version 7.2
 param ( 
-    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")][guid]$TenantId=$env:AZURE_TENANT_ID ?? $env:ARM_TENANT_ID,
-    [parameter(Mandatory=$false,HelpMessage="Azure subscription ID")][guid]$SubscriptionId=$env:AZURE_SUBSCRIPTION_ID ?? $env:ARM_SUBSCRIPTION_ID,
+    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")][guid]$TenantId=$env:AZURE_TENANT_ID ?? $env:ARM_TENANT_ID,
+    [parameter(Mandatory=$false,HelpMessage="Azure subscription id")][guid]$SubscriptionId=$env:AZURE_SUBSCRIPTION_ID ?? $env:ARM_SUBSCRIPTION_ID,
     [parameter(Mandatory=$false,HelpMessage="Azure resource group name")][string]$ResourceGroupName=$env:AZURE_RESOURCE_GROUP,
     [parameter(Mandatory=$false,HelpMessage="Azure RBAC role to assign to the Service Principal")][string]$AzureRole="Contributor",
     [parameter(Mandatory=$false,HelpMessage="GitHub repository in <owner>/<name> format")][string]$RepositoryName,
@@ -157,10 +157,10 @@ if (!$SkipServicePrincipalFederation) {
     }
 
     # Retrieve existing federation subjects
-    Write-Host "Retrieving existing federation subjects for Service Principal with client ID '$appId'..."
+    Write-Host "Retrieving existing federation subjects for Service Principal with clientId '$appId'..."
     $getUrl = "https://graph.microsoft.com/beta/applications/${appObjectId}/federatedIdentityCredentials"
     Write-Debug "getUrl: $getUrl"
-    Write-Verbose "Retrieving federations for application with object ID '${appObjectId}'..."
+    Write-Verbose "Retrieving federations for application with objectId '${appObjectId}'..."
     az rest --method GET `
             --headers '{\""Content-Type\"": \""application/json\""}' `
             --uri "$getUrl" `
@@ -168,7 +168,7 @@ if (!$SkipServicePrincipalFederation) {
             --query "value[].subject" | ConvertFrom-Json | Set-Variable federatedSubjects
 
     # Create federation subjects
-    Write-Host "Creating federation subjects for Service Principal with client ID '$appId'..."
+    Write-Host "Creating federation subjects for Service Principal with clientId '$appId'..."
     foreach ($subject in $subjects) {
         if ($federatedSubjects -and $federatedSubjects.Contains($subject)) {
             Write-Verbose "Federation subject '$subject' already exists"

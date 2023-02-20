@@ -23,13 +23,15 @@ function Find-ApplicationByGUID (
         az ad app show --id $Id 2>$null | Set-Variable jsonResponse
         if ($jsonResponse) {
             $jsonResponse | ConvertFrom-Json | Set-Variable app
-            Write-Verbose "Found Application with Object ID '$Id' using:`naz ad app show --id ${Id}"
+            Write-Verbose "Found Application with Object id '$Id' using:`naz ad app show --id ${Id}"
             Write-JsonResponse -Json $jsonResponse
             return $app
         } else {
-            return $null
+            Write-Verbose "No Application found with Object id '$Id'"
         }    
     }
+
+    return $null
 }
 
 function Find-ApplicationByName (
@@ -44,9 +46,11 @@ function Find-ApplicationByName (
             Write-JsonResponse -Json $jsonResponse
             return $app
         } else {
-            return $null
+            Write-Verbose "No Application found with name '$Name'"
         }    
     }
+
+    return $null
 }
 
 function Find-ApplicationsByName (
@@ -55,17 +59,21 @@ function Find-ApplicationsByName (
     $StartsWith
 ) {
     $graphUrl = "https://graph.microsoft.com/v1.0/applications?$count=true&`$filter=startswith(displayName,'${StartsWith}')&`$expand=federatedIdentityCredentials&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
-    $jmesPath = "value[].{name:displayName,appId:appId,id:id,federationSubjects:join(',',federatedIdentityCredentials[].subject),passwordCredentials:length(passwordCredentials[]),keyCredentials:length(keyCredentials[])}"
+    $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedIdentityCredentials:join(',',federatedIdentityCredentials[].subject),passwordCredentials:length(passwordCredentials[]),keyCredentials:length(keyCredentials[])}"
     Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
 
     if ($apps) {
-        $apps | Select-Object -Property name,appId,id,federationSubjects,keyCredentials,passwordCredentials `
+        $apps | Select-Object -Property name,appId,id,federatedIdentityCredentials,keyCredentials,passwordCredentials `
               | Sort-Object -Property name `
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose
         return $apps
+    } else {
+        Write-Verbose "No apps found with name starting with '$StartsWith'"
     }
+
+    return $null
 }
 
 function Find-DirectoryObjectsByGraphUrl (
@@ -91,6 +99,8 @@ function Find-DirectoryObjectsByGraphUrl (
             $directoryObject | Format-List | Out-String | Write-Debug
         }
         return $directoryObject
+    } else {
+        Write-Verbose "No objects found"
     }
 
     return $null
@@ -135,7 +145,11 @@ function Find-IdentitiesByNameMicrosoftGraph (
         Write-Verbose "az ad sp list --filter `"${filter}`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
         Write-JsonResponse -Json $jsonResponse
         return $sps
+    } else {
+        Write-Verbose "No identities found with name starting with '$StartsWith'"
     }
+
+    return $null
 }
 
 function Find-ManagedIdentitiesByNameMicrosoftGraph (
@@ -156,7 +170,11 @@ function Find-ManagedIdentitiesByNameMicrosoftGraph (
         Write-Verbose "az ad sp list --filter `"startswith(displayName,'${StartsWith}') and servicePrincipalType eq 'ManagedIdentity'`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table"
         Write-JsonResponse -Json $jsonResponse
         return $sps
+    } else {
+        Write-Verbose "No managed identities found with name starting with '$StartsWith'"
     }
+
+    return $null
 }
 
 function Find-ManagedIdentitiesByNameAzureResourceGraph (
@@ -191,7 +209,11 @@ function Find-ManagedIdentitiesByNameAzureResourceGraph (
         Write-Verbose "az graph query -q `"${resourceGraphQuery}`" -a --query `"data`""
         Write-JsonResponse -Json $jsonResponse
         return $mis
+    } else {
+        Write-Verbose "No managed identities found with name containing '$Search'"
     }
+
+    return $null
 }
 
 function Find-ManagedIdentitiesBySubscription (
@@ -219,29 +241,33 @@ function Find-ManagedIdentitiesBySubscription (
         "az ad sp list --filter `"servicePrincipalType eq 'ManagedIdentity' and alternativeNames/any(p:startsWith(p,'${resourcePrefix}'))`" --query `"[${jmesPathQuery}].{name:displayName,appId:appId,principalId:id,resourceId:alternativeNames[1]}`" -o table" | Write-Verbose
         Write-JsonResponse -Json $jsonResponse
         return $mis
+    } else {
+        Write-Verbose "No managed identities found with resourceId starting with '${resourcePrefix}'"
     }
+
+    return $null
 }
 
-function Find-ManagedIdentityByResourceID (
+function Find-ManagedIdentityByResourceId (
     [parameter(Mandatory=$true)][string]$Id
 ) {
     switch -regex ($Id) {
-        # Match User-assigned Identity Resource ID
+        # Match User-assigned Identity Resource id
         "/subscriptions/(.)+/resourcegroups/(.)+/providers/Microsoft.ManagedIdentity/userAssignedIdentities/(.)+" {
-            Write-Verbose "'$Id' is a User-assigned Identity Resource ID"
+            Write-Verbose "'$Id' is a User-assigned Identity Resource id"
             $IsSysytemIdentity = $false
             $IsUserIdentity = $true
             break
         }
-        # Match generic Resource ID (System-assigned Identity)
+        # Match generic Resource id (System-assigned Identity)
         "/subscriptions/(.)+/resourcegroups/(.)+/(.)+/(.)+" {
-            Write-Verbose "'$Id' is a Resource ID"
+            Write-Verbose "'$Id' is a Resource id"
             $IsSysytemIdentity = $true
             $IsUserIdentity = $false
             break
         }
         default {
-            Write-Error "'$Id' is not a valid Resource ID"
+            Write-Error "'$Id' is not a valid Resource id"
             exit
         }
     }
@@ -253,6 +279,8 @@ function Find-ManagedIdentityByResourceID (
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual" -replace "\$","```$" | Write-Verbose
         return $sp
+    } else {
+        Write-Verbose "No Managed Identity found with resourceId '$Id' using Microsoft Graph query:"
     }
 
     # Use ARM API for User-assigned Identity
@@ -266,8 +294,10 @@ function Find-ManagedIdentityByResourceID (
             Write-Verbose "az identity show --ids $Id"
             Write-JsonResponse -Json $jsonResponse
             return $mi
+        } else {
+            Write-Verbose "No User-assigned Identity found with resourceId '$Id' using ARM API"
         }
-    }
+    } 
 
     # Use ARM API for System-assigned Identity
     if ($IsSysytemIdentity) {
@@ -280,6 +310,8 @@ function Find-ManagedIdentityByResourceID (
             Write-Verbose "az resource show --ids $Id --query `"identity`" -o tsv"
             Write-JsonResponse -Json $jsonResponse
             return $mi
+        } else {
+            Write-Verbose "No System-assigned Identity found with resourceId '$Id' using ARM API"
         }
     }
 }
@@ -299,7 +331,9 @@ function Find-ServicePrincipalByGUID (
         Write-Verbose "az ad sp list --filter `"appId eq '${Id}' or id eq '${Id}'`" --query `"[0]`""
         Write-JsonResponse -Json $jsonResponse
         return $sp
-    }    
+    } else {
+        Write-Verbose "No Service Principal found with id '$Id'"
+    }
 
     return $null
 }
@@ -318,6 +352,8 @@ function Find-ServicePrincipalByName (
         }
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual" -replace "\$","```$" | Write-Verbose
         return $sp
+    } else {
+        Write-Verbose "No Service Principal found with name '$Name' using Microsoft Graph query"
     }
 
     return $null
