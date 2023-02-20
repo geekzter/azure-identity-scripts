@@ -15,6 +15,8 @@
     ./find_workload_identity.ps1 "https://identity.azure.net/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
 .EXAMPLE
     ./find_workload_identity.ps1 "https://VisualStudio/SPN12345678-1234-1234-abcd-1234567890ab"
+.EXAMPLE
+    ./find_workload_identity.ps1 "sc://myorg/myproj/mysc"
 #>
 #Requires -Version 7
 param ( 
