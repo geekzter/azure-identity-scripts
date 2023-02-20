@@ -23,11 +23,23 @@ param (
 
     [parameter(Mandatory=$false)]
     [switch]
+    $HasNoCertificates=$false,
+
+    [parameter(Mandatory=$false)]
+    [switch]
     $HasFederation=$false,
 
     [parameter(Mandatory=$false)]
     [switch]
+    $HasNoFederation=$false,
+
+    [parameter(Mandatory=$false)]
+    [switch]
     $HasSecrets=$false,
+
+    [parameter(Mandatory=$false)]
+    [switch]
+    $HasNoSecrets=$false,
 
     # [parameter(Mandatory=$false)]
     # [ValidateSet("ServicePrincipal", "UserCreatedManagedIdentity", "Any")]
@@ -64,7 +76,13 @@ $msftGraphObjects | Where-Object {
 } | Where-Object { 
     $_.keyCredentials -ge ($HasCertificates ? 1 : 0)
 } | Where-Object { 
+    !$HasNoCertificates -or $_.keyCredentials -eq 0
+} | Where-Object { 
     !$HasFederation -or ![string]::IsNullOrEmpty($_.federationSubjects)
 } | Where-Object { 
+    !$HasNoFederation -or [string]::IsNullOrEmpty($_.federationSubjects)
+} | Where-Object { 
     $_.passwordCredentials -ge ($HasSecrets ? 1 : 0)
+} | Where-Object { 
+    !$HasNoSecrets -or $_.passwordCredentials -eq 0
 } | Sort-Object -Property name -Unique | Format-Table -AutoSize
