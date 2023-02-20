@@ -90,6 +90,25 @@ switch -regex ($IdOrName) {
         }
         break
     }
+    # Match Azure Pipelines federation subject
+    "sc://[-\d\w]+/[-\d\w]+/[-_\d\w]+" {
+        Write-Verbose "'$IdOrName' is a Federation Subject"
+        Find-ApplicationsByFederation -StartsWith $IdOrName | Set-Variable apps
+
+        if (($apps | Measure-Object).Count -gt 1) {
+            Write-Warning "Found $($apps.Count) Applications with Federation Subject '$IdOrName', using the first one"
+        }
+
+        $apps | Select-Object -First 1 | Set-Variable app
+        if ($app) {
+            az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
+        } else {
+            Write-Warning "Could not find Application with Federation Subject '$IdOrName'"
+            exit
+        }
+        break
+    }
+
     # Match Name or URL
     "^[\w\-\/\:\.]+" {
         if (!$SkipApplication) {
