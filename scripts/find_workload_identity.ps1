@@ -20,7 +20,7 @@
 #>
 #Requires -Version 7
 param ( 
-    [parameter(Mandatory=$true,HelpMessage="Application/Client/Object/Principal id/Resource id/Name/Service Principal Name")]
+    [parameter(Mandatory=$true,HelpMessage="Application/Client/Object/Principal id/Resource id/Name/Service Principal Name/Federated subject identifier")]
     [ValidateNotNullOrEmpty()]
     [string]
     $IdOrName,
