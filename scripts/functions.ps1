@@ -53,12 +53,35 @@ function Find-ApplicationByName (
     return $null
 }
 
+function Find-ApplicationsByFederation (
+    [parameter(Mandatory=$true)]
+    [string]
+    $StartsWith
+) {
+    $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$expand=federatedIdentityCredentials&`$filter=federatedIdentityCredentials/any(f:startsWith(f/subject,'${StartsWith}'))"
+    $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedIdentityCredentials:join(',',federatedIdentityCredentials[].subject),passwordCredentials:length(passwordCredentials[]),keyCredentials:length(keyCredentials[])}"
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
+
+    if ($apps) {
+        $apps | Select-Object -Property name,appId,id,federatedIdentityCredentials,keyCredentials,passwordCredentials `
+              | Sort-Object -Property name `
+              | Set-Variable apps
+        Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
+        "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose
+        return $apps
+    } else {
+        Write-Verbose "No apps found with name starting with '$StartsWith'"
+    }
+
+    return $null
+}
+
 function Find-ApplicationsByName (
     [parameter(Mandatory=$true)]
     [string]
     $StartsWith
 ) {
-    $graphUrl = "https://graph.microsoft.com/v1.0/applications?$count=true&`$filter=startswith(displayName,'${StartsWith}')&`$expand=federatedIdentityCredentials&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
+    $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$filter=startswith(displayName,'${StartsWith}')&`$expand=federatedIdentityCredentials&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
     $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedIdentityCredentials:join(',',federatedIdentityCredentials[].subject),passwordCredentials:length(passwordCredentials[]),keyCredentials:length(keyCredentials[])}"
     Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
 

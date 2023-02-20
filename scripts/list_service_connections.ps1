@@ -63,16 +63,22 @@ Write-Debug $MyInvocation.line
 Write-Verbose "Logging into Azure..."
 Login-Az -Tenant ([ref]$TenantId)
 
-$prefix = "${Organization}-"
+$federationPrefix = "sc://${Organization}/"
+$namePrefix = "${Organization}-"
 $message = "Identities of type 'Application' in Azure DevOps organization '${Organization}'"
 if ($Project) {
-    $prefix += "${Project}-"
+    $federationPrefix += "${Project}/"
+    $namePrefix += "${Project}-"
     $message += " and project '${Project}'"
 }
 
 Write-Host "Searching for ${message}..."
-# Find-IdentitiesByNameMicrosoftGraph -StartsWith $prefix -IdentityType $IdentityType | Set-Variable msftGraphObjects
-Find-ApplicationsByName -StartsWith $prefix | Set-Variable msftGraphObjects
+# Find-IdentitiesByNameMicrosoftGraph -StartsWith $namePrefix -IdentityType $IdentityType | Set-Variable msftGraphObjects
+if ($HasFederation) {
+    Find-ApplicationsByFederation -StartsWith $federationPrefix | Set-Variable msftGraphObjects
+} else {
+    Find-ApplicationsByName -StartsWith $namePrefix | Set-Variable msftGraphObjects
+}
 
 Write-Host "${message}:"
 $msftGraphObjects | Where-Object { 
