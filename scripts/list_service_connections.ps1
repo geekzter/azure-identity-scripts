@@ -46,6 +46,11 @@ param (
     # [string]
     # $IdentityType="Any",
 
+    [parameter(Mandatory=$false,HelpMessage="Azure subscription id")]
+    [ValidateNotNullOrEmpty()]
+    [guid]
+    $SubscriptionId,
+
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
     $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
@@ -73,6 +78,8 @@ Write-Host "${message}:"
 $msftGraphObjects | Where-Object { 
     # Filter out objects not using a GUID as suffix
     $_.name -match "${Organization}-[^-]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
+} | Where-Object { 
+    !$SubscriptionId -or $_.name -match $SubscriptionId
 } | Where-Object { 
     $_.keyCredentials -ge ($HasCertificates ? 1 : 0)
 } | Where-Object { 
