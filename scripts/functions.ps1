@@ -75,8 +75,8 @@ function Find-ApplicationsByFederation (
         if (!$Details) {
             $apps | Select-Object -Property name,appId,id,federatedSubjects,secretCount,certCount `
                   | Set-Variable apps
-            }
-        $apps | Sort-Object -Property name `
+        }
+        $apps | Sort-Object -Property name,federatedSubjects `
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose

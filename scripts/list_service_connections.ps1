@@ -103,4 +103,4 @@ $msftGraphObjects | Where-Object {
     $_.secretCount -ge ($HasSecrets ? 1 : 0)
 } | Where-Object { 
     !$HasNoSecrets -or $_.secretCount -eq 0
-} | Sort-Object -Property name,federatedSubjects | Format-Table -AutoSize
+} | Format-Table -AutoSize
