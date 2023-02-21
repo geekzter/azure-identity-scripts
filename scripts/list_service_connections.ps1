@@ -8,12 +8,10 @@
 #Requires -Version 7
 param ( 
     [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Organization")]
-    [ValidateNotNull()]
     [string]
     $Organization=($env:AZDO_ORG_SERVICE_URL -split '/' | Select-Object -Skip 3),
 
     [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Project")]
-    [ValidateNotNull()]
     [string]
     $Project,
 
@@ -23,16 +21,28 @@ param (
 
     [parameter(Mandatory=$false)]
     [switch]
+    $HasNoCertificates=$false,
+
+    [parameter(Mandatory=$false)]
+    [switch]
     $HasFederation=$false,
+
+    [parameter(Mandatory=$false)]
+    [switch]
+    $HasNoFederation=$false,
 
     [parameter(Mandatory=$false)]
     [switch]
     $HasSecrets=$false,
 
-    # [parameter(Mandatory=$false)]
-    # [ValidateSet("ServicePrincipal", "UserCreatedManagedIdentity", "Any")]
-    # [string]
-    # $IdentityType="Any",
+    [parameter(Mandatory=$false)]
+    [switch]
+    $HasNoSecrets=$false,
+
+    [parameter(Mandatory=$false,HelpMessage="Azure subscription id")]
+    [ValidateNotNullOrEmpty()]
+    [guid]
+    $SubscriptionId,
 
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
@@ -46,25 +56,51 @@ Write-Debug $MyInvocation.line
 Write-Verbose "Logging into Azure..."
 Login-Az -Tenant ([ref]$TenantId)
 
-$prefix = "${Organization}-"
-$message = "Identities of type 'Application' in Azure DevOps organization '${Organization}'"
+$message = "Identities of type 'Application' in Azure DevOps"
+if ($Organization) {
+    $federationPrefix += "sc://${Organization}/"
+    $namePrefix = "${Organization}-"
+    $message += " organization '${Organization}'"
+} elseif (!$HasFederation) {
+    Write-Warning "Organization not specified, listing all Service Connections with federation instead"
+    $HasFederation = $true
+}
 if ($Project) {
-    $prefix += "${Project}-"
+    if (!$Organization) {
+        Write-Warning "Project '${Project}' requires Organization to be specified"
+        exit 1
+    }
+    $federationPrefix += "${Project}/"
+    $namePrefix += "${Project}-"
     $message += " and project '${Project}'"
 }
+$federationPrefix ??= "sc://"
 
-Write-Host "Searching for ${message}..."
-# Find-IdentitiesByNameMicrosoftGraph -StartsWith $prefix -IdentityType $IdentityType | Set-Variable msftGraphObjects
-Find-ApplicationsByName -StartsWith $prefix | Set-Variable msftGraphObjects
+if ($HasFederation) {
+    $message += " using federation"
+    Write-Host "Searching for ${message}..."
+    Find-ApplicationsByFederation -StartsWith $federationPrefix | Set-Variable msftGraphObjects
+} else {
+    Write-Host "Searching for ${message}..."
+    Find-ApplicationsByName -StartsWith $namePrefix | Set-Variable msftGraphObjects
+}
 
 Write-Host "${message}:"
 $msftGraphObjects | Where-Object { 
-    # Filter out objects not using a GUID as suffix
-    $_.name -match "${Organization}-\w+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
+    # We already check federation on organization/project, so we can ignore it here
+    !$HasFederation -or $_.name -match "${Organization}-[^-]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
 } | Where-Object { 
-    $_.keyCredentials -ge ($HasCertificates ? 1 : 0)
+    !$SubscriptionId -or $_.name -match $SubscriptionId
 } | Where-Object { 
-    !$HasFederation -or ![string]::IsNullOrEmpty($_.federationSubjects)
+    $_.certCount -ge ($HasCertificates ? 1 : 0)
 } | Where-Object { 
-    $_.passwordCredentials -ge ($HasSecrets ? 1 : 0)
-} | Sort-Object -Property name -Unique | Format-Table -AutoSize
+    !$HasNoCertificates -or $_.certCount -eq 0
+} | Where-Object { 
+    !$HasFederation -or $_.federatedSubjects -match "sc://[^/]+/[^/]+/[^/]+"
+} | Where-Object { 
+    !$HasNoFederation -or [string]::IsNullOrEmpty($_.federatedSubjects)
+} | Where-Object { 
+    $_.secretCount -ge ($HasSecrets ? 1 : 0)
+} | Where-Object { 
+    !$HasNoSecrets -or $_.secretCount -eq 0
+} | Format-Table -AutoSize

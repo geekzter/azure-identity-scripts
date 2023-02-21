@@ -15,10 +15,12 @@
     ./find_workload_identity.ps1 "https://identity.azure.net/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
 .EXAMPLE
     ./find_workload_identity.ps1 "https://VisualStudio/SPN12345678-1234-1234-abcd-1234567890ab"
+.EXAMPLE
+    ./find_workload_identity.ps1 "sc://myorg/myproj/mysc"
 #>
 #Requires -Version 7
 param ( 
-    [parameter(Mandatory=$true,HelpMessage="Application/Client/Object/Principal ID/Resource ID/Name/Service Principal Name")]
+    [parameter(Mandatory=$true,HelpMessage="Application/Client/Object/Principal id/Resource id/Name/Service Principal Name/Federated subject identifier")]
     [ValidateNotNullOrEmpty()]
     [string]
     $IdOrName,
@@ -27,7 +29,7 @@ param (
     [switch]
     $SkipApplication=$false,
     
-    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant ID")]
+    [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
     $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) 
@@ -50,32 +52,32 @@ switch -regex ($IdOrName) {
             if ($app) {
                 az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
             } else {
-                Write-Warning "Could not find Application or Service Principal objects with Application or Object ID '$IdOrName'"
+                Write-Warning "Could not find Application or Service Principal objects with Application or Object id '$IdOrName'"
                 exit
             }
         }
         break
     }
-    # Match User-assigned Identity Resource ID
+    # Match User-assigned Identity Resource id
     "/subscriptions/(.)+/resourcegroups/(.)+/providers/Microsoft.ManagedIdentity/userAssignedIdentities/(.)+" {
-        Write-Verbose "'$IdOrName' is a User-assigned Identity Resource ID"
-        Find-ManagedIdentityByResourceID -Id $IdOrName | Set-Variable mi
+        Write-Verbose "'$IdOrName' is a User-assigned Identity Resource id"
+        Find-ManagedIdentityByResourceId -Id $IdOrName | Set-Variable mi
         if ($mi) {
             Find-ServicePrincipalByGUID -Id $mi.principalId | Set-Variable sp
         } else {
-            Write-Warning "Could not find Managed Identity with Resource ID '$IdOrName'"
+            Write-Warning "Could not find Managed Identity with Resource id '$IdOrName'"
             exit
         }
         break
     }
-    # Match generic Resource ID (System-assigned Identity)
+    # Match generic Resource id (System-assigned Identity)
     "/subscriptions/(.)+/resourcegroups/(.)+/(.)+/(.)+" {
-        Write-Verbose "'$IdOrName' is a Resource ID"
-        Find-ManagedIdentityByResourceID -Id $IdOrName | Set-Variable mi
+        Write-Verbose "'$IdOrName' is a Resource id"
+        Find-ManagedIdentityByResourceId -Id $IdOrName | Set-Variable mi
         if ($mi) {
             Find-ServicePrincipalByGUID -Id $mi.principalId | Set-Variable sp
         } else {
-            Write-Warning "Could not find System-assigned Identity with Resource ID '$IdOrName'"
+            Write-Warning "Could not find System-assigned Identity with Resource id '$IdOrName'"
             exit
         }
         break
@@ -90,6 +92,25 @@ switch -regex ($IdOrName) {
         }
         break
     }
+    # Match Azure Pipelines federation subject
+    "sc://[-\d\w]+/[-\d\w]+/[-_\d\w]+" {
+        Write-Verbose "'$IdOrName' is a Federation Subject"
+        Find-ApplicationsByFederation -StartsWith $IdOrName -Details -MatchExactSubject | Set-Variable apps
+
+        if (($apps | Measure-Object).Count -gt 1) {
+            Write-Warning "Found $($apps.Count) Applications with Federation Subject '$IdOrName', selecting oldest one"
+        }
+
+        $apps | Select-Object -First 1 | Set-Variable app
+        if ($app) {
+            az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
+        } else {
+            Write-Warning "Could not find Application with Federation Subject '$IdOrName'"
+            exit
+        }
+        break
+    }
+
     # Match Name or URL
     "^[\w\-\/\:\.]+" {
         if (!$SkipApplication) {
@@ -107,7 +128,7 @@ switch -regex ($IdOrName) {
         break
     }
     default {
-        Write-Output "$($PSStyle.Formatting.Error)'$IdOrName' is not a valid GUID, Name or Resource ID, exiting$($PSStyle.Reset)" | Write-Warning
+        Write-Output "$($PSStyle.Formatting.Error)'$IdOrName' is not a valid GUID, Name or Resource id, exiting$($PSStyle.Reset)" | Write-Warning
         exit
     }
 }
