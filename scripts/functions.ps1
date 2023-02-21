@@ -60,13 +60,23 @@ function Find-ApplicationsByFederation (
 
     [parameter(Mandatory=$false)]
     [switch]
+    $MatchExactSubject,
+
+    [parameter(Mandatory=$false)]
+    [switch]
     $Details
 ) {
+    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith -MatchExactSubject $MatchExactSubject -Details $Details"
+    if ($MatchExactSubject) {
+        $filter = "federatedIdentityCredentials/any(f:subject eq '${StartsWith}')"
+    } else {
+        $filter = "federatedIdentityCredentials/any(f:startsWith(f/subject,'${StartsWith}'))"
+    }
     if ($Details) {
-        $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$expand=federatedIdentityCredentials&`$filter=federatedIdentityCredentials/any(f:startsWith(f/subject,'${StartsWith}'))"
+        $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}"
         $jmesPath = "value[]"
     } else {
-        $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$expand=federatedIdentityCredentials&`$filter=federatedIdentityCredentials/any(f:startsWith(f/subject,'${StartsWith}'))&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
+        $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
         $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedSubjects:join(',',federatedIdentityCredentials[].subject),secretCount:length(passwordCredentials[]),certCount:length(keyCredentials[])}"
     }
     Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
@@ -76,7 +86,7 @@ function Find-ApplicationsByFederation (
             $apps | Select-Object -Property name,appId,id,federatedSubjects,secretCount,certCount `
                   | Set-Variable apps
         }
-        $apps | Sort-Object -Property name,federatedSubjects `
+        $apps | Sort-Object -Property name,federatedSubjects,createdDateTime`
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose
