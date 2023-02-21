@@ -8,12 +8,10 @@
 #Requires -Version 7
 param ( 
     [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Organization")]
-    [ValidateNotNullOrEmpty()]
     [string]
     $Organization=($env:AZDO_ORG_SERVICE_URL -split '/' | Select-Object -Skip 3),
 
     [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Project")]
-    [ValidateNotNull()]
     [string]
     $Project,
 
@@ -59,11 +57,13 @@ Write-Verbose "Logging into Azure..."
 Login-Az -Tenant ([ref]$TenantId)
 
 $message = "Identities of type 'Application' in Azure DevOps"
-$federationPrefix = "sc://"
 if ($Organization) {
-    $federationPrefix += "${Organization}/"
+    $federationPrefix += "sc://${Organization}/"
     $namePrefix = "${Organization}-"
     $message += " organization '${Organization}'"
+} elseif (!$HasFederation) {
+    Write-Warning "Organization not specified, listing all Service Connections with federation instead"
+    $HasFederation = $true
 }
 if ($Project) {
     if (!$Organization) {
@@ -74,8 +74,9 @@ if ($Project) {
     $namePrefix += "${Project}-"
     $message += " and project '${Project}'"
 }
+$federationPrefix ??= "sc://"
 
-if ($HasFederation -or !$namePrefix) {
+if ($HasFederation) {
     $message += " using federation"
     Write-Host "Searching for ${message}..."
     Find-ApplicationsByFederation -StartsWith $federationPrefix | Set-Variable msftGraphObjects
@@ -86,20 +87,20 @@ if ($HasFederation -or !$namePrefix) {
 
 Write-Host "${message}:"
 $msftGraphObjects | Where-Object { 
-    # Filter out objects not using a GUID as suffix
-    $_.name -match "${Organization}-[^-]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
+    # We already check federation on organization/project, so we can ignore it here
+    !$HasFederation -or $_.name -match "${Organization}-[^-]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
 } | Where-Object { 
     !$SubscriptionId -or $_.name -match $SubscriptionId
 } | Where-Object { 
-    $_.keyCredentials -ge ($HasCertificates ? 1 : 0)
+    $_.certCount -ge ($HasCertificates ? 1 : 0)
 } | Where-Object { 
-    !$HasNoCertificates -or $_.keyCredentials -eq 0
+    !$HasNoCertificates -or $_.certCount -eq 0
 } | Where-Object { 
-    !$HasFederation -or ![string]::IsNullOrEmpty($_.federatedIdentityCredentials)
+    !$HasFederation -or $_.federatedSubjects -match "sc://[^/]+/[^/]+/[^/]+"
 } | Where-Object { 
-    !$HasNoFederation -or [string]::IsNullOrEmpty($_.federatedIdentityCredentials)
+    !$HasNoFederation -or [string]::IsNullOrEmpty($_.federatedSubjects)
 } | Where-Object { 
-    $_.passwordCredentials -ge ($HasSecrets ? 1 : 0)
+    $_.secretCount -ge ($HasSecrets ? 1 : 0)
 } | Where-Object { 
-    !$HasNoSecrets -or $_.passwordCredentials -eq 0
-} | Sort-Object -Property name -Unique | Format-Table -AutoSize
+    !$HasNoSecrets -or $_.secretCount -eq 0
+} | Sort-Object -Property name,federatedSubjects | Format-Table -AutoSize
