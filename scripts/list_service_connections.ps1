@@ -41,11 +41,6 @@ param (
     [switch]
     $HasNoSecrets=$false,
 
-    # [parameter(Mandatory=$false)]
-    # [ValidateSet("ServicePrincipal", "UserCreatedManagedIdentity", "Any")]
-    # [string]
-    # $IdentityType="Any",
-
     [parameter(Mandatory=$false,HelpMessage="Azure subscription id")]
     [ValidateNotNullOrEmpty()]
     [guid]
@@ -63,18 +58,24 @@ Write-Debug $MyInvocation.line
 Write-Verbose "Logging into Azure..."
 Login-Az -Tenant ([ref]$TenantId)
 
-$federationPrefix = "sc://${Organization}/"
-$namePrefix = "${Organization}-"
 $message = "Identities of type 'Application' in Azure DevOps organization '${Organization}'"
+$federationPrefix = "sc://"
+if ($Organization) {
+    $federationPrefix += "${Organization}/"
+    $namePrefix = "${Organization}-"
+}
 if ($Project) {
+    if (!$Organization) {
+        Write-Warning "Project '${Project}' requires Organization to be specified"
+        exit 1
+    }
     $federationPrefix += "${Project}/"
     $namePrefix += "${Project}-"
     $message += " and project '${Project}'"
 }
 
 Write-Host "Searching for ${message}..."
-# Find-IdentitiesByNameMicrosoftGraph -StartsWith $namePrefix -IdentityType $IdentityType | Set-Variable msftGraphObjects
-if ($HasFederation) {
+if ($HasFederation -or !$namePrefix) {
     Find-ApplicationsByFederation -StartsWith $federationPrefix | Set-Variable msftGraphObjects
 } else {
     Find-ApplicationsByName -StartsWith $namePrefix | Set-Variable msftGraphObjects
