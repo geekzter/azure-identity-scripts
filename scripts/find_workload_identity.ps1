@@ -50,7 +50,7 @@ switch -regex ($IdOrName) {
         if (!$sp) {
             Find-ApplicationByGUID -Id $IdOrName | Set-Variable app
             if ($app) {
-                az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
+                Find-ServicePrincipalByGUID -Id $app.appId | Set-Variable sp
             } else {
                 Write-Warning "Could not find Application or Service Principal objects with Application or Object id '$IdOrName'"
                 exit
@@ -103,7 +103,7 @@ switch -regex ($IdOrName) {
 
         $apps | Select-Object -First 1 | Set-Variable app
         if ($app) {
-            az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
+            Find-ServicePrincipalByGUID -Id $app.appId | Set-Variable sp
         } else {
             Write-Warning "Could not find Application with Federation Subject '$IdOrName'"
             exit
@@ -117,7 +117,7 @@ switch -regex ($IdOrName) {
             Find-ApplicationByName -Name $IdOrName | Set-Variable app
         }
         if ($app) {
-            az ad sp list --filter "appId eq '$($app.appId)'" --query "[0]" | ConvertFrom-Json | Set-Variable sp
+            Find-ServicePrincipalByGUID -Id $app.appId | Set-Variable sp
         } else {
             Find-ServicePrincipalByName -Name $IdOrName | Set-Variable sp
         }
@@ -134,7 +134,7 @@ switch -regex ($IdOrName) {
 }
 
 if (!$SkipApplication -and !$app -and $sp -and ($sp.servicePrincipalType -ieq "Application")) {
-    az ad app show --id $sp.appId | ConvertFrom-Json | Set-Variable app
+    Find-ApplicationByGUID -Id $sp.appId | Set-Variable app
 }
 if ($app) {
     Write-Host "Found Application '$($app.displayName)' with appId '$($app.appId)'"
