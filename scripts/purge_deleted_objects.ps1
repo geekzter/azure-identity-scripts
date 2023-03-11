@@ -2,6 +2,10 @@
 <#
 .SYNOPSIS 
     Purge deleted objects from Azure Active Directory
+.EXAMPLE
+    ./purge_deleted_objects.ps1 -ObjectType Application
+.EXAMPLE
+    ./purge_deleted_objects.ps1 -ObjectType Group
 #>
 #Requires -Version 7
 param ( 
