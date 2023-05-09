@@ -177,9 +177,9 @@ function Find-DirectoryObjectsByGraphUrl (
     $GraphUrl -replace "\$","```$" | Set-Variable graphUrlToDisplay
     Write-Debug "az rest --method get --url `"${graphUrlToDisplay}`" --headers ConsistencyLevel=eventual --query `"${JmesPath}`""
     az rest --method get `
-            --url $GraphUrl `
+            --url "${GraphUrl} " `
             --headers ConsistencyLevel=eventual `
-            --query $JmesPath `
+            --query "${JmesPath} " `
             -o json `
             | Set-Variable jsonResponse
     if ($jsonResponse) {
