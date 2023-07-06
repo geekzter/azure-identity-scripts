@@ -463,12 +463,14 @@ function Add-ServicePrincipalProperties (
     $ServicePrincipal | Add-Member -NotePropertyName principalId -NotePropertyValue $ServicePrincipal.id
 
     if ($ServicePrincipal.servicePrincipalType -eq 'ManagedIdentity') {
-        "https://portal.azure.com/#@{0}/resource{1}" -f $TenantId, $ServicePrincipal.alternativeNames[1] | Set-Variable portalLink
+        "https://portal.azure.com/#@{0}/resource{1}" -f $TenantId, $ServicePrincipal.alternativeNames[1] | Set-Variable applicationPortalLink
     } else {
-        "https://portal.azure.com/{0}/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/{1}" -f $TenantId, $ServicePrincipal.appId | Set-Variable portalLink
+        "https://portal.azure.com/{0}/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/{1}" -f $TenantId, $ServicePrincipal.appId | Set-Variable applicationPortalLink
     }
-    $ServicePrincipal | Add-Member -NotePropertyName portalLink -NotePropertyValue $portalLink
+    $ServicePrincipal | Add-Member -NotePropertyName applicationPortalLink -NotePropertyValue $applicationPortalLink
 
+    "https://portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/{0}/appId/{1}" -f $ServicePrincipal.id, $ServicePrincipal.appId | Set-Variable servicePrincipalPortalLink
+    $ServicePrincipal | Add-Member -NotePropertyName servicePrincipalPortalLink -NotePropertyValue $servicePrincipalPortalLink
 }
 
 function Login-Az (
