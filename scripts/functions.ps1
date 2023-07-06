@@ -422,6 +422,7 @@ function Find-ServicePrincipalByGUID (
         } elseif ($sp.appId -eq $Id) {
             Write-Verbose "Found Service Principal with appId '$Id' using:"
         }
+        Add-ServicePrincipalProperties -ServicePrincipal $sp
         Write-Verbose "az ad sp list --filter `"appId eq '${Id}' or id eq '${Id}'`" --query `"[0]`""
         Write-JsonResponse -Json $jsonResponse
         return $sp
@@ -438,12 +439,12 @@ function Find-ServicePrincipalByName (
     $graphUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$filter=displayName eq '$Name' or servicePrincipalNames/any(c:c eq '${Name}')"
     Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[0]" | Set-Variable sp
     if ($sp) {
-        $sp | Add-Member -NotePropertyName principalId -NotePropertyValue $sp.id
         if ($sp.displayName -eq $Name) {
             Write-Verbose "Found Service Principal with name '$Name' using Microsoft Graph query:"
         } else {
             Write-Verbose "Found Service Principal with servicePrincipalName '$Name' using Microsoft Graph query:"
         }
+        Add-ServicePrincipalProperties -ServicePrincipal $sp
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual" -replace "\$","```$" | Write-Verbose
         return $sp
     } else {
@@ -451,6 +452,25 @@ function Find-ServicePrincipalByName (
     }
 
     return $null
+}
+
+function Add-ServicePrincipalProperties (
+    [parameter(Mandatory=$true)]
+    [ValidateNotNull()]
+    [object]
+    $ServicePrincipal
+) {
+    $ServicePrincipal | Add-Member -NotePropertyName principalId -NotePropertyValue $ServicePrincipal.id
+
+    if ($ServicePrincipal.servicePrincipalType -eq 'ManagedIdentity') {
+        "https://portal.azure.com/#@{0}/resource{1}" -f $TenantId, $ServicePrincipal.alternativeNames[1] | Set-Variable applicationPortalLink
+    } else {
+        "https://portal.azure.com/{0}/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/{1}" -f $TenantId, $ServicePrincipal.appId | Set-Variable applicationPortalLink
+    }
+    $ServicePrincipal | Add-Member -NotePropertyName applicationPortalLink -NotePropertyValue $applicationPortalLink
+
+    "https://portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/{0}/appId/{1}" -f $ServicePrincipal.id, $ServicePrincipal.appId | Set-Variable servicePrincipalPortalLink
+    $ServicePrincipal | Add-Member -NotePropertyName servicePrincipalPortalLink -NotePropertyValue $servicePrincipalPortalLink
 }
 
 function Login-Az (
