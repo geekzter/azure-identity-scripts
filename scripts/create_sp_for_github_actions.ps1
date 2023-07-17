@@ -158,14 +158,11 @@ if (!$SkipServicePrincipalFederation) {
 
     # Retrieve existing federation subjects
     Write-Host "Retrieving existing federation subjects for Service Principal with clientId '$appId'..."
-    $getUrl = "https://graph.microsoft.com/beta/applications/${appObjectId}/federatedIdentityCredentials"
-    Write-Debug "getUrl: $getUrl"
-    Write-Verbose "Retrieving federations for application with objectId '${appObjectId}'..."
-    az rest --method GET `
-            --headers '{\""Content-Type\"": \""application/json\""}' `
-            --uri "$getUrl" `
-            --body "@${requestBodyFile}" `
-            --query "value[].subject" | ConvertFrom-Json | Set-Variable federatedSubjects
+    az ad app federated-credential list --id $appObjectId `
+                                        --query [].subject `
+                                        | ConvertFrom-Json `
+                                        | Set-Variable federatedSubjects
+    Write-Debug "federatedSubjects: $($federatedSubjects -join ',')"
 
     # Create federation subjects
     Write-Host "Creating federation subjects for Service Principal with clientId '$appId'..."
