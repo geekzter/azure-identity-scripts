@@ -4,7 +4,7 @@
 
 This repo contains a few [PowerShell](https://github.com/PowerShell/PowerShell) scripts that use the [Azure CLI](https://github.com/Azure/azure-cli) to create or find Azure Active Directory objects:
 
-## Azure Active Directort
+## Azure Active Directory
 
 - Find Service Principal or Managed Identity with [find_workload_identity.ps1](scripts/find_workload_identity.ps1), using any of these as argument:
   - Application/Client id
