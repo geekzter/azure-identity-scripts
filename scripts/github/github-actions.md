@@ -1,13 +1,13 @@
 # Service Principal for GitHub Actions with Workload Identity (OpenID Connect) pattern
 
-The [create_sp_for_github_actions.ps1](scripts/create_sp_for_github_actions.ps1) script demonstrates the use of a pattern called [Workload Identity federation][2] to configure a Service Principal without password secrets to act as the identity to access Azure from GitHub-hosted runners. There are 'howto' articles on both [GitHub Docs][3] and [Microsoft Docs][1], and the configuration is also documented on the [azure/login action][4].    
+The [create_sp_for_github_actions.ps1](create_sp_for_github_actions.ps1) script demonstrates the use of a pattern called [Workload Identity federation][2] to configure a Service Principal without password secrets to act as the identity to access Azure from GitHub-hosted runners. There are 'howto' articles on both [GitHub Docs][3] and [Microsoft Docs][1], and the configuration is also documented on the [azure/login action][4].    
 To set this up, configuration is required in 3 distinct services:
 - Azure Active Directory: Service Principal configuration
 - Azure: An RBAC role must be granted to a resource in Azure 
 - GitHub: Service Principal information (excluding the key/password) must be configured as secrets
 - GitHub: The action workflow YAML needs to be configured accordingly
 
-To make life easier, the [create_sp_for_github_actions.ps1](scripts/create_sp_for_github_actions.ps1) configures the first 3 steps. In its most simple form it configures federation subjects for the repo where the script is executed from (e.g. geekzter/azure-active-directory-scripts) for pull request, common branch names, the current branch, and the tag 'azure'.
+To make life easier, the [create_sp_for_github_actions.ps1](create_sp_for_github_actions.ps1) configures the first 3 steps. In its most simple form it configures federation subjects for the repo where the script is executed from (e.g. geekzter/azure-active-directory-scripts) for pull request, common branch names, the current branch, and the tag 'azure'.
 ```powershell
 ./create_sp_for_github_actions.ps1
 ```

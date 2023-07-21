@@ -1,4 +1,4 @@
-# Azure Active Directory Scripts
+# Azure Identity Scripts
 
 [![azure-cli-ci](https://github.com/geekzter/azure-active-directory-scripts/actions/workflows/ci.yml/badge.svg)](https://github.com/geekzter/azure-active-directory-scripts/actions/workflows/ci.yml)
 
@@ -16,4 +16,4 @@ This repo contains a few [PowerShell](https://github.com/PowerShell/PowerShell) 
   - Name (pattern)
 - List identities for Azure Pipeline Service Connections by Azure DevOps organization and (optionally) project: [list_service_connections.ps1](scripts/list_service_connections.ps1)
 - Purge deleted directory objects (e.g. applications) [purge_deleted_objects.ps1](scripts/purge_deleted_objects.ps1)
-- Create Service Principal for GitHub Actions with Workload identity federation: [create_sp_for_github_actions.ps1](github-actions.md)   
+- Create Service Principal for GitHub Actions with Workload identity federation: [create_sp_for_github_actions.ps1](scripts/github/github-actions.md)   
