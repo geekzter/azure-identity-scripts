@@ -13,3 +13,6 @@ output principal_name {
 output principal_url {
   value       = "https://portal.azure.com/${azurerm_user_assigned_identity.identity.tenant_id}/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/${azurerm_user_assigned_identity.identity.principal_id}/appId/${azurerm_user_assigned_identity.identity.client_id}"
 }
+output tenant_id {
+  value       = azurerm_user_assigned_identity.identity.tenant_id
+}

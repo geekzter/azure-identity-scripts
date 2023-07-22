@@ -20,5 +20,8 @@ output principal_name {
 output principal_url {
   description = "This is the URL to the Azure Portal Enterprise (Service Principal) Application page for this application."
   value       = "https://portal.azure.com/${data.azuread_client_config.current.tenant_id}/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/${azuread_service_principal.spn.id}/appId/${azuread_application.app_registration.application_id}/preferredSingleSignOnMode~/null"
+}
 
+output tenant_id {
+  value       = data.azuread_client_config.current.tenant_id
 }

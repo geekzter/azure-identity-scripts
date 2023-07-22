@@ -64,3 +64,13 @@ module azure_access {
   resource_id                  = var.azure_resource_id
   role                         = var.azure_role
 }
+
+module service_connection {
+  source                       = "./modules/service-connection"
+  application_id               = local.application_id
+  project_name                 = var.azdo_project_name
+  tenant_id                    = var.create_managed_identity ? module.managed_identity.0.tenant_id : module.service_principal.0.tenant_id
+  service_connection_name      = local.azdo_service_connection_name
+  subscription_id              = local.target_subscription_id
+  subscription_name            = module.azure_access.subscription_name
+}
