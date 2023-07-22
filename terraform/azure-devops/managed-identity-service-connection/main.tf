@@ -1,15 +1,5 @@
 data azuread_client_config current {}
 
-data external azdo_token {
-  program                      = [
-    "az", 
-    "account", 
-    "get-access-token", 
-    "--resource", 
-    "499b84ac-1321-427f-aa17-267ca6975798"
-  ]
-}
-
 # Random resource suffix, this will prevent name collisions when creating resources in parallel
 resource random_string suffix {
   length                       = 4
