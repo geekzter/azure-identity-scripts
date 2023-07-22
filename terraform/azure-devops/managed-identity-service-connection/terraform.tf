@@ -25,3 +25,23 @@ provider azurerm {
     }
   }
 }
+
+provider azurerm {
+  alias                        = "managed_identity"
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+  subscription_id              = local.managed_identity_subscription_id
+}
+
+provider azurerm {
+  alias                        = "target"
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+  subscription_id              = local.target_subscription_id
+}
