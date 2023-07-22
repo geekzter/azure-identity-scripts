@@ -1,3 +1,10 @@
+output azdo_member_id {
+  # value       = data.external.azdo_member.result.id
+  value       = jsondecode(data.http.azdo_member.response_body).id
+}
+output azdo_organization_id {
+  value       = local.azdo_organization_id
+}
 output azdo_project_id {
   value       = module.service_connection.project_id
 }

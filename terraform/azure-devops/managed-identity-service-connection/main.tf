@@ -11,28 +11,33 @@ resource random_string suffix {
 
 locals {
   application_id               = var.create_managed_identity ? module.managed_identity.0.application_id : module.service_principal.0.application_id
-  azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
   azdo_organization_name       = replace(var.azdo_organization_url,"/.*dev.azure.com//","")
+  azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
   azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-oidc-${var.create_managed_identity ? "msi" : "sp"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.suffix}"
   federation_subject           = "sc://${local.azdo_organization_name}/${var.azdo_project_name}/${local.azdo_service_connection_name}"
   principal_id                 = var.create_managed_identity ? module.managed_identity.0.principal_id : module.service_principal.0.principal_id
   principal_name               = var.create_managed_identity ? module.managed_identity.0.principal_name : module.service_principal.0.principal_name
   issuer                       = "https://app.vstoken.visualstudio.com"
+  # issuer                       = "https://vstoken.dev.azure.com/${local.azdo_organization_id}"
   suffix                       = random_string.suffix.result
   managed_identity_subscription_id = split("/", var.managed_identity_resource_group_id)[2]
   target_subscription_id       = split("/", var.azure_resource_id)[2]
 }
 
-resource terraform_data managed_identity_validator {
-  input                        = timestamp()
+# resource terraform_data managed_identity_validator {
+#   # input                        = timestamp()
+#   triggers_replace             = [
+#     var.create_managed_identity,
+#     var.managed_identity_resource_group_id
+#   ]
 
-  lifecycle {
-    precondition {
-      condition                = var.create_managed_identity && can(split("/", var.managed_identity_resource_group_id)[4])
-      error_message            = "managed_identity_resource_group_id is required when create_managed_identity is true"
-    }
-  }
-}
+#   lifecycle {
+#     precondition {
+#       condition                = var.create_managed_identity && can(split("/", var.managed_identity_resource_group_id)[4])
+#       error_message            = "managed_identity_resource_group_id is required when create_managed_identity is true"
+#     }
+#   }
+# }
 
 module managed_identity {
   providers                    = {
@@ -45,7 +50,7 @@ module managed_identity {
   resource_group_name          = split("/", var.managed_identity_resource_group_id)[4]
 
   count                        = var.create_managed_identity ? 1 : 0
-  depends_on                   = [ terraform_data.managed_identity_validator ]
+  # depends_on                   = [terraform_data.managed_identity_validator]
 }
 
 module service_principal {

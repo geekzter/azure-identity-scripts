@@ -7,6 +7,7 @@ terraform {
     }
     azurerm                    = "~> 3.66"
     external                   = "~> 2.3"
+    http                       = "~> 3.4"
     random                     = "~> 3.5"
   }
   required_version             = "~> 1.3"
