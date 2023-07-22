@@ -4,6 +4,10 @@ output application_id {
 output application_name {
   value       = var.create_managed_identity ? null : module.service_principal.0.application_name
 }
+output azdo_token {
+  sensitive   = true
+  value       = data.external.azdo_token.result.accessToken
+}
 output federation_subject {
   value       = local.federation_subject
 }
