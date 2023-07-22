@@ -43,6 +43,13 @@ module managed_identity {
   name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.suffix}"
   resource_group_name          = split("/", var.managed_identity_resource_group_id)[4]
 
+  # lifecycle {
+  #   precondition {
+  #     condition                = var.create_managed_identity && (var.managed_identity_resource_group_id == null || var.managed_identity_resource_group_id == "")
+  #     error_message            = "managed_identity_resource_group_id is required when create_managed_identity is true"
+  #   }
+  # }
+
   count                        = var.create_managed_identity ? 1 : 0
 }
 
