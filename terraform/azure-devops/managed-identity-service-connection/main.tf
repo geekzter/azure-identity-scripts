@@ -24,20 +24,19 @@ locals {
   target_subscription_id       = split("/", var.azure_resource_id)[2]
 }
 
-# resource terraform_data managed_identity_validator {
-#   # input                        = timestamp()
-#   triggers_replace             = [
-#     var.create_managed_identity,
-#     var.managed_identity_resource_group_id
-#   ]
+resource terraform_data managed_identity_validator {
+  triggers_replace             = [
+    var.create_managed_identity,
+    var.managed_identity_resource_group_id
+  ]
 
-#   lifecycle {
-#     precondition {
-#       condition                = var.create_managed_identity && can(split("/", var.managed_identity_resource_group_id)[4])
-#       error_message            = "managed_identity_resource_group_id is required when create_managed_identity is true"
-#     }
-#   }
-# }
+  lifecycle {
+    precondition {
+      condition                = var.create_managed_identity && can(split("/", var.managed_identity_resource_group_id)[4])
+      error_message            = "managed_identity_resource_group_id is required when create_managed_identity is true"
+    }
+  }
+}
 
 module managed_identity {
   providers                    = {
@@ -50,7 +49,7 @@ module managed_identity {
   resource_group_name          = split("/", var.managed_identity_resource_group_id)[4]
 
   count                        = var.create_managed_identity ? 1 : 0
-  # depends_on                   = [terraform_data.managed_identity_validator]
+  depends_on                   = [terraform_data.managed_identity_validator]
 }
 
 module service_principal {
