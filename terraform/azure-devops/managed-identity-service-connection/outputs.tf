@@ -1,10 +1,15 @@
 output azdo_project_id {
   value       = module.service_connection.project_id
 }
+output azdo_service_connection_id {
+  value       = module.service_connection.service_connection_id
+}
 output azdo_service_connection_name {
   value       = local.azdo_service_connection_name
 }
-
+output azdo_service_connection_url {
+  value       = module.service_connection.service_connection_url
+}
 output azure_resource_group_name {
   value       = split("/", var.azure_resource_id)[4]
 }
