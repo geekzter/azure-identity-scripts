@@ -23,7 +23,7 @@ locals {
   application_id               = var.create_managed_identity ? module.managed_identity.0.application_id : module.service_principal.0.application_id
   azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
   azdo_organization_name       = replace(var.azdo_organization_url,"/.*dev.azure.com//","")
-  azdo_service_connection_name = "msi-oidc-${terraform.workspace}-${local.suffix}"
+  azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-oidc-${var.create_managed_identity ? "msi" : "sp"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.suffix}"
   federation_subject           = "sc://${local.azdo_organization_name}/${var.azdo_project_name}/${local.azdo_service_connection_name}"
   principal_id                 = var.create_managed_identity ? module.managed_identity.0.principal_id : module.service_principal.0.principal_id
   principal_name               = var.create_managed_identity ? module.managed_identity.0.principal_name : module.service_principal.0.principal_name
