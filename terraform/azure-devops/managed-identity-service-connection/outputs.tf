@@ -11,7 +11,7 @@ output azdo_service_connection_url {
   value       = module.service_connection.service_connection_url
 }
 output azure_resource_group_name {
-  value       = split("/", var.azure_resource_id)[4]
+  value       = try(split("/", var.azure_resource_id)[4],null)
 }
 output azure_subscription_id {
   value       = local.target_subscription_id
