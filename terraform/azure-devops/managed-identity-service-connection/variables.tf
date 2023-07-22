@@ -4,9 +4,17 @@ variable azdo_organization_url {
 variable azdo_project_name {
   nullable                     = false
 }
-variable owner_object_id {
-  default                      = null
+
+variable azure_resource_id {
+  description                  = "The Azure scope to assign access to"
+  nullable                     = false
 }
+
+variable azure_role {
+  default                      = "Contributor"
+  nullable                     = false
+}
+
 variable resource_prefix {
   description                  = "The prefix to put at the end of resource names created"
   default                      = "demo"
