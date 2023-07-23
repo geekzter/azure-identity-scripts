@@ -26,9 +26,9 @@ schedules:
 
 variables:
 - group: 'terraform-service-connection' # subscriptionConnection
-- application: 'Azure Service Connection'
-- repository: 'azure-identity-scripts'
-- managedIdentityResourceGroupName: 'terraform-$(Build.BuildId)'
+  application: 'Azure Service Connection'
+  repository: 'azure-identity-scripts'
+  managedIdentityResourceGroupName: 'terraform-$(Build.BuildId)'
 
 jobs:
 - job: 'Provision'
