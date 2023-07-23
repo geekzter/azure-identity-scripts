@@ -69,7 +69,7 @@ jobs:
     displayName: 'Terraform init'
     workingDirectory: '$(terraformDirectory)'
 
-  - ${{ eq(parameters['identityType'], 'Managed Identity') }}:
+  - ${{ if eq(parameters['identityType'], 'Managed Identity') }}:
     # Create resource group for managed identity
     - task: AzureCLI@2
       displayName: 'Create Managed Identity resource group'
