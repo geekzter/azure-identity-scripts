@@ -42,7 +42,7 @@ jobs:
     managedIdentityResourceGroupLocation: centralus
     managedIdentityResourceGroupName: ${{ split(variables['System.CollectionUri'], '/')[3] }}-service-connections
     repository: 'azure-identity-scripts'
-    scriptDirectory: $(Build.SourcesDirectory)/scripts
+    scriptDirectory: $(Build.SourcesDirectory)/scripts/azure-devops
     terraformDirectory: $(Build.SourcesDirectory)/terraform/azure-devops/managed-identity-service-connection
     TF_IN_AUTOMATION: true
     TF_INPUT: 0
