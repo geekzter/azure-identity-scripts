@@ -1,4 +1,4 @@
-name: azure-cli-ci
+name: pwsh-ci
 
 on:
   pull_request:
