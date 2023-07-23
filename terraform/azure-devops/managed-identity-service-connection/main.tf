@@ -68,6 +68,7 @@ module service_principal {
   source                       = "./modules/service-principal"
   federation_subject           = local.federation_subject
   issuer                       = local.issuer
+  multi_tenant                 = false
   name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
 
   count                        = var.create_managed_identity ? 0 : 1

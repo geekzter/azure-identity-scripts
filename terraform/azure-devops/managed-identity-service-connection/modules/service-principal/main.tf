@@ -7,6 +7,7 @@ locals {
 resource azuread_application app_registration {
   display_name                 = var.name
   owners                       = [local.owner_object_id]
+  sign_in_audience             = var.multi_tenant ? "AzureADMultipleOrgs" : null
 }
 
 resource azuread_service_principal spn {
