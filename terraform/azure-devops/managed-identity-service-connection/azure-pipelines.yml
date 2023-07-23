@@ -48,8 +48,8 @@ jobs:
     TF_WORKSPACE: ci
 
   steps:
-    - bash: |
-        echo ${{ split(variables['System.CollectionUri'], '/')}}
+    - pwsh: |
+        Write-Host "${{ split(variables['System.CollectionUri'], '/')}}"
       
   # - pwsh: terraform init
   #   displayName: 'Terraform init'
