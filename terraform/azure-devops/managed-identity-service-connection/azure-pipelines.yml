@@ -11,13 +11,13 @@ parameters:
 - name: destroy
   displayName: Destroy Infrastructure
   type: string
-  default: 'If no prior resources exist'
+  default: Always
   values:
   - Always
-  - 'If no prior resources exist'
   - Never 
   - 'On failure'
   - 'On success'
+  
 pr:
   autoCancel: false
   branches:
