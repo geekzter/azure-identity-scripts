@@ -1,4 +1,5 @@
 variable azdo_organization_id {
+  default                      = null
   nullable                     = true
 }
 variable azdo_organization_url {
