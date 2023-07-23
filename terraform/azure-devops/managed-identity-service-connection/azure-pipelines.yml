@@ -48,7 +48,11 @@ jobs:
     TF_WORKSPACE: ci
 
   steps:
-    - pwsh: Write-Host "${{ split(variables['System.CollectionUri'], '/')[1] }}"
+    - pwsh: |
+        Write-Host "0: ${{ split(variables['System.CollectionUri'], '/')[0] }}"
+        Write-Host "1: ${{ split(variables['System.CollectionUri'], '/')[1] }}"
+        Write-Host "2: ${{ split(variables['System.CollectionUri'], '/')[2] }}"
+        Write-Host "3: ${{ split(variables['System.CollectionUri'], '/')[3] }}"
     # - pwsh: Write-Host "${{ variables['System.CollectionUri'] }}"
       
   # - pwsh: terraform init
