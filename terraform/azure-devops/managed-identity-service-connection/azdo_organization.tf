@@ -1,5 +1,5 @@
 locals {
-  azdo_organization_id         = [for a in jsondecode(data.http.azdo_organizations.response_body).value : a.accountId if a.accountName == local.azdo_organization_name][0]
+  azdo_organization_id         = var.azdo_organization_id != null && var.azdo_organization_id != "" ? var.azdo_organization_id : [for a in jsondecode(data.http.azdo_organizations.response_body).value : a.accountId if a.accountName == local.azdo_organization_name][0]
 }
 
 data http azdo_member {
