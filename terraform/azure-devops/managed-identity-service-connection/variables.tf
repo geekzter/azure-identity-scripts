@@ -5,9 +5,9 @@ variable azdo_project_name {
   nullable                     = false
 }
 
-variable azure_resource_id {
+variable azure_scope {
   description                  = "The Azure scope to assign access to"
-  nullable                     = false
+  default                      = null
 }
 
 variable azure_role {
@@ -20,7 +20,6 @@ variable create_managed_identity {
   default                      = true
   type                         = bool
 }
-
 variable managed_identity_resource_group_id {
   default                      = null
   description                  = "The resource group to create the Managed Identity in"
@@ -31,7 +30,10 @@ variable resource_prefix {
   default                      = "demo"
   nullable                     = false
 }
-
+variable resource_suffix {
+  description                  = "The suffix to put at the of resource names created"
+  default                      = "" # Empty string triggers a random suffix
+}
 variable run_id {
   description                  = "The ID that identifies the pipeline / workflow that invoked Terraform"
   default                      = null
