@@ -26,9 +26,6 @@ schedules:
 
 variables:
 - group: 'terraform-service-connection' # subscriptionConnection
-  application: 'Azure Service Connection'
-  repository: 'azure-identity-scripts'
-  managedIdentityResourceGroupName: 'terraform-$(Build.BuildId)'
 
 jobs:
 - job: 'Provision'
@@ -39,8 +36,11 @@ jobs:
     vmImage: ubuntu-latest
 
   variables:
+    application: 'Azure Service Connection'
     AZURE_CORE_ONLY_SHOW_ERRORS: true
     AZURE_EXTENSION_USE_DYNAMIC_INSTALL: yes_without_prompt
+    # managedIdentityResourceGroupName: 'terraform-$(Build.BuildId)'
+    repository: 'azure-identity-scripts'
     scriptDirectory: $(Build.SourcesDirectory)/scripts
     terraformDirectory: $(Build.SourcesDirectory)/terraform/azure-devops/managed-identity-service-connection
     TF_IN_AUTOMATION: true
