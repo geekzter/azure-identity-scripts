@@ -49,7 +49,7 @@ jobs:
 
   steps:
     - bash: |
-        echo ${{ split(variables[''], '/')}}
+        echo ${{ split(variables['System.CollectionUri'], '/')}}
       
   # - pwsh: terraform init
   #   displayName: 'Terraform init'
