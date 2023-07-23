@@ -11,7 +11,7 @@ resource azurerm_user_assigned_identity identity {
 }
 
 resource azurerm_federated_identity_credential fic {
-  name                         = replace(var.federation_subject,"/[:/]+/","-")
+  name                         = replace(var.federation_subject,"/[:/ ]+/","-")
   resource_group_name          = data.azurerm_resource_group.identity.name
   audience                     = ["api://AzureADTokenExchange"]
   issuer                       = var.issuer

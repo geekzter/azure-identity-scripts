@@ -18,7 +18,7 @@ resource azuread_service_principal spn {
 resource azuread_application_federated_identity_credential fic {
   application_object_id        = azuread_application.app_registration.object_id
   description                  = "Created by Terraform"
-  display_name                 = replace(var.federation_subject,"/[:/]+/","-")
+  display_name                 = replace(var.federation_subject,"/[:/ ]+/","-")
   audiences                    = ["api://AzureADTokenExchange"]
   issuer                       = var.issuer
   subject                      = var.federation_subject
