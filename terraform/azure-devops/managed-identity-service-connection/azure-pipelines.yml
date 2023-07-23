@@ -17,7 +17,7 @@ parameters:
   - Never 
   - 'On failure'
   - 'On success'
-  
+
 pr:
   autoCancel: false
   branches:
@@ -54,6 +54,7 @@ jobs:
     application: 'Azure Service Connection'
     AZURE_CORE_ONLY_SHOW_ERRORS: true
     AZURE_EXTENSION_USE_DYNAMIC_INSTALL: yes_without_prompt
+    createManagedIdentity: ${{ lower(eq(parameters['identityType'], 'Managed Identity')) }}
     managedIdentityResourceGroupLocation: centralus
     managedIdentityResourceGroupName: ${{ split(variables['System.CollectionUri'], '/')[3] }}-service-connections
     repository: 'azure-identity-scripts'
@@ -125,7 +126,7 @@ jobs:
       TF_VAR_azdo_organization_id: $(System.CollectionId)
       TF_VAR_azdo_organization_url: $(System.CollectionUri)
       TF_VAR_azdo_project_name: $(System.TeamProject)
-      TF_VAR_create_managed_identity: ${{ eq(parameters['identityType'], 'Managed Identity') }}
+      TF_VAR_create_managed_identity: $(createManagedIdentity)
       TF_VAR_managed_identity_resource_group_id: $(managedIdentityResourceGroup.id)
       TF_VAR_resource_suffix: $(Build.BuildId)
       TF_VAR_run_id: $(Build.BuildId)
@@ -161,7 +162,7 @@ jobs:
         TF_VAR_azdo_organization_id: $(System.CollectionId)
         TF_VAR_azdo_organization_url: $(System.CollectionUri)
         TF_VAR_azdo_project_name: $(System.TeamProject)
-        TF_VAR_create_managed_identity: ${{ eq(parameters['identityType'], 'Managed Identity') }}
+        TF_VAR_create_managed_identity: $(createManagedIdentity)
         TF_VAR_managed_identity_resource_group_id: $(managedIdentityResourceGroup.id)
         TF_VAR_resource_suffix: $(Build.BuildId)
         TF_VAR_run_id: $(Build.BuildId)
