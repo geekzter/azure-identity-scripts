@@ -25,7 +25,7 @@ schedules:
     - master
 
 variables:
-- group: 'terraform-service-connection' # subscriptionConnection
+- group: 'terraform-service-connection' # Should contain 'azureConnection'
 
 jobs:
 - job: 'Provision'
@@ -39,7 +39,8 @@ jobs:
     application: 'Azure Service Connection'
     AZURE_CORE_ONLY_SHOW_ERRORS: true
     AZURE_EXTENSION_USE_DYNAMIC_INSTALL: yes_without_prompt
-    # managedIdentityResourceGroupName: 'terraform-$(Build.BuildId)'
+    managedIdentityResourceGroupLocation: centralus
+    managedIdentityResourceGroupName: ${{ split(variables['System.CollectionUri'], '/')[3] }}-service-connections
     repository: 'azure-identity-scripts'
     scriptDirectory: $(Build.SourcesDirectory)/scripts
     terraformDirectory: $(Build.SourcesDirectory)/terraform/azure-devops/managed-identity-service-connection
@@ -48,125 +49,157 @@ jobs:
     TF_WORKSPACE: ci
 
   steps:
-    - pwsh: |
-        Write-Host "0: ${{ split(variables['System.CollectionUri'], '/')[0] }}"
-        Write-Host "1: ${{ split(variables['System.CollectionUri'], '/')[1] }}"
-        Write-Host "2: ${{ split(variables['System.CollectionUri'], '/')[2] }}"
-        Write-Host "3: ${{ split(variables['System.CollectionUri'], '/')[3] }}"
-    # - pwsh: Write-Host "${{ variables['System.CollectionUri'] }}"
-      
-  # - pwsh: terraform init
-  #   displayName: 'Terraform init'
-  #   workingDirectory: '$(terraformDirectory)'
+  - pwsh: terraform init
+    displayName: 'Terraform init'
+    workingDirectory: '$(terraformDirectory)'
 
-  # - task: AzureCLI@2
-  #   displayName: 'Terraform apply'
-  #   name: apply
-  #   inputs:
-  #     azureSubscription: '$(subscriptionConnection)'
-  #     scriptType: pscore
-  #     scriptLocation: inlineScript
-  #     inlineScript: |
-  #       $(scriptDirectory)/set_terraform_azurerm_vars.ps1 -Token $(System.AccessToken)
+  # Create resource group for managed identity
+  - task: AzureCLI@2
+    displayName: 'Create Managed Identity resource group'
+    name: managedIdentityResourceGroup
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      failOnStandardError: true
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        az group list --query "[?name == '$(managedIdentityResourceGroupName)'].id" `
+                      -o tsv `
+                      | Set-Variable -Name managedIdentityResourceGroupId
+        
+        if (!$managedIdentityResourceGroupId) {
+          Write-Host "Creating resource group `"$managedIdentityResourceGroupName`"..."
+          az group create --name $(managedIdentityResourceGroupName) `
+                          --location $(managedIdentityResourceGroupLocation) `
+                          --query id `
+                          | Set-Variable -Name managedIdentityResourceGroupId
+        } else {
+          Write-Host "Resource group `"$managedIdentityResourceGroupName`" already exists"
+        }
 
-  #       terraform apply -auto-approve
-  #     addSpnToEnvironment: true
-  #     failOnStandardError: true
-  #     workingDirectory: '$(terraformDirectory)'
-  #   env:
-  #     TF_VAR_azdo_organization_url: $(System.CollectionUri)
-  #     TF_VAR_azdo_project_name: $(System.TeamProject)
-  #     TF_VAR_managed_identity_resource_group_id:
-  #     TF_VAR_resource_suffix: $(Build.BuildId)
-  #     TF_VAR_run_id: $(Build.BuildId)
+        Write-Host "##vso[task.setvariable variable=id;isOutput=true]${managedIdentityResourceGroupId}"
 
-  # - pwsh: |
-  #     Write-Host "##vso[task.setvariable variable=result;isOutput=true]success"
-  #   name: provisioningResult
-  #   displayName: 'Indicate provisioning success'
-  #   condition: succeeded()
+  - task: AzureCLI@2
+    displayName: 'Terraform apply'
+    name: apply
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $(scriptDirectory)/set_terraform_azurerm_vars.ps1 -Token $(System.AccessToken)
 
-  # - task: AzureCLI@2
-  #   displayName: 'Terraform destroy'
-  #   condition: succeededOrFailed()
-  #   continueOnError: true # Treat failure as warning during destroy, we will clean up anyway
-  #   inputs:
-  #     azureSubscription: '$(subscriptionConnection)'
-  #     scriptType: pscore
-  #     scriptLocation: inlineScript
-  #     inlineScript: |
-  #       $(scriptDirectory)/set_terraform_azurerm_vars.ps1 -Token $(System.AccessToken)
-  #       terraform destroy -auto-approve
-  #     addSpnToEnvironment: true
-  #     failOnStandardError: true
-  #     workingDirectory: '$(terraformDirectory)'
-  #   env:
-  #     TF_VAR_resource_suffix: $(Build.BuildId)
-  #     TF_VAR_run_id: $(Build.BuildId)
+        # List environment variables
+        Get-ChildItem -Path Env: `
+                      -Recurse `
+                      -Include ARM_*, TF_* `
+                      | ForEach-Object { 
+                            if ($_.Name -match 'SECRET|TOKEN') {
+                                $_.Value = "<redacted>"
+                            } 
+                            $_
+                        } `
+                      | Sort-Object -Property Name `
+                      | Format-Table -AutoSize
 
-  # - task: AzureCLI@2
-  #   name: teardownAzure
-  #   displayName: 'Tear down remaining Azure resources'
-  #   condition: or(always(),canceled())
-  #   inputs:
-  #     azureSubscription: '$(subscriptionConnection)'
-  #     scriptType: pscore
-  #     scriptLocation: inlineScript
-  #     inlineScript: |
-  #       $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
-  #       # Build JMESPath expression
-  #       $tagQuery = "[?tags.application == '$(application)' && tags.repository == '$(repository)' && tags.workspace == '$(TF_WORKSPACE)' && tags.runId == '$(Build.BuildId)' && properties.provisioningState != 'Deleting'].id"
-  #       Write-Host "Removing resources identified by `"$tagQuery`"..."
+        terraform apply -auto-approve
+      addSpnToEnvironment: true
+      failOnStandardError: true
+      workingDirectory: '$(terraformDirectory)'
+    env:
+      TF_VAR_azdo_organization_url: $(System.CollectionUri)
+      TF_VAR_azdo_project_name: $(System.TeamProject)
+      TF_VAR_managed_identity_resource_group_id: $(managedIdentityResourceGroup.id)
+      TF_VAR_resource_suffix: $(Build.BuildId)
+      TF_VAR_run_id: $(Build.BuildId)
 
-  #       # Remove resource groups
-  #       $resourceGroupIDs = $(az group list --query "${tagQuery}" -o tsv)
-  #       if ($resourceGroupIDs) {
-  #         Write-Host "Removing resource group(s) `"${resourceGroupIDs}`"..."
-  #         &{ # az writes information to stderr
-  #           $ErrorActionPreference = 'SilentlyContinue'
-  #           az resource delete --ids $resourceGroupIDs 2>&1
-  #         }
-  #       } else {
-  #         Write-Host "No resource groups to remove"
-  #       }
+  - pwsh: |
+      Write-Host "##vso[task.setvariable variable=result;isOutput=true]success"
+    name: provisioningResult
+    displayName: 'Indicate provisioning success'
+    condition: succeeded()
 
-  #       # Remove (remaining) resources
-  #       $resourceIDs = $(az resource list --query "${tagQuery}" -o tsv)
-  #       if ($resourceIDs) {
-  #         Write-Host "Removing resources `"${resourceIDs}`"..."
-  #         &{ # az writes information to stderr
-  #           $ErrorActionPreference = 'SilentlyContinue'
-  #           az resource delete --ids $resourceIDs 2>&1
-  #         }
-  #       } else {
-  #         Write-Host "No resources to remove"
-  #       }
-  #     failOnStandardError: true
-  #     workingDirectory: '$(scriptDirectory)'
+  - task: AzureCLI@2
+    displayName: 'Terraform destroy'
+    condition: succeededOrFailed()
+    continueOnError: true # Treat failure as warning during destroy, we will clean up anyway
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $(scriptDirectory)/set_terraform_azurerm_vars.ps1 -Token $(System.AccessToken)
+        terraform destroy -auto-approve
+      addSpnToEnvironment: true
+      failOnStandardError: true
+      workingDirectory: '$(terraformDirectory)'
+    env:
+      TF_VAR_resource_suffix: $(Build.BuildId)
+      TF_VAR_run_id: $(Build.BuildId)
 
-  # - task: AzureCLI@2
-  #   name: teardownAzDO
-  #   displayName: 'Tear down remaining Azure DevOps resources'
-  #   condition: or(always(),canceled())
-  #   inputs:
-  #     azureSubscription: '$(subscriptionConnection)'
-  #     scriptType: pscore
-  #     scriptLocation: inlineScript
-  #     inlineScript: |
-  #       $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
-  #       az devops configure --defaults organization=$(System.CollectionUri) project=$(System.TeamProject)
-  #       az devops service-endpoint list --query "[?ends_with(@.name, '-$(Build.BuildId)')].id" `
-  #                                       -o tsv `
-  #                                       | Set-Variable -Name serviceConnectionId
-  #       if (!$serviceConnectionId) {
-  #         Write-Host "No service connections to remove"
-  #         exit 0
-  #       } 
+  - task: AzureCLI@2
+    name: teardownAzure
+    displayName: 'Tear down remaining Azure resources'
+    condition: or(always(),canceled())
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
+        # Build JMESPath expression
+        $tagQuery = "[?tags.application == '$(application)' && tags.repository == '$(repository)' && tags.workspace == '$(TF_WORKSPACE)' && tags.runId == '$(Build.BuildId)' && properties.provisioningState != 'Deleting'].id"
+        Write-Host "Removing resources identified by `"$tagQuery`"..."
 
-  #       Write-Host "Removing service connection ${serviceConnectionId}..."
-  #       &{ # az writes information to stderr
-  #         $ErrorActionPreference = 'SilentlyContinue'
-  #         az devops service-endpoint delete --id $serviceConnectionId --yes 2>&1
-  #       }
-  #     failOnStandardError: true
-  #     workingDirectory: '$(scriptDirectory)'
+        # Remove resource groups
+        $resourceGroupIDs = $(az group list --query "${tagQuery}" -o tsv)
+        if ($resourceGroupIDs) {
+          Write-Host "Removing resource group(s) `"${resourceGroupIDs}`"..."
+          &{ # az writes information to stderr
+            $ErrorActionPreference = 'SilentlyContinue'
+            az resource delete --ids $resourceGroupIDs 2>&1
+          }
+        } else {
+          Write-Host "No resource groups to remove"
+        }
+
+        # Remove (remaining) resources
+        $resourceIDs = $(az resource list --query "${tagQuery}" -o tsv)
+        if ($resourceIDs) {
+          Write-Host "Removing resources `"${resourceIDs}`"..."
+          &{ # az writes information to stderr
+            $ErrorActionPreference = 'SilentlyContinue'
+            az resource delete --ids $resourceIDs 2>&1
+          }
+        } else {
+          Write-Host "No resources to remove"
+        }
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
+
+  - task: AzureCLI@2
+    name: teardownAzDO
+    displayName: 'Tear down remaining Azure DevOps resources'
+    condition: or(always(),canceled())
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
+        az devops configure --defaults organization=$(System.CollectionUri) project=$(System.TeamProject)
+        az devops service-endpoint list --query "[?ends_with(@.name, '-$(Build.BuildId)')].id" `
+                                        -o tsv `
+                                        | Set-Variable -Name serviceConnectionId
+        if (!$serviceConnectionId) {
+          Write-Host "No service connections to remove"
+          exit 0
+        } 
+
+        Write-Host "Removing service connection ${serviceConnectionId}..."
+        &{ # az writes information to stderr
+          $ErrorActionPreference = 'SilentlyContinue'
+          az devops service-endpoint delete --id $serviceConnectionId --yes 2>&1
+        }
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
