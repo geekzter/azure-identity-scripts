@@ -4,7 +4,7 @@
     Prepares Terraform azure provider environment variables
  
 .EXAMPLE
-    ./set_terraform_azurerm_vars
+    ./set_terraform_azurerm_vars.ps1
 #> 
 #Requires -Version 7.2
 
