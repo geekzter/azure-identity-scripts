@@ -6,6 +6,8 @@ resource azurerm_user_assigned_identity identity {
   location                     = data.azurerm_resource_group.identity.location
   name                         = var.name
   resource_group_name          = data.azurerm_resource_group.identity.name
+
+  tags                         = var.tags
 }
 
 resource azurerm_federated_identity_credential fic {

@@ -31,3 +31,8 @@ variable resource_prefix {
   default                      = "demo"
   nullable                     = false
 }
+
+variable run_id {
+  description                  = "The ID that identifies the pipeline / workflow that invoked Terraform"
+  default                      = null
+}

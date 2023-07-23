@@ -13,13 +13,23 @@ locals {
   application_id               = var.create_managed_identity ? module.managed_identity.0.application_id : module.service_principal.0.application_id
   azdo_organization_name       = replace(var.azdo_organization_url,"/.*dev.azure.com//","")
   azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
-  azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-oidc-${var.create_managed_identity ? "msi" : "sp"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.suffix}"
+  azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-oidc-${var.create_managed_identity ? "msi" : "sp"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
   federation_subject           = "sc://${local.azdo_organization_name}/${var.azdo_project_name}/${local.azdo_service_connection_name}"
   principal_id                 = var.create_managed_identity ? module.managed_identity.0.principal_id : module.service_principal.0.principal_id
   principal_name               = var.create_managed_identity ? module.managed_identity.0.principal_name : module.service_principal.0.principal_name
   issuer                       = "https://app.vstoken.visualstudio.com"
   # issuer                       = "https://vstoken.dev.azure.com/${local.azdo_organization_id}"
-  suffix                       = random_string.suffix.result
+  resource_suffix              = random_string.suffix.result
+  resource_tags                = {
+    application                = "Azure Service Connection"
+    githubRepo                 = "https://github.com/geekzter/azure-identity-scripts"
+    provisioner                = "terraform"
+    provisionerClientId        = data.azuread_client_config.current.client_id
+    provisionerObjectId        = data.azuread_client_config.current.object_id
+    repository                 = "azure-identity-scripts"
+    runId                      = var.run_id
+    workspace                  = terraform.workspace
+  }
   managed_identity_subscription_id = split("/", var.managed_identity_resource_group_id)[2]
   target_subscription_id       = split("/", var.azure_resource_id)[2]
 }
@@ -45,8 +55,9 @@ module managed_identity {
   source                       = "./modules/managed-identity"
   federation_subject           = local.federation_subject
   issuer                       = local.issuer
-  name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.suffix}"
+  name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
   resource_group_name          = split("/", var.managed_identity_resource_group_id)[4]
+  tags                         = local.resource_tags
 
   count                        = var.create_managed_identity ? 1 : 0
   depends_on                   = [terraform_data.managed_identity_validator]
@@ -56,7 +67,7 @@ module service_principal {
   source                       = "./modules/service-principal"
   federation_subject           = local.federation_subject
   issuer                       = local.issuer
-  name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.suffix}"
+  name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
 
   count                        = var.create_managed_identity ? 0 : 1
 }
