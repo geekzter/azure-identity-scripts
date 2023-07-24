@@ -124,7 +124,7 @@ jobs:
       failOnStandardError: true
       workingDirectory: '$(terraformDirectory)'
     env:
-      TF_VAR_azdo_organization_id: $(System.CollectionId)
+      # TF_VAR_azdo_organization_id: $(System.CollectionId)
       TF_VAR_azdo_organization_url: $(System.CollectionUri)
       TF_VAR_azdo_project_name: $(System.TeamProject)
       TF_VAR_create_managed_identity: $(createManagedIdentity)
@@ -160,7 +160,7 @@ jobs:
         failOnStandardError: true
         workingDirectory: '$(terraformDirectory)'
       env:
-        TF_VAR_azdo_organization_id: $(System.CollectionId)
+        # TF_VAR_azdo_organization_id: $(System.CollectionId)
         TF_VAR_azdo_organization_url: $(System.CollectionUri)
         TF_VAR_azdo_project_name: $(System.TeamProject)
         TF_VAR_create_managed_identity: $(createManagedIdentity)
