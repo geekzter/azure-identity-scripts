@@ -11,7 +11,7 @@ resource random_string suffix {
 
 locals {
   application_id               = var.create_managed_identity ? module.managed_identity.0.application_id : module.service_principal.0.application_id
-  azdo_organization_name       = replace(var.azdo_organization_url,"/.*dev.azure.com//","")
+  azdo_organization_name       = split("/",var.azdo_organization_url)[3]
   azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
   azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-oidc-${var.create_managed_identity ? "msi" : "sp"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
   azure_scope                  = var.azure_scope != null && var.azure_scope != "" ? var.azure_scope : "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
