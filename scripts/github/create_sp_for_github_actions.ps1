@@ -227,7 +227,7 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
 }
 Write-Host "`nGitHub repository:`n${repositoryUrl}"
 Write-Host "`nConfigure workflow YAML as per the azure/login action documentation:`nhttps://github.com/marketplace/actions/azure-login"
-Write-Host "`nService Principal in Azure Portal:`nhttps://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Credentials/appId/${appId}/isMSAApp/"
+Write-Host "`nService Principal in Azure Portal:`nhttps://portal.azure.com/${TenantId}/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Credentials/appId/${appId}"
 Write-Host "`nAccess Control list on scope '$scope' in Azure Portal:`nhttps://portal.azure.com/#@${TenantId}/resource${scope}/users"
 Write-Host "`nSecrets on GitHub web:`n${repositoryUrl}/settings/secrets/actions"
 Write-Host "`n"
