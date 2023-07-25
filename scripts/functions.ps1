@@ -469,7 +469,7 @@ function Add-ServicePrincipalProperties (
     }
     $ServicePrincipal | Add-Member -NotePropertyName applicationPortalLink -NotePropertyValue $applicationPortalLink
 
-    "https://portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/{0}/appId/{1}" -f $ServicePrincipal.id, $ServicePrincipal.appId | Set-Variable servicePrincipalPortalLink
+    "https://portal.azure.com/{0}/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/{1}/appId/{2}" -f $TenantId, $ServicePrincipal.id, $ServicePrincipal.appId | Set-Variable servicePrincipalPortalLink
     $ServicePrincipal | Add-Member -NotePropertyName servicePrincipalPortalLink -NotePropertyValue $servicePrincipalPortalLink
 }
 
