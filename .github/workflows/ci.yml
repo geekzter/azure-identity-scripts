@@ -58,17 +58,17 @@ jobs:
         az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | ConvertFrom-Json | Set-Variable sp
 
         Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
-        ./find_workload_identity.ps1 $sp.id -SkipApplication -SkipFederation
+        ./find_workload_identity.ps1 $sp.id -ServicePrincipalOnly
 
         Write-Host "`nFind Service Principal using app/client ID '$($sp.appId)'"
-        ./find_workload_identity.ps1 $sp.appId -SkipApplication -SkipFederation
+        ./find_workload_identity.ps1 $sp.appId -ServicePrincipalOnly
 
         Write-Host "`nFind Service Principal using displayName '$($sp.displayName)'"
-        ./find_workload_identity.ps1 $sp.displayName -SkipApplication -SkipFederation
+        ./find_workload_identity.ps1 $sp.displayName -ServicePrincipalOnly
         
         Write-Host "`nFind Service Principal using servicePrincipalNames[]"
         foreach ($servicePrincipalName in $sp.servicePrincipalNames) {
           Write-Host "`nFind Service Principal using servicePrincipalName '$servicePrincipalName'"
-          ./find_workload_identity.ps1 $servicePrincipalName -SkipApplication -SkipFederation
+          ./find_workload_identity.ps1 $servicePrincipalName -ServicePrincipalOnly
         }
       shell: pwsh

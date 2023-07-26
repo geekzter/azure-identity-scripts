@@ -27,11 +27,7 @@ param (
 
     [parameter(Mandatory=$false)]
     [switch]
-    $SkipApplication=$false,
-    
-    [parameter(Mandatory=$false)]
-    [switch]
-    $SkipFederation=$false,
+    $ServicePrincipalOnly=$false,
     
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
@@ -117,7 +113,7 @@ switch -regex ($IdOrName) {
 
     # Match Name or URL
     "^[\w\-\/\:\.]+" {
-        if (!$SkipApplication) {
+        if (!$ServicePrincipalOnly) {
             Find-ApplicationByName -Name $IdOrName | Set-Variable app
         }
         if ($app) {
@@ -138,12 +134,12 @@ switch -regex ($IdOrName) {
 }
 
 ## Retrieve app if it wasn't retrieved yet
-if (!$SkipApplication -and !$app -and $sp -and ($sp.servicePrincipalType -ieq "Application")) {
+if (!$ServicePrincipalOnly -and !$app -and $sp -and ($sp.servicePrincipalType -ieq "Application")) {
     Find-ApplicationByGUID -Id $sp.appId | Set-Variable app
 }
 
 # Get Federated Credentials
-if (!$SkipFederation -and $sp) {
+if (!$ServicePrincipalOnly -and $sp) {
     Get-FederatedCredentials -AppId $sp.appId -Type $sp.servicePrincipalType | Set-Variable fic
 }
 
