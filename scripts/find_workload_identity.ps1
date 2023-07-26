@@ -29,6 +29,10 @@ param (
     [switch]
     $SkipApplication=$false,
     
+    [parameter(Mandatory=$false)]
+    [switch]
+    $SkipFederation=$false,
+    
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
     $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
@@ -139,7 +143,7 @@ if (!$SkipApplication -and !$app -and $sp -and ($sp.servicePrincipalType -ieq "A
 }
 
 # Get Federated Credentials
-if ($sp) {
+if (!$SkipFederation -and $sp) {
     Get-FederatedCredentials -AppId $sp.appId -Type $sp.servicePrincipalType | Set-Variable fic
 }
 
