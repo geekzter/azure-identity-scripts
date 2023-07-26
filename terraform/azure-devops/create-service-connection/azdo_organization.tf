@@ -15,11 +15,11 @@ data http azdo_member {
   lifecycle {
     postcondition {
       condition                = tonumber(self.status_code) < 300
-      error_message            = "Could not retrieve member information"
+      error_message            = "Could not retrieve member information from ${self.url}"
     }
     postcondition {
       condition                = can(jsondecode(self.response_body).id)
-      error_message            = "No member information or not in expected format"
+      error_message            = "Member information at ${self.url} not available ot in expected format"
     }
   }
 }
@@ -34,11 +34,11 @@ data http azdo_organizations {
   lifecycle {
     postcondition {
       condition                = tonumber(self.status_code) < 300
-      error_message            = "Could not retrieve account information"
+      error_message            = "Could not retrieve account information from ${self.url}"
     }
     postcondition {
       condition                = length(jsondecode(self.response_body).value) > 0
-      error_message            = "No organizations found for member ${local.azdo_member_id}"
+      error_message            = "No organizations found for member ${local.azdo_member_id} at ${self.url}"
     }
   }
 }
