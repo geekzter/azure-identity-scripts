@@ -55,10 +55,6 @@ jobs:
                       | ConvertFrom-Json `
                       | Set-Variable sp
 
-        Write-Host "scHasMSFTGraphPermissions 1: ${{ variables.scHasMSFTGraphPermissions }}"
-        Write-Host "scHasMSFTGraphPermissions 2: ${{ variables['scHasMSFTGraphPermissions'] }}"
-        Write-Host "scHasMSFTGraphPermissions 3: $(scHasMSFTGraphPermissions)"
-        Write-Host "servicePrincipalOnly: $(servicePrincipalOnly)"
         $servicePrincipalOnly = $$(servicePrincipalOnly)
         Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
         ./find_workload_identity.ps1 $sp.id -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
