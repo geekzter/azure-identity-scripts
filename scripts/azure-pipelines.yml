@@ -30,7 +30,7 @@ variables:
 - name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
   value: yes_without_prompt
 - name: servicePrincipalOnly
-  value: ${{ ne(variables.scHasMSFTGraphPermissions, 'true') }}
+  value: ${{ eq(variables.scHasMSFTGraphPermissions, 'true') }}
 
 jobs:
 - job: find_workload_identity
