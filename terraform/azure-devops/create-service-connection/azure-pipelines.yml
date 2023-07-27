@@ -2,7 +2,7 @@ name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-$(SourceBranchName)-$
 
 parameters:
 - name: identityType
-  displayName: Terraform Workspace
+  displayName: Identity Type
   type: string
   default: Managed Identity
   values:
@@ -40,7 +40,7 @@ schedules:
 trigger: none
 
 variables:
-- group: 'terraform-service-connection' # Should contain 'azureConnection'
+- group: 'identity-ci' # Should contain 'azureConnection'
 
 jobs:
 - job: 'Provision'

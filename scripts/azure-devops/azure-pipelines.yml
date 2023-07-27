@@ -1,0 +1,76 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-$(SourceBranchName)-$(Build.BuildId)
+
+# parameters:
+# - name: destroy
+#   displayName: Destroy Infrastructure
+#   type: string
+#   default: Always
+#   values:
+#   - Always
+#   - Never 
+#   - 'On failure'
+#   - 'On success'
+
+pr:
+  autoCancel: false
+  branches:
+    include:
+    - '*'
+  drafts: false
+  paths:
+    exclude:
+    - '.devcontainer/**'  
+    - 'visuals/**'  
+    - '*.md'  
+schedules:
+- cron: '0 0 * * Tue,Fr'
+  displayName: 'Bi-weekly build (UTC)'
+  # Run if there are no changes
+  always: 'true'
+  branches:
+    include:
+    - master
+trigger: none
+
+variables:
+- group: 'identity-ci' # Should contain 'azureConnection'
+- name: scriptDirectory
+  value: $(Build.SourcesDirectory)/scripts/azure-devops
+- name: AZURE_CORE_ONLY_SHOW_ERRORS
+  value: true
+- name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
+  value: yes_without_prompt
+
+jobs:
+- job: find_workload_identity
+
+  pool:
+    name: 'Azure Pipelines'
+    vmImage: ubuntu-latest
+
+  steps:
+  - task: AzureCLI@2
+    displayName: 'Test find_workload_identity.ps1'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | ConvertFrom-Json | Set-Variable sp
+
+        Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
+        ./find_workload_identity.ps1 $sp.id -ServicePrincipalOnly
+
+        Write-Host "`nFind Service Principal using app/client ID '$($sp.appId)'"
+        ./find_workload_identity.ps1 $sp.appId -ServicePrincipalOnly
+
+        Write-Host "`nFind Service Principal using displayName '$($sp.displayName)'"
+        ./find_workload_identity.ps1 $sp.displayName -ServicePrincipalOnly
+        
+        Write-Host "`nFind Service Principal using servicePrincipalNames[]"
+        foreach ($servicePrincipalName in $sp.servicePrincipalNames) {
+          Write-Host "`nFind Service Principal using servicePrincipalName '$servicePrincipalName'"
+          ./find_workload_identity.ps1 $servicePrincipalName -ServicePrincipalOnly
+        }
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
