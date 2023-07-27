@@ -56,7 +56,10 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | ConvertFrom-Json | Set-Variable sp
+        az ad sp list --filter "appId eq '$(az account show --query user.name -o tsv)'" --query "[0]" `
+                      -o json `
+                      | ConvertFrom-Json `
+                      | Set-Variable sp
 
         Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
         ./find_workload_identity.ps1 $sp.id -ServicePrincipalOnly
