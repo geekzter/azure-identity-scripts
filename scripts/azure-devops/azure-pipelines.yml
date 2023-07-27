@@ -62,8 +62,12 @@ jobs:
 
         Write-Host "SYSTEM_COLLECTIONURI: ${env:SYSTEM_COLLECTIONURI}"
         ($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/'
-        Write-Host "Org name:" -NoNewline
-        ($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/' | Select-Object -Skip 3
+
+        ($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/' | Select-Object -Skip 3 | Set-Variable orgName
+        Write-Host "Org name: ${orgName}"
+        $orgName.GetType()
+        $orgName | Get-Member
+        
 
         az account show -o json | ConvertFrom-Json | Set-Variable account
 
