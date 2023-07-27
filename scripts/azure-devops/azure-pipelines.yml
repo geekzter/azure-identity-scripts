@@ -58,16 +58,6 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        Set-PSDebug -Trace 1
-
-        Write-Host "SYSTEM_COLLECTIONURI: ${env:SYSTEM_COLLECTIONURI}"
-        ($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/'
-
-        ($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/' | Select-Object -Index 3 | Set-Variable orgName
-        Write-Host "Org name: ${orgName}"
-        $orgName.GetType()
-        $orgName | Get-Member
-
         az account show -o json | ConvertFrom-Json | Set-Variable account
 
         Write-Host "`nList Managed Identities in subscription '$($account.name)'"
