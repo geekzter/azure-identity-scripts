@@ -1,0 +1,77 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-$(SourceBranchName)-$(Build.BuildId)
+
+# parameters:
+# - name: destroy
+#   displayName: Destroy Infrastructure
+#   type: string
+#   default: Always
+#   values:
+#   - Always
+#   - Never 
+#   - 'On failure'
+#   - 'On success'
+
+pr:
+  autoCancel: false
+  branches:
+    include:
+    - '*'
+  drafts: false
+  paths:
+    exclude:
+    - '.devcontainer/**'  
+    - 'visuals/**'  
+    - '*.md'  
+schedules:
+- cron: '0 0 * * Tue,Fr'
+  displayName: 'Bi-weekly build (UTC)'
+  # Run if there are no changes
+  always: 'true'
+  branches:
+    include:
+    - master
+trigger: none
+
+variables:
+- group: 'identity-ci' # Should contain 'azureConnection', 'scHasMSFTGraphPermissions'
+- name: scriptDirectory
+  value: $(Build.SourcesDirectory)/scripts/azure-devops
+- name: AZURE_CORE_ONLY_SHOW_ERRORS
+  value: true
+- name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
+  value: yes_without_prompt
+
+jobs:
+- job: retrieval_scripts
+
+  pool:
+    name: 'Azure Pipelines'
+    vmImage: ubuntu-latest
+
+  steps:
+  - task: AzureCLI@2
+    displayName: 'list_service_connections.ps1'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        az account show -o json | ConvertFrom-Json | Set-Variable account
+
+        Write-Host "`nList Managed Identities in subscription '$($account.name)'"
+        ./list_service_connections.ps1 -TenantId $account.tenantId
+
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
+
+  - task: AzureCLI@2
+    displayName: 'set_terraform_azurerm_vars.ps1'
+    inputs:
+      addSpnToEnvironment: true
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        ./set_terraform_azurerm_vars.ps1
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'

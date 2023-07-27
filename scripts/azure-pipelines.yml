@@ -1,0 +1,96 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-$(SourceBranchName)-$(Build.BuildId)
+
+pr:
+  autoCancel: false
+  branches:
+    include:
+    - '*'
+  drafts: false
+  paths:
+    exclude:
+    - '.devcontainer/**'  
+    - 'visuals/**'  
+    - '*.md'  
+schedules:
+- cron: '0 0 * * Tue,Fr'
+  displayName: 'Bi-weekly build (UTC)'
+  # Run if there are no changes
+  always: 'true'
+  branches:
+    include:
+    - master
+trigger: none
+
+variables:
+- group: 'identity-ci' # Should contain 'azureConnection', 'scHasMSFTGraphPermissions'
+- name: scriptDirectory
+  value: $(Build.SourcesDirectory)/scripts
+- name: AZURE_CORE_ONLY_SHOW_ERRORS
+  value: true
+- name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
+  value: yes_without_prompt
+- name: servicePrincipalOnly
+  value: $[ ne(variables.scHasMSFTGraphPermissions, 'true') ]
+
+jobs:
+- job: find_workload_identity
+
+  pool:
+    name: 'Azure Pipelines'
+    vmImage: ubuntu-latest
+
+  steps:
+  - task: AzureCLI@2
+    displayName: 'find_workload_identity.ps1'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        az account show -o json | ConvertFrom-Json | Set-Variable account
+
+        az ad sp list --filter "appId eq '$($account.user.name)'" `
+                      --query "[0]" `
+                      -o json `
+                      | ConvertFrom-Json `
+                      | Set-Variable sp
+
+        $servicePrincipalOnly = $$(servicePrincipalOnly)
+        Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
+        ./find_workload_identity.ps1 $sp.id -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
+
+        Write-Host "`nFind Service Principal using app/client ID '$($sp.appId)'"
+        ./find_workload_identity.ps1 $sp.appId -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
+
+        Write-Host "`nFind Service Principal using displayName '$($sp.displayName)'"
+        ./find_workload_identity.ps1 $sp.displayName -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
+        
+        Write-Host "`nFind Service Principal using servicePrincipalNames[]"
+        foreach ($servicePrincipalName in $sp.servicePrincipalNames) {
+          Write-Host "`nFind Service Principal using servicePrincipalName '$servicePrincipalName'"
+          ./find_workload_identity.ps1 $servicePrincipalName -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
+        }
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
+
+- job: list_managed_identities
+
+  pool:
+    name: 'Azure Pipelines'
+    vmImage: ubuntu-latest
+
+  steps:
+  - task: AzureCLI@2
+    displayName: 'list_managed_identities.ps1'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        az account show -o json | ConvertFrom-Json | Set-Variable account
+
+        Write-Host "`nList Managed Identities in subscription '$($account.name)'"
+        ./list_managed_identities.ps1 -SubscriptionId $account.id -TenantId $account.tenantId
+
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'

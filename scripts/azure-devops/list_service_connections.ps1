@@ -9,7 +9,7 @@
 param ( 
     [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Organization")]
     [string]
-    $Organization=($env:AZDO_ORG_SERVICE_URL -split '/' | Select-Object -Skip 3),
+    $Organization=(($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/' | Select-Object -Index 3),
 
     [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Project")]
     [string]
