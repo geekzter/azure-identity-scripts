@@ -58,6 +58,9 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
+        Write-Host "SYSTEM_COLLECTIONURI: ${env:SYSTEM_COLLECTIONURI}"
+        ($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/'
+
         az account show -o json | ConvertFrom-Json | Set-Variable account
 
         Write-Host "`nList Managed Identities in subscription '$($account.name)'"
