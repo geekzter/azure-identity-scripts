@@ -50,7 +50,7 @@ param (
 ) 
 
 Write-Debug $MyInvocation.line
-. (Join-Path $PSScriptRoot functions.ps1)
+. (Join-Path $PSScriptRoot .. functions.ps1)
 
 # Login to Azure CLI
 Write-Verbose "Logging into Azure..."
