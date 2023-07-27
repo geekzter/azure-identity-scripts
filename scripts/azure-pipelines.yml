@@ -55,7 +55,9 @@ jobs:
                       | ConvertFrom-Json `
                       | Set-Variable sp
 
-        Write-Host "scHasMSFTGraphPermissions: ${{ variables.scHasMSFTGraphPermissions }}"
+        Write-Host "scHasMSFTGraphPermissions 1: ${{ variables.scHasMSFTGraphPermissions }}"
+        Write-Host "scHasMSFTGraphPermissions 2: ${{ variables['scHasMSFTGraphPermissions'] }}"
+        Write-Host "scHasMSFTGraphPermissions 3: $(scHasMSFTGraphPermissions)"
         Write-Host "servicePrincipalOnly: $(servicePrincipalOnly)"
         $servicePrincipalOnly = $$(servicePrincipalOnly)
         Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
