@@ -40,8 +40,6 @@ variables:
   value: true
 - name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
   value: yes_without_prompt
-- name: servicePrincipalOnly
-  value: $[ not(coalesce(variables['scHasMSFTGraphPermissions'], 'false')) ]
 
 jobs:
 - job: retrieval_scripts
