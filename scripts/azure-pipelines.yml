@@ -40,6 +40,8 @@ variables:
   value: true
 - name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
   value: yes_without_prompt
+- name: scHasMSFTGraphPermissions
+  value: true
 
 jobs:
 - job: find_workload_identity
@@ -63,19 +65,20 @@ jobs:
                       | ConvertFrom-Json `
                       | Set-Variable sp
 
+        $servicePrincipalOnly = !$$(scHasMSFTGraphPermissions)
         Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
-        ./find_workload_identity.ps1 $sp.id -ServicePrincipalOnly:$false -TenantId $account.tenantId
+        ./find_workload_identity.ps1 $sp.id -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
 
         Write-Host "`nFind Service Principal using app/client ID '$($sp.appId)'"
-        ./find_workload_identity.ps1 $sp.appId -ServicePrincipalOnly:$false -TenantId $account.tenantId
+        ./find_workload_identity.ps1 $sp.appId -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
 
         Write-Host "`nFind Service Principal using displayName '$($sp.displayName)'"
-        ./find_workload_identity.ps1 $sp.displayName -ServicePrincipalOnly:$false -TenantId $account.tenantId
+        ./find_workload_identity.ps1 $sp.displayName -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
         
         Write-Host "`nFind Service Principal using servicePrincipalNames[]"
         foreach ($servicePrincipalName in $sp.servicePrincipalNames) {
           Write-Host "`nFind Service Principal using servicePrincipalName '$servicePrincipalName'"
-          ./find_workload_identity.ps1 $servicePrincipalName -ServicePrincipalOnly:$false -TenantId $account.tenantId
+          ./find_workload_identity.ps1 $servicePrincipalName -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
         }
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
