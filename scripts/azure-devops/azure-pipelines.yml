@@ -44,7 +44,7 @@ variables:
   value: $[ not(coalesce(variables['scHasMSFTGraphPermissions'], 'false')) ]
 
 jobs:
-- job: retrieval-scripts
+- job: retrieval_scripts
 
   pool:
     name: 'Azure Pipelines'
