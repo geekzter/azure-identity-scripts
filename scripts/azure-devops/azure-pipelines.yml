@@ -44,7 +44,7 @@ variables:
   value: $[ not(coalesce(variables['scHasMSFTGraphPermissions'], 'false')) ]
 
 jobs:
-- job: list_service_connections
+- job: retrieval-scripts
 
   pool:
     name: 'Azure Pipelines'
@@ -63,16 +63,27 @@ jobs:
         Write-Host "SYSTEM_COLLECTIONURI: ${env:SYSTEM_COLLECTIONURI}"
         ($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/'
 
-        ($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/' | Select-Object -Skip 3 | Set-Variable orgName
+        ($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/' | Select-Object -Index 3 | Set-Variable orgName
         Write-Host "Org name: ${orgName}"
         $orgName.GetType()
         $orgName | Get-Member
-        
 
         az account show -o json | ConvertFrom-Json | Set-Variable account
 
         Write-Host "`nList Managed Identities in subscription '$($account.name)'"
         ./list_service_connections.ps1 -TenantId $account.tenantId
 
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
+
+  - task: AzureCLI@2
+    displayName: 'Test set_terraform_azurerm_vars.ps1'
+    inputs:
+      addSpnToEnvironment: true
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        ./set_terraform_azurerm_vars.ps1
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
