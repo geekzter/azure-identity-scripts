@@ -29,8 +29,8 @@ variables:
   value: true
 - name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
   value: yes_without_prompt
-- name: servicePrincipalOnly
-  value: $[ not(coalesce(variables['scHasMSFTGraphPermissions'], 'false')) ]
+- name: scHasMSFTGraphPermissions
+  value: $[ coalesce(variables['scHasMSFTGraphPermissions'], 'false') ]
 
 jobs:
 - job: find_workload_identity
@@ -41,7 +41,7 @@ jobs:
 
   steps:
   - task: AzureCLI@2
-    displayName: 'Test find_workload_identity.ps1'
+    displayName: 'find_workload_identity.ps1'
     inputs:
       azureSubscription: '$(azureConnection)'
       scriptType: pscore
@@ -55,7 +55,7 @@ jobs:
                       | ConvertFrom-Json `
                       | Set-Variable sp
 
-        $servicePrincipalOnly = $$(servicePrincipalOnly)
+        $servicePrincipalOnly = !$$(scHasMSFTGraphPermissions)
         Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
         ./find_workload_identity.ps1 $sp.id -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
 
@@ -81,7 +81,7 @@ jobs:
 
   steps:
   - task: AzureCLI@2
-    displayName: 'Test list_managed_identities.ps1'
+    displayName: 'list_managed_identities.ps1'
     inputs:
       azureSubscription: '$(azureConnection)'
       scriptType: pscore
