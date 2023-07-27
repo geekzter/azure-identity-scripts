@@ -40,8 +40,6 @@ variables:
   value: true
 - name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
   value: yes_without_prompt
-- name: scHasMSFTGraphPermissions
-  value: true
 - name: servicePrincipalOnly
   value: $[ not(coalesce(variables['scHasMSFTGraphPermissions'], 'false')) ]
 
@@ -68,7 +66,6 @@ jobs:
                       | ConvertFrom-Json `
                       | Set-Variable sp
 
-        # $servicePrincipalOnly = !$$(scHasMSFTGraphPermissions)
         $servicePrincipalOnly = $$(servicePrincipalOnly)
         Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
         ./find_workload_identity.ps1 $sp.id -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
