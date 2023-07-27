@@ -33,7 +33,7 @@ schedules:
 trigger: none
 
 variables:
-- group: 'identity-ci' # Should contain 'azureConnection'
+- group: 'identity-ci' # Should contain 'azureConnection', 'scHasMSFTGraphPermissions'
 - name: scriptDirectory
   value: $(Build.SourcesDirectory)/scripts
 - name: AZURE_CORE_ONLY_SHOW_ERRORS
@@ -42,6 +42,8 @@ variables:
   value: yes_without_prompt
 - name: scHasMSFTGraphPermissions
   value: true
+- name: servicePrincipalOnly
+  value: $[ not(coalesce(variables['scHasMSFTGraphPermissions'], 'false')) ]
 
 jobs:
 - job: find_workload_identity
@@ -60,12 +62,14 @@ jobs:
       inlineScript: |
         az account show -o json | ConvertFrom-Json | Set-Variable account
 
-        az ad sp list --filter "appId eq '$($account.user.name)'" --query "[0]" `
+        az ad sp list --filter "appId eq '$($account.user.name)'" `
+                      --query "[0]" `
                       -o json `
                       | ConvertFrom-Json `
                       | Set-Variable sp
 
-        $servicePrincipalOnly = !$$(scHasMSFTGraphPermissions)
+        # $servicePrincipalOnly = !$$(scHasMSFTGraphPermissions)
+        $servicePrincipalOnly = $$(servicePrincipalOnly)
         Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
         ./find_workload_identity.ps1 $sp.id -ServicePrincipalOnly:$servicePrincipalOnly -TenantId $account.tenantId
 
