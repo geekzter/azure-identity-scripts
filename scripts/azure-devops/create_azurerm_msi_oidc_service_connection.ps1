@@ -56,7 +56,7 @@ param (
     $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL || env:SYSTEM_TASKDEFINITIONSURI)
 ) 
 Write-Verbose $MyInvocation.line 
-. (Join-Path $PSScriptRoot functions.ps1)
+. (Join-Path $PSScriptRoot .. functions.ps1)
 $apiVersion = "7.1-preview.4"
 
 if (-not (Get-Command az -ErrorAction SilentlyContinue)) {

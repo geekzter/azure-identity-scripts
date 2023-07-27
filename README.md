@@ -25,7 +25,7 @@ This repo contains a few [PowerShell](https://github.com/PowerShell/PowerShell) 
   [set_terraform_azurerm_vars.ps1](scripts/azure-devops/set_terraform_azurerm_vars.ps1)
 - Create Managed Identity for Service Connection with Workload identity federation: [create_azurerm_msi_oidc_service_connection.ps1](scripts/azure-devops/create_azurerm_msi_oidc_service_connection.ps1)
 - Create Managed Identity for Service Connection with Workload identity federation with [Terraform](terraform/azure-devops/create-service-connection)
-- List identities for Azure Pipeline Service Connections by Azure DevOps organization and (optionally) project: [list_service_connections.ps1](scripts/list_service_connections.ps1)
+- List identities for Azure Pipeline Service Connections in Azure Active Directory pertaining to Azure DevOps organization and (optionally) project: [list_service_connections.ps1](scripts/azure-devops/list_service_connections.ps1)
 
 ## GitHub
 

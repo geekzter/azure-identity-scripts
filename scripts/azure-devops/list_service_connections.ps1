@@ -3,7 +3,7 @@
 .SYNOPSIS 
     Find Azure DevOps Service Connections
 .DESCRIPTION 
-    Use the Microsoft Graph API to find Azure DevOps Service Connections by organisation & project, using Azure DevOps Service Connection naming convention
+    Use the Microsoft Graph API to find Azure DevOps Service Connections by organization & project, using Azure DevOps Service Connection naming convention
 #>
 #Requires -Version 7
 param ( 
@@ -50,7 +50,7 @@ param (
 ) 
 
 Write-Debug $MyInvocation.line
-. (Join-Path $PSScriptRoot functions.ps1)
+. (Join-Path $PSScriptRoot .. functions.ps1)
 
 # Login to Azure CLI
 Write-Verbose "Logging into Azure..."
