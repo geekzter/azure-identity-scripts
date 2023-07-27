@@ -101,7 +101,7 @@ jobs:
         az account show -o json | ConvertFrom-Json | Set-Variable account
 
         Write-Host "`nList Managed Identities in subscription '$($account.name)'"
-        ./list_managed_identities.ps1 $sp.id -SubscriptionId $account.id -TenantId $account.tenantId
+        ./list_managed_identities.ps1 -SubscriptionId $account.id -TenantId $account.tenantId
 
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
