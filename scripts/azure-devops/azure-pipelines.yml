@@ -36,6 +36,7 @@ variables:
 
 jobs:
 # - job: retrieval_scripts
+#   displayName: 'Microsoft Graph Retrieval scripts'
 
 #   pool:
 #     name: 'Azure Pipelines'
@@ -70,6 +71,7 @@ jobs:
 #       workingDirectory: '$(scriptDirectory)'
 
 - job: create_service_connection
+  displayName: 'Create Service Connection'
   pool:
     name: 'Azure Pipelines'
     vmImage: ubuntu-latest
@@ -114,6 +116,7 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
+        Set-PSdebug -Trace 1
         ./create_azurerm_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
                                                          -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
                                                          -IdentitySubscriptionId $(az account show --query id -o tsv) `
@@ -123,6 +126,7 @@ jobs:
 - job: teardown
   condition: succeededOrFailed()
   dependsOn: create_service_connection
+  displayName: 'Tear down resources'
   pool:
     name: 'Azure Pipelines'
     vmImage: ubuntu-latest
