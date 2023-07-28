@@ -85,10 +85,10 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         $tags=@("application=$(application)","provisioner=azure-cli","runId=$(Build.BuildId)")
-        $managedIdentityResourceGroupName="${{ variables['organizationName'] }}-service-connections"
+        $managedIdentityResourceGroupName="${{ variables['organizationName'] }}-service-connections-$(Build.BuildId)"
         Write-Host "Creating resource group `"$managedIdentityResourceGroupName`"..."
-        az group create --name $(managedIdentityResourceGroupName) `
-                        --location $(managedIdentityResourceGroupLocation) `
+        az group create --name $managedIdentityResourceGroupName `
+                        --location centralus `
                         --tags $tags `
                         --query id `
                         | Set-Variable -Name managedIdentityResourceGroupId
