@@ -26,7 +26,7 @@ variables:
 - name: scriptDirectory
   value: $(Build.SourcesDirectory)/scripts/azure-devops
 - name: organizationName
-  value: ${{ split(variables['System.CollectionUri'],"/")[3] }}
+  value: ${{ split(variables['System.CollectionUri'],'/')[3] }}
 - name: AZURE_CORE_ONLY_SHOW_ERRORS
   value: true
 - name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
