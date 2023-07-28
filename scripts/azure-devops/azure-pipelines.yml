@@ -148,43 +148,43 @@ jobs:
   variables:
     clientId: $[ dependencies.inspectCluster.outputs['createServiceConnection.clientId'] ]
   steps:
-  - task: AzureCLI@2
-    name: teardownAzure
-    displayName: 'Tear down Azure resources'
-    inputs:
-      azureSubscription: '$(azureConnection)'
-      scriptType: pscore
-      scriptLocation: inlineScript
-      inlineScript: |
-        $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
-        # Build JMESPath expression
-        $tagQuery = "[?tags.application == '$(application)' && tags.runId == '$(Build.BuildId)' && properties.provisioningState != 'Deleting'].id"
-        Write-Host "Removing resources identified by `"$tagQuery`"..."
+  # - task: AzureCLI@2
+  #   name: teardownAzure
+  #   displayName: 'Tear down Azure resources'
+  #   inputs:
+  #     azureSubscription: '$(azureConnection)'
+  #     scriptType: pscore
+  #     scriptLocation: inlineScript
+  #     inlineScript: |
+  #       $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
+  #       # Build JMESPath expression
+  #       $tagQuery = "[?tags.application == '$(application)' && tags.runId == '$(Build.BuildId)' && properties.provisioningState != 'Deleting'].id"
+  #       Write-Host "Removing resources identified by `"$tagQuery`"..."
 
-        # Remove resource groups
-        $resourceGroupIDs = $(az group list --query "${tagQuery}" -o tsv)
-        if ($resourceGroupIDs) {
-          Write-Host "Removing resource group(s) `"${resourceGroupIDs}`"..."
-          &{ # az writes information to stderr
-            $ErrorActionPreference = 'SilentlyContinue'
-            az resource delete --ids $resourceGroupIDs 2>&1
-          }
-        } else {
-          Write-Host "No resource groups to remove"
-        }
+  #       # Remove resource groups
+  #       $resourceGroupIDs = $(az group list --query "${tagQuery}" -o tsv)
+  #       if ($resourceGroupIDs) {
+  #         Write-Host "Removing resource group(s) `"${resourceGroupIDs}`"..."
+  #         &{ # az writes information to stderr
+  #           $ErrorActionPreference = 'SilentlyContinue'
+  #           az resource delete --ids $resourceGroupIDs 2>&1
+  #         }
+  #       } else {
+  #         Write-Host "No resource groups to remove"
+  #       }
 
-        # Remove (remaining) resources
-        $resourceIDs = $(az resource list --query "${tagQuery}" -o tsv)
-        if ($resourceIDs) {
-          Write-Host "Removing resources `"${resourceIDs}`"..."
-          &{ # az writes information to stderr
-            $ErrorActionPreference = 'SilentlyContinue'
-            az resource delete --ids $resourceIDs 2>&1
-          }
-        } else {
-          Write-Host "No resources to remove"
-        }
-      failOnStandardError: true
+  #       # Remove (remaining) resources
+  #       $resourceIDs = $(az resource list --query "${tagQuery}" -o tsv)
+  #       if ($resourceIDs) {
+  #         Write-Host "Removing resources `"${resourceIDs}`"..."
+  #         &{ # az writes information to stderr
+  #           $ErrorActionPreference = 'SilentlyContinue'
+  #           az resource delete --ids $resourceIDs 2>&1
+  #         }
+  #       } else {
+  #         Write-Host "No resources to remove"
+  #       }
+  #     failOnStandardError: true
 
   - task: AzureCLI@2
     displayName: 'Tear down Service Connection'
