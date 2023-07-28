@@ -45,7 +45,7 @@ param (
     [ValidatePattern("^$|(?i)/subscriptions/[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(/resourcegroups/(.+?))?")]
     $ServiceConnectionScope,
 
-    [parameter(Mandatory=$true,HelpMessage="Name of the Azure DevOps Project")]
+    [parameter(Mandatory=$false,HelpMessage="Name of the Azure DevOps Project")]
     [string]
     [ValidateNotNullOrEmpty()]
     $Project=$env:SYSTEM_TEAMPROJECT,
