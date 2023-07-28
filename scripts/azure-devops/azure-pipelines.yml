@@ -76,8 +76,8 @@ jobs:
 
   steps:
   - task: AzureCLI@2
-    displayName: 'Create Managed Identity resource group'
-    name: managedIdentityResourceGroup
+    displayName: 'Create Managed Identity and scope resource groups'
+    name: resourceGroup
     inputs:
       azureSubscription: '$(azureConnection)'
       failOnStandardError: true
@@ -86,15 +86,24 @@ jobs:
       inlineScript: |
         $tags=@("application=$(application)","provisioner=azure-cli","runId=$(Build.BuildId)")
         $managedIdentityResourceGroupName="${{ variables['organizationName'] }}-service-connections-$(Build.BuildId)"
-        Write-Host "Creating resource group `"$managedIdentityResourceGroupName`"..."
+        Write-Host "Creating Managed Identity resource group `"$managedIdentityResourceGroupName`"..."
         az group create --name $managedIdentityResourceGroupName `
                         --location centralus `
                         --tags $tags `
                         --query id `
                         | Set-Variable -Name managedIdentityResourceGroupId
+        Write-Host "##vso[task.setvariable variable=managedIdentityResourceGroupId;isOutput=true]${managedIdentityResourceGroupId}"
+        Write-Host "##vso[task.setvariable variable=managedIdentityResourceGroupName;isOutput=true]${managedIdentityResourceGroupName}"
 
-        Write-Host "##vso[task.setvariable variable=id;isOutput=true]${managedIdentityResourceGroupId}"
-        Write-Host "##vso[task.setvariable variable=name;isOutput=true]${managedIdentityResourceGroupName}"
+        $scopeResourceGroupName="${{ variables['organizationName'] }}-service-connection-test-scope-$(Build.BuildId)"
+        Write-Host "Creating Managed Identity resource group `"$managedIdentityResourceGroupName`"..."
+        az group create --name $scopeResourceGroupName `
+                        --location centralus `
+                        --tags $tags `
+                        --query id `
+                        | Set-Variable -Name scopeResourceGroupId
+        Write-Host "##vso[task.setvariable variable=scopeResourceGroupId;isOutput=true]${scopeResourceGroupId}"
+        Write-Host "##vso[task.setvariable variable=scopeResourceGroupName;isOutput=true]${scopeResourceGroupName}"
 
 - job: teardown
   dependsOn: create_service_connection
