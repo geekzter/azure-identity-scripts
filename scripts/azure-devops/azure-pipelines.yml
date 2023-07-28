@@ -146,7 +146,7 @@ jobs:
     name: 'Azure Pipelines'
     vmImage: ubuntu-latest
   variables:
-    clientId: $[ dependencies.inspectCluster.outputs['createServiceConnection.clientId'] ]
+    clientId: $[ dependencies.createServiceConnection.outputs['identity.clientId'] ]
   steps:
   - task: AzureCLI@2
     name: teardownAzure
@@ -200,7 +200,7 @@ jobs:
 
         az devops service-endpoint list 
         Write-Host "[?authorization.parameters.serviceprincipalid=='$(clientId)'].id"
-        
+
         az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(clientId)'].id" `
                                         -o tsv `
                                         | Set-Variable -Name serviceConnectionId
