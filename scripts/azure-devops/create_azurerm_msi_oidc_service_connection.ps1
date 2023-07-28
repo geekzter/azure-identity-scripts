@@ -45,7 +45,7 @@ param (
     [ValidatePattern("^$|(?i)/subscriptions/[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(/resourcegroups/(.+?))?")]
     $ServiceConnectionScope,
 
-    [parameter(Mandatory=$true,HelpMessage="Name of the Azure DevOps Project")]
+    [parameter(Mandatory=$false,HelpMessage="Name of the Azure DevOps Project")]
     [string]
     [ValidateNotNullOrEmpty()]
     $Project=$env:SYSTEM_TEAMPROJECT,
@@ -53,7 +53,7 @@ param (
     [parameter(Mandatory=$false,HelpMessage="Url of the Azure DevOps Organization")]
     [uri]
     [ValidateNotNullOrEmpty()]
-    $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL || env:SYSTEM_TASKDEFINITIONSURI)
+    $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI)
 ) 
 Write-Verbose $MyInvocation.line 
 . (Join-Path $PSScriptRoot .. functions.ps1)
