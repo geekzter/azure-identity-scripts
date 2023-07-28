@@ -23,6 +23,8 @@ trigger: none
 
 variables:
 - group: 'identity-ci' # Should contain 'azureConnection', 'scHasMSFTGraphPermissions'
+- name: application
+  value: 'Service Connections'
 - name: scriptDirectory
   value: $(Build.SourcesDirectory)/scripts/azure-devops
 - name: organizationName
@@ -68,7 +70,6 @@ jobs:
 #       workingDirectory: '$(scriptDirectory)'
 
 - job: create_service_connection
-
   pool:
     name: 'Azure Pipelines'
     vmImage: ubuntu-latest
@@ -83,13 +84,61 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        $tags=@("application=Service Connections","provisioner=azure-cli","runId=$(Build.BuildId)")
+        $tags=@("application=$(application)","provisioner=azure-cli","runId=$(Build.BuildId)")
         $managedIdentityResourceGroupName="${{ variables['organizationName'] }}-service-connections"
         Write-Host "Creating resource group `"$managedIdentityResourceGroupName`"..."
-        # az group create --name $(managedIdentityResourceGroupName) `
-        #                 --location $(managedIdentityResourceGroupLocation) `
-        #                 --tags $tags `
-        #                 --query id `
-        #                 | Set-Variable -Name managedIdentityResourceGroupId
+        az group create --name $(managedIdentityResourceGroupName) `
+                        --location $(managedIdentityResourceGroupLocation) `
+                        --tags $tags `
+                        --query id `
+                        | Set-Variable -Name managedIdentityResourceGroupId
 
         Write-Host "##vso[task.setvariable variable=id;isOutput=true]${managedIdentityResourceGroupId}"
+        Write-Host "##vso[task.setvariable variable=name;isOutput=true]${managedIdentityResourceGroupName}"
+
+- job: teardown
+  dependsOn: create_service_connection
+  pool:
+    name: 'Azure Pipelines'
+    vmImage: ubuntu-latest
+
+  steps:
+  - task: AzureCLI@2
+    condition: succeededOrFailed()
+    name: teardownAzure
+    displayName: 'Tear down Azure resources'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
+        # Build JMESPath expression
+        $tagQuery = "[?tags.application == '$(application)' && tags.runId == '$(Build.BuildId)' && properties.provisioningState != 'Deleting'].id"
+        Write-Host "Removing resources identified by `"$tagQuery`"..."
+
+        # Remove resource groups
+        $resourceGroupIDs = $(az group list --query "${tagQuery}" -o tsv)
+        if ($resourceGroupIDs) {
+          Write-Host "Removing resource group(s) `"${resourceGroupIDs}`"..."
+          &{ # az writes information to stderr
+            $ErrorActionPreference = 'SilentlyContinue'
+            az resource delete --ids $resourceGroupIDs 2>&1
+          }
+        } else {
+          Write-Host "No resource groups to remove"
+        }
+
+        # Remove (remaining) resources
+        $resourceIDs = $(az resource list --query "${tagQuery}" -o tsv)
+        if ($resourceIDs) {
+          Write-Host "Removing resources `"${resourceIDs}`"..."
+          &{ # az writes information to stderr
+            $ErrorActionPreference = 'SilentlyContinue'
+            az resource delete --ids $resourceIDs 2>&1
+          }
+        } else {
+          Write-Host "No resources to remove"
+        }
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
