@@ -53,7 +53,7 @@ param (
     [parameter(Mandatory=$false,HelpMessage="Url of the Azure DevOps Organization")]
     [uri]
     [ValidateNotNullOrEmpty()]
-    $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL || $env:SYSTEM_COLLECTIONURI)
+    $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI)
 ) 
 Write-Verbose $MyInvocation.line 
 . (Join-Path $PSScriptRoot .. functions.ps1)

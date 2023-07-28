@@ -116,7 +116,15 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        Set-PSdebug -Trace 1
+        if ($env:SYSTEM_DEBUG -eq "true") {
+          $InformationPreference = "Continue"
+          $VerbosePreference = "Continue"
+          $DebugPreference = "Continue"
+
+          Set-PSDebug -Trace 1
+          
+          Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+        }
         ./create_azurerm_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
                                                          -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
                                                          -IdentitySubscriptionId $(az account show --query id -o tsv) `
