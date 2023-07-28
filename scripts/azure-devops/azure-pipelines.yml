@@ -117,7 +117,7 @@ jobs:
         ./create_azurerm_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
                                                          -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
                                                          -IdentitySubscriptionId $(az account show --query id -o tsv) `
-                                                         -ServiceConnectionScope $(resourceGroup.scopeResourceGroupName)
+                                                         -ServiceConnectionScope $(resourceGroup.scopeResourceGroupId)
       workingDirectory: '$(scriptDirectory)'
 
 - job: teardown
