@@ -117,10 +117,11 @@ jobs:
         ./create_azurerm_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
                                                          -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
                                                          -IdentitySubscriptionId $(az account show --query id -o tsv) `
-                                                         -ServiceConnectionScope $(resourceGroup.scopeResourceGroupName) `
+                                                         -ServiceConnectionScope $(resourceGroup.scopeResourceGroupName)
       workingDirectory: '$(scriptDirectory)'
 
 - job: teardown
+  condition: succeededOrFailed()
   dependsOn: create_service_connection
   pool:
     name: 'Azure Pipelines'
@@ -128,7 +129,6 @@ jobs:
 
   steps:
   - task: AzureCLI@2
-    condition: succeededOrFailed()
     name: teardownAzure
     displayName: 'Tear down Azure resources'
     inputs:
