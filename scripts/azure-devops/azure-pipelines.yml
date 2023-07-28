@@ -36,13 +36,49 @@ variables:
 - group: 'identity-ci' # Should contain 'azureConnection', 'scHasMSFTGraphPermissions'
 - name: scriptDirectory
   value: $(Build.SourcesDirectory)/scripts/azure-devops
+- name: organizationName
+  value: ${{ split(variables['System.CollectionUri'],"/")[3] }}
 - name: AZURE_CORE_ONLY_SHOW_ERRORS
   value: true
 - name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
   value: yes_without_prompt
 
 jobs:
-- job: retrieval_scripts
+# - job: retrieval_scripts
+
+#   pool:
+#     name: 'Azure Pipelines'
+#     vmImage: ubuntu-latest
+
+#   steps:
+#   - task: AzureCLI@2
+#     displayName: 'list_service_connections.ps1'
+#     inputs:
+#       azureSubscription: '$(azureConnection)'
+#       scriptType: pscore
+#       scriptLocation: inlineScript
+#       inlineScript: |
+#         az account show -o json | ConvertFrom-Json | Set-Variable account
+
+#         Write-Host "`nList Managed Identities in subscription '$($account.name)'"
+#         ./list_service_connections.ps1 -TenantId $account.tenantId
+
+#       failOnStandardError: true
+#       workingDirectory: '$(scriptDirectory)'
+
+#   - task: AzureCLI@2
+#     displayName: 'set_terraform_azurerm_vars.ps1'
+#     inputs:
+#       addSpnToEnvironment: true
+#       azureSubscription: '$(azureConnection)'
+#       scriptType: pscore
+#       scriptLocation: inlineScript
+#       inlineScript: |
+#         ./set_terraform_azurerm_vars.ps1
+#       failOnStandardError: true
+#       workingDirectory: '$(scriptDirectory)'
+
+- job: create_service_connection
 
   pool:
     name: 'Azure Pipelines'
@@ -50,28 +86,21 @@ jobs:
 
   steps:
   - task: AzureCLI@2
-    displayName: 'list_service_connections.ps1'
+    displayName: 'Create Managed Identity resource group'
+    name: managedIdentityResourceGroup
     inputs:
       azureSubscription: '$(azureConnection)'
+      failOnStandardError: true
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        az account show -o json | ConvertFrom-Json | Set-Variable account
+        $tags=@("application=Service Connections","provisioner=azure-cli","runId=$(Build.BuildId)")
+        $managedIdentityResourceGroupName="${{ variables['organizationName'] }}-service-connections"
+        Write-Host "Creating resource group `"$managedIdentityResourceGroupName`"..."
+        # az group create --name $(managedIdentityResourceGroupName) `
+        #                 --location $(managedIdentityResourceGroupLocation) `
+        #                 --tags $tags `
+        #                 --query id `
+        #                 | Set-Variable -Name managedIdentityResourceGroupId
 
-        Write-Host "`nList Managed Identities in subscription '$($account.name)'"
-        ./list_service_connections.ps1 -TenantId $account.tenantId
-
-      failOnStandardError: true
-      workingDirectory: '$(scriptDirectory)'
-
-  - task: AzureCLI@2
-    displayName: 'set_terraform_azurerm_vars.ps1'
-    inputs:
-      addSpnToEnvironment: true
-      azureSubscription: '$(azureConnection)'
-      scriptType: pscore
-      scriptLocation: inlineScript
-      inlineScript: |
-        ./set_terraform_azurerm_vars.ps1
-      failOnStandardError: true
-      workingDirectory: '$(scriptDirectory)'
+        Write-Host "##vso[task.setvariable variable=id;isOutput=true]${managedIdentityResourceGroupId}"
