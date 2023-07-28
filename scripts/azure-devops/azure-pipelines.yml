@@ -118,8 +118,7 @@ jobs:
                                                          -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
                                                          -IdentitySubscriptionId $(az account show --query id -o tsv) `
                                                          -ServiceConnectionScope $(resourceGroup.scopeResourceGroupName) `
-    failOnStandardError: true
-    workingDirectory: '$(scriptDirectory)'
+      workingDirectory: '$(scriptDirectory)'
 
 - job: teardown
   dependsOn: create_service_connection
