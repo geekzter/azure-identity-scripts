@@ -1,6 +1,6 @@
 # Azure Identity Scripts
 
-[![github-secrets-ci](https://github.com/geekzter/azure-identity-scripts/actions/workflows/ci.yml/badge.svg)](https://github.com/geekzter/azure-identity-scripts/actions/workflows/ci.yml)
+[![gh-secrets-ci](https://github.com/geekzter/azure-identity-scripts/actions/workflows/ci.yml/badge.svg)](https://github.com/geekzter/azure-identity-scripts/actions/workflows/ci.yml)
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fidentity-azdo-pwsh-ci?branchName=main&label=azdo-pwsh-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=7&branchName=main)
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fidentity-pwsh-ci?branchName=main&label=pwsh-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=6&branchName=main)
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fcreate-service-connection?branchName=main&label=terraform-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=5&branchName=main)
