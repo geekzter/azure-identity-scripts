@@ -109,7 +109,7 @@ jobs:
 
   - task: AzureCLI@2
     displayName: 'Create Managed Identity and Service Connection'
-    name: create_service_connection
+    name: identity
     inputs:
       azureSubscription: '$(azureConnection)'
       failOnStandardError: true
@@ -129,6 +129,13 @@ jobs:
                                                          -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
                                                          -IdentitySubscriptionId $(az account show --query id -o tsv) `
                                                          -ServiceConnectionScope $(resourceGroup.scopeResourceGroupId)
+
+        az identity list -g $(resourceGroup.managedIdentityResourceGroupName) `
+                         --query [0].clientId `
+                         -o tsv `
+                         | Set-Variable -Name clientId
+        Write-Host "##vso[task.setvariable variable=clientId;isOutput=true]${clientId}"
+
       workingDirectory: '$(scriptDirectory)'
 
 - job: teardown
@@ -175,5 +182,30 @@ jobs:
           }
         } else {
           Write-Host "No resources to remove"
+        }
+      failOnStandardError: true
+
+  - task: AzureCLI@2
+    name: teardownAzDO
+    condition: succeededOrFailed()
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
+        az devops configure --defaults organization="$(System.CollectionUri)" project="$(System.TeamProject)"
+        az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(identity.clientId)']" `
+                                        -o tsv `
+                                        | Set-Variable -Name serviceConnectionId
+        if (!$serviceConnectionId) {
+          Write-Host "No service connections to remove"
+          exit 0
+        } 
+
+        Write-Host "Removing service connection ${serviceConnectionId}..."
+        &{ # az writes information to stderr
+          $ErrorActionPreference = 'SilentlyContinue'
+          az devops service-endpoint delete --id $serviceConnectionId --yes 2>&1
         }
       failOnStandardError: true
