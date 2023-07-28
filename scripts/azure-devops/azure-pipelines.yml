@@ -70,7 +70,7 @@ jobs:
 #       failOnStandardError: true
 #       workingDirectory: '$(scriptDirectory)'
 
-- job: create_service_connection
+- job: createServiceConnection
   displayName: 'Create Service Connection'
   pool:
     name: 'Azure Pipelines'
@@ -140,12 +140,13 @@ jobs:
 
 - job: teardown
   condition: succeededOrFailed()
-  dependsOn: create_service_connection
+  dependsOn: createServiceConnection
   displayName: 'Tear down resources'
   pool:
     name: 'Azure Pipelines'
     vmImage: ubuntu-latest
-
+  variables:
+    clientId: $[ dependencies.inspectCluster.outputs['createServiceConnection.clientId'] ]
   steps:
   - task: AzureCLI@2
     name: teardownAzure
@@ -186,6 +187,7 @@ jobs:
       failOnStandardError: true
 
   - task: AzureCLI@2
+    displayName: 'Tear down Service Connection'
     name: teardownAzDO
     condition: succeededOrFailed()
     inputs:
@@ -195,7 +197,7 @@ jobs:
       inlineScript: |
         $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
         az devops configure --defaults organization="$(System.CollectionUri)" project="$(System.TeamProject)"
-        az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(identity.clientId)']" `
+        az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(clientId)']" `
                                         -o tsv `
                                         | Set-Variable -Name serviceConnectionId
         if (!$serviceConnectionId) {
