@@ -197,7 +197,7 @@ jobs:
       inlineScript: |
         $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
         az devops configure --defaults organization="$(System.CollectionUri)" project="$(System.TeamProject)"
-        az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(clientId)']" `
+        az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(clientId)'].id" `
                                         -o tsv `
                                         | Set-Variable -Name serviceConnectionId
         if (!$serviceConnectionId) {
