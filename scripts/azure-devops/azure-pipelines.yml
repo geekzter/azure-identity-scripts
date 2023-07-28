@@ -1,16 +1,5 @@
 name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-$(SourceBranchName)-$(Build.BuildId)
 
-# parameters:
-# - name: destroy
-#   displayName: Destroy Infrastructure
-#   type: string
-#   default: Always
-#   values:
-#   - Always
-#   - Never 
-#   - 'On failure'
-#   - 'On success'
-
 pr:
   autoCancel: false
   branches:
