@@ -1,4 +1,4 @@
-name: github-secrets-ci
+name: gh-secrets-ci
 
 on:
   pull_request:
