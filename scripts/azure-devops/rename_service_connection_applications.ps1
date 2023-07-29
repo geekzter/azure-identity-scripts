@@ -40,6 +40,7 @@ Login-Az -Tenant ([ref]$TenantId)
 
 # Get owned service connections using AAD tenant
 $organizationName=($OrganizationUrl -split '/' | Select-Object -Index 3)
+$OrganizationUrl -replace "/*$", "" | Set-Variable -Name OrganizationUrl
 $userName=(az account show --query user.name -o tsv)
 az devops service-endpoint list --project $Project `
                                 --organization $OrganizationUrl `
@@ -51,6 +52,7 @@ az devops service-endpoint list --project $Project `
 $serviceConnections | Format-Table -AutoSize -Property Name | Out-String | Write-Debug
 
 # Iterate through service connections
+"Processing service connections referencing an AAD application in {0}/{1}/_settings/adminservices created by {2}..." -f $OrganizationUrl, [uri]::EscapeDataString($Project), $userName | Write-Host
 foreach ($serviceConnection in $serviceConnections) {
     # Get application
     Write-Verbose "Getting application '$($serviceConnection.authorization.parameters.serviceprincipalid)' for service connection '$($serviceConnection.name)'..."
@@ -101,5 +103,5 @@ foreach ($serviceConnection in $serviceConnections) {
 }
 
 # List processed service connection identities
-Write-Host "Service connections processed:"
+"`nService connections processed referencing an AAD application in {0}/{1}/_settings/adminservices created by {2}:" -f $OrganizationUrl, [uri]::EscapeDataString($Project), $userName | Write-Host
 $serviceConnections | Format-Table -AutoSize -Property Name, @{Name="clientId";Expression={$_.authorization.parameters.serviceprincipalid}}, oldApplicationName, newApplicationName
