@@ -27,7 +27,7 @@ param (
 
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
-    $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
+    $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID ?? [guid]::Empty)
 ) 
 
 Write-Debug $MyInvocation.line
