@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7
 param ( 
-    [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Organization")]
+    [parameter(Mandatory=$true,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Organization")]
     [ValidateNotNullOrEmpty()]
     [string]
     $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI)
