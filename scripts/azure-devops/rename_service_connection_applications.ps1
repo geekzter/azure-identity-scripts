@@ -78,7 +78,6 @@ foreach ($serviceConnection in $serviceConnections) {
     } else {
         "{0}-{1}-{2}" -f $organizationName, $Project, $serviceConnection.name `
                       | Set-Variable -Name newApplicationName
-                      $newApplicationName -replace ' ', '' | Set-Variable -Name newApplicationName
     }
     Write-Verbose "New application name: ${newApplicationName}"
 
