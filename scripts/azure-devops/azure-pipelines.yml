@@ -36,13 +36,28 @@ variables:
 
 jobs:
 - job: retrievalScripts
-  displayName: 'Microsoft Graph Retrieval scripts'
+  displayName: 'Non-modifying tests'
 
   pool:
     name: 'Azure Pipelines'
     vmImage: ubuntu-latest
 
   steps:
+  - task: AzureCLI@2
+    displayName: 'rename_service_connection_applications.ps1'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        Write-Host "`nSimulating renaming service connection applications to defaults"
+        ./rename_service_connection_applications.ps1 -Reset -WhatIf
+
+        Write-Host "`nSimulating pretty-naming service connection applications"
+        ./rename_service_connection_applications.ps1 -WhatIf
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
+
   - task: AzureCLI@2
     displayName: 'list_service_connections.ps1'
     inputs:
@@ -65,8 +80,7 @@ jobs:
       azureSubscription: '$(azureConnection)'
       scriptType: pscore
       scriptLocation: inlineScript
-      inlineScript: |
-        ./set_terraform_azurerm_vars.ps1
+      inlineScript: set_terraform_azurerm_vars.ps1
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
 

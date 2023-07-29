@@ -88,12 +88,18 @@ foreach ($serviceConnection in $serviceConnections) {
     }
 
     # Rename app
-    Write-Host "Renaming application $($application.displayName) to '${newApplicationName}'..."
+    $serviceConnection | Add-Member "newApplicationName" $newApplicationName
+    Write-Host "Renaming application $($application.displayName) to '${newApplicationName}'..." -Nonewline
+    if ($WhatIf) {
+        Write-Host " skipped (WhatIf specified)"
+        continue
+    } else {
+        Write-Host ""
+    }
     az ad app update --id $application.appId `
                      --display-name $newApplicationName
-    $serviceConnection | Add-Member "newApplicationName" $newApplicationName
 }
 
 # List processed service connection identities
 Write-Host "Service connections processed:"
-$serviceConnections | Format-Table -AutoSize -Property Name, oldApplicationName, newApplicationName
+$serviceConnections | Format-Table -AutoSize -Property Name, @{Name="clientId";Expression={$_.authorization.parameters.serviceprincipalid}}, oldApplicationName, newApplicationName
