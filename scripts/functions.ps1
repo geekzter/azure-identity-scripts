@@ -533,6 +533,8 @@ function Login-Az (
             az account show 2>$null | ConvertFrom-Json | Set-Variable azureAccount
             $TenantId.Value = $azureAccount.tenantId
         }
+    } else {
+        $TenantId.Value = $azureAccount.tenantId
     }
 }
 
