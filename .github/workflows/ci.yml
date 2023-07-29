@@ -1,4 +1,4 @@
-name: pwsh-ci
+name: gh-secrets-ci
 
 on:
   pull_request:
@@ -50,25 +50,3 @@ jobs:
 
         echo "These are resource groups that AZURE_CLIENT_ID '${{ secrets.AZURE_CLIENT_ID }}' has access to in '$(az account show --query name -o tsv)':"
         az group list --query "sort_by([].{Name:name, ResourceId:id}, &Name)" -o table
-
-    - name: Test find_workload_identity.ps1
-      run: |
-        Set-PSDebug -Trace 0
-
-        az ad sp list --filter "appId eq '${{ secrets.AZURE_CLIENT_ID }}'" --query "[0]" -o json | ConvertFrom-Json | Set-Variable sp
-
-        Write-Host "`nFind Service Principal using object/principal ID '$($sp.id)'"
-        ./find_workload_identity.ps1 $sp.id -SkipApplication
-
-        Write-Host "`nFind Service Principal using app/client ID '$($sp.appId)'"
-        ./find_workload_identity.ps1 $sp.appId -SkipApplication
-
-        Write-Host "`nFind Service Principal using displayName '$($sp.displayName)'"
-        ./find_workload_identity.ps1 $sp.displayName -SkipApplication
-        
-        Write-Host "`nFind Service Principal using servicePrincipalNames[]"
-        foreach ($servicePrincipalName in $sp.servicePrincipalNames) {
-          Write-Host "`nFind Service Principal using servicePrincipalName '$servicePrincipalName'"
-          ./find_workload_identity.ps1 $servicePrincipalName -SkipApplication
-        }
-      shell: pwsh

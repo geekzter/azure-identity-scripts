@@ -1,0 +1,228 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-$(SourceBranchName)-$(Build.BuildId)
+
+pr:
+  autoCancel: false
+  branches:
+    include:
+    - '*'
+  drafts: false
+  paths:
+    exclude:
+    - '.devcontainer/**'  
+    - 'visuals/**'  
+    - '*.md'  
+schedules:
+- cron: '0 0 * * Tue,Fr'
+  displayName: 'Bi-weekly build (UTC)'
+  # Run if there are no changes
+  always: 'true'
+  branches:
+    include:
+    - master
+trigger: none
+
+variables:
+- group: 'identity-ci' # Should contain 'azureConnection', 'scHasMSFTGraphPermissions'
+- name: application
+  value: 'Service Connections'
+- name: scriptDirectory
+  value: $(Build.SourcesDirectory)/scripts/azure-devops
+- name: organizationName
+  value: ${{ split(variables['System.CollectionUri'],'/')[3] }}
+- name: AZURE_CORE_ONLY_SHOW_ERRORS
+  value: true
+- name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
+  value: yes_without_prompt
+
+jobs:
+- job: retrievalScripts
+  displayName: 'Non-modifying tests'
+
+  pool:
+    name: 'Azure Pipelines'
+    vmImage: ubuntu-latest
+
+  steps:
+  - task: AzureCLI@2
+    displayName: 'rename_service_connection_applications.ps1'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        Write-Host "`nSimulating renaming service connection applications to defaults"
+        ./rename_service_connection_applications.ps1 -Reset -WhatIf
+
+        Write-Host "`nSimulating pretty-naming service connection applications"
+        ./rename_service_connection_applications.ps1 -WhatIf
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
+
+  - task: AzureCLI@2
+    displayName: 'list_service_connections.ps1'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        az account show -o json | ConvertFrom-Json | Set-Variable account
+
+        Write-Host "`nList Managed Identities in subscription '$($account.name)'"
+        ./list_service_connections.ps1 -TenantId $account.tenantId
+
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
+
+  - task: AzureCLI@2
+    displayName: 'set_terraform_azurerm_vars.ps1'
+    inputs:
+      addSpnToEnvironment: true
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: ./set_terraform_azurerm_vars.ps1
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
+
+- job: createServiceConnection
+  displayName: 'Create Service Connection'
+  pool:
+    name: 'Azure Pipelines'
+    vmImage: ubuntu-latest
+
+  steps:
+  - task: AzureCLI@2
+    displayName: 'Create resource groups for Managed Identity and scope'
+    name: resourceGroup
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      failOnStandardError: true
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $tags=@("application=$(application)","provisioner=azure-cli","runId=$(Build.BuildId)")
+        $managedIdentityResourceGroupName="${{ variables['organizationName'] }}-service-connections-$(Build.BuildId)"
+        Write-Host "Creating Managed Identity resource group `"$managedIdentityResourceGroupName`"..."
+        az group create --name $managedIdentityResourceGroupName `
+                        --location centralus `
+                        --tags $tags `
+                        --query id `
+                        | Set-Variable -Name managedIdentityResourceGroupId
+        Write-Host "##vso[task.setvariable variable=managedIdentityResourceGroupId;isOutput=true]${managedIdentityResourceGroupId}"
+        Write-Host "##vso[task.setvariable variable=managedIdentityResourceGroupName;isOutput=true]${managedIdentityResourceGroupName}"
+
+        $scopeResourceGroupName="${{ variables['organizationName'] }}-service-connection-test-scope-$(Build.BuildId)"
+        Write-Host "Creating Managed Identity resource group `"$managedIdentityResourceGroupName`"..."
+        az group create --name $scopeResourceGroupName `
+                        --location centralus `
+                        --tags $tags `
+                        --query id `
+                        | Set-Variable -Name scopeResourceGroupId
+        Write-Host "##vso[task.setvariable variable=scopeResourceGroupId;isOutput=true]${scopeResourceGroupId}"
+        Write-Host "##vso[task.setvariable variable=scopeResourceGroupName;isOutput=true]${scopeResourceGroupName}"
+
+  - task: AzureCLI@2
+    displayName: 'Create Managed Identity and Service Connection'
+    name: identity
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      failOnStandardError: true
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        if ($env:SYSTEM_DEBUG -eq "true") {
+          $InformationPreference = "Continue"
+          $VerbosePreference = "Continue"
+          $DebugPreference = "Continue"
+
+          Set-PSDebug -Trace 1
+          
+          Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+        }
+        ./create_azurerm_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
+                                                         -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
+                                                         -IdentitySubscriptionId $(az account show --query id -o tsv) `
+                                                         -ServiceConnectionScope $(resourceGroup.scopeResourceGroupId)
+
+        az identity list -g $(resourceGroup.managedIdentityResourceGroupName) `
+                         --query [0].clientId `
+                         -o tsv `
+                         | Set-Variable -Name clientId
+        Write-Host "##vso[task.setvariable variable=clientId;isOutput=true]${clientId}"
+
+      workingDirectory: '$(scriptDirectory)'
+
+- job: teardown
+  condition: succeededOrFailed()
+  dependsOn: createServiceConnection
+  displayName: 'Tear down resources'
+  pool:
+    name: 'Azure Pipelines'
+    vmImage: ubuntu-latest
+  variables:
+    clientId: $[ dependencies.createServiceConnection.outputs['identity.clientId'] ]
+  steps:
+  - task: AzureCLI@2
+    name: teardownAzure
+    displayName: 'Tear down Azure resources'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
+        # Build JMESPath expression
+        $tagQuery = "[?tags.application == '$(application)' && tags.runId == '$(Build.BuildId)' && properties.provisioningState != 'Deleting'].id"
+        Write-Host "Removing resources identified by `"$tagQuery`"..."
+
+        # Remove resource groups
+        $resourceGroupIDs = $(az group list --query "${tagQuery}" -o tsv)
+        if ($resourceGroupIDs) {
+          Write-Host "Removing resource group(s) `"${resourceGroupIDs}`"..."
+          &{ # az writes information to stderr
+            $ErrorActionPreference = 'SilentlyContinue'
+            az resource delete --ids $resourceGroupIDs 2>&1
+          }
+        } else {
+          Write-Host "No resource groups to remove"
+        }
+
+        # Remove (remaining) resources
+        $resourceIDs = $(az resource list --query "${tagQuery}" -o tsv)
+        if ($resourceIDs) {
+          Write-Host "Removing resources `"${resourceIDs}`"..."
+          &{ # az writes information to stderr
+            $ErrorActionPreference = 'SilentlyContinue'
+            az resource delete --ids $resourceIDs 2>&1
+          }
+        } else {
+          Write-Host "No resources to remove"
+        }
+      failOnStandardError: true
+
+  - task: AzureCLI@2
+    displayName: 'Tear down Service Connection'
+    name: teardownAzDO
+    condition: succeededOrFailed()
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
+        az devops configure --defaults organization="$(System.CollectionUri)" project="$(System.TeamProject)"
+
+        az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(clientId)'].id" `
+                                        -o tsv `
+                                        | Set-Variable -Name serviceConnectionId
+        if (!$serviceConnectionId) {
+          Write-Host "No service connections to remove"
+          exit 0
+        } 
+
+        Write-Host "Removing service connection ${serviceConnectionId}..."
+        &{ # az writes information to stderr
+          $ErrorActionPreference = 'SilentlyContinue'
+          az devops service-endpoint delete --id $serviceConnectionId --yes 2>&1
+        }
+      failOnStandardError: true

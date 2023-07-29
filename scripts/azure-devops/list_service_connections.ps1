@@ -3,13 +3,13 @@
 .SYNOPSIS 
     Find Azure DevOps Service Connections
 .DESCRIPTION 
-    Use the Microsoft Graph API to find Azure DevOps Service Connections by organisation & project, using Azure DevOps Service Connection naming convention
+    Use the Microsoft Graph API to find Azure DevOps Service Connections by organization & project, using Azure DevOps Service Connection naming convention
 #>
 #Requires -Version 7
 param ( 
     [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Organization")]
     [string]
-    $Organization=($env:AZDO_ORG_SERVICE_URL -split '/' | Select-Object -Skip 3),
+    $Organization=(($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI) -split '/' | Select-Object -Index 3),
 
     [parameter(Mandatory=$false,ParameterSetName="Organization",HelpMessage="Name of the Azure DevOps Project")]
     [string]
@@ -46,11 +46,11 @@ param (
 
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
-    $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
+    $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID ?? [guid]::Empty)
 ) 
 
 Write-Debug $MyInvocation.line
-. (Join-Path $PSScriptRoot functions.ps1)
+. (Join-Path $PSScriptRoot .. functions.ps1)
 
 # Login to Azure CLI
 Write-Verbose "Logging into Azure..."

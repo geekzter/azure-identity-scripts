@@ -1,7 +1,9 @@
 # Azure Identity Scripts
 
-[![pwsh-ci](https://github.com/geekzter/azure-identity-scripts/actions/workflows/ci.yml/badge.svg)](https://github.com/geekzter/azure-identity-scripts/actions/workflows/ci.yml)
-[![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fcreate-service-connection?branchName=refs%2Fpull%2F18%2Fmerge&label=create-service-connection)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=5&branchName=refs%2Fpull%2F18%2Fmerge)
+[![gh-secrets-ci](https://github.com/geekzter/azure-identity-scripts/actions/workflows/ci.yml/badge.svg)](https://github.com/geekzter/azure-identity-scripts/actions/workflows/ci.yml)
+[![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fidentity-azdo-pwsh-ci?branchName=main&label=azdo-pwsh-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=7&branchName=main)
+[![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fidentity-pwsh-ci?branchName=main&label=pwsh-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=6&branchName=main)
+[![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fcreate-service-connection?branchName=main&label=terraform-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=5&branchName=main)
 
 This repo contains a few [PowerShell](https://github.com/PowerShell/PowerShell) scripts that use the [Azure CLI](https://github.com/Azure/azure-cli) to create or find Azure Active Directory objects:
 
@@ -25,7 +27,8 @@ This repo contains a few [PowerShell](https://github.com/PowerShell/PowerShell) 
   [set_terraform_azurerm_vars.ps1](scripts/azure-devops/set_terraform_azurerm_vars.ps1)
 - Create Managed Identity for Service Connection with Workload identity federation: [create_azurerm_msi_oidc_service_connection.ps1](scripts/azure-devops/create_azurerm_msi_oidc_service_connection.ps1)
 - Create Managed Identity for Service Connection with Workload identity federation with [Terraform](terraform/azure-devops/create-service-connection)
-- List identities for Azure Pipeline Service Connections by Azure DevOps organization and (optionally) project: [list_service_connections.ps1](scripts/list_service_connections.ps1)
+- List identities for Azure Pipeline Service Connections in Azure Active Directory pertaining to Azure DevOps organization and (optionally) project: [list_service_connections.ps1](scripts/azure-devops/list_service_connections.ps1)
+- 'Pretty-name' Azure Active Directory applications created for Service Connections, so the Service Connection name is included in the application display name: [rename_service_connection_applications.ps1](scripts/azure-devops/rename_service_connection_applications.ps1)
 
 ## GitHub
 

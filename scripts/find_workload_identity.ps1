@@ -27,7 +27,7 @@ param (
 
     [parameter(Mandatory=$false)]
     [switch]
-    $SkipApplication=$false,
+    $ServicePrincipalOnly=$false,
     
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
@@ -113,7 +113,7 @@ switch -regex ($IdOrName) {
 
     # Match Name or URL
     "^[\w\-\/\:\.]+" {
-        if (!$SkipApplication) {
+        if (!$ServicePrincipalOnly) {
             Find-ApplicationByName -Name $IdOrName | Set-Variable app
         }
         if ($app) {
@@ -133,14 +133,26 @@ switch -regex ($IdOrName) {
     }
 }
 
-if (!$SkipApplication -and !$app -and $sp -and ($sp.servicePrincipalType -ieq "Application")) {
+## Retrieve app if it wasn't retrieved yet
+if (!$ServicePrincipalOnly -and !$app -and $sp -and ($sp.servicePrincipalType -ieq "Application")) {
     Find-ApplicationByGUID -Id $sp.appId | Set-Variable app
 }
+
+# Get Federated Credentials
+if (!$ServicePrincipalOnly -and $sp) {
+    Get-FederatedCredentials -AppId $sp.appId -Type $sp.servicePrincipalType | Set-Variable fic
+}
+
 if ($app) {
+    # Get-FederatedCredentials -Application $app.appId | Set-Variable fic
     Write-Host "Found Application '$($app.displayName)' with appId '$($app.appId)'"
     $app | Format-List
 }
 if ($sp) {
     Write-Host "Found Service Principal '$($sp.displayName)' of type '$($sp.servicePrincipalType)' with appId '$($sp.appId)'"
     $sp | Format-List
+}
+if ($fic) {
+    Write-Host "Federated Identity Credentials for appId '$($sp.appId)'"
+    $fic | Format-List
 }

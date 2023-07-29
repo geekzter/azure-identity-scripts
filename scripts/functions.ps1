@@ -1,3 +1,22 @@
+function Add-ServicePrincipalProperties (
+    [parameter(Mandatory=$true)]
+    [ValidateNotNull()]
+    [object]
+    $ServicePrincipal
+) {
+    $ServicePrincipal | Add-Member -NotePropertyName principalId -NotePropertyValue $ServicePrincipal.id
+
+    if ($ServicePrincipal.servicePrincipalType -eq 'ManagedIdentity') {
+        "https://portal.azure.com/#@{0}/resource{1}" -f $TenantId, $ServicePrincipal.alternativeNames[1] | Set-Variable applicationPortalLink
+    } else {
+        "https://portal.azure.com/{0}/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/{1}" -f $TenantId, $ServicePrincipal.appId | Set-Variable applicationPortalLink
+    }
+    $ServicePrincipal | Add-Member -NotePropertyName applicationPortalLink -NotePropertyValue $applicationPortalLink
+
+    "https://portal.azure.com/{0}/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/{1}/appId/{2}" -f $TenantId, $ServicePrincipal.id, $ServicePrincipal.appId | Set-Variable servicePrincipalPortalLink
+    $ServicePrincipal | Add-Member -NotePropertyName servicePrincipalPortalLink -NotePropertyValue $servicePrincipalPortalLink
+}
+
 function Create-IdentityTypeJmesPathQuery (
     [parameter(Mandatory=$false)]
     [ValidateSet("UserCreatedManagedIdentity", "SystemCreatedManagedIdentity", "Any")]
@@ -126,13 +145,13 @@ function Find-ApplicationsByFederation (
         $jmesPath = "value[]"
     } else {
         $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
-        $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedSubjects:join(',',federatedIdentityCredentials[].subject),secretCount:length(passwordCredentials[]),certCount:length(keyCredentials[])}"
+        $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedSubjects:join(',',federatedIdentityCredentials[].subject),issuers:join(',',federatedIdentityCredentials[].issuer),secretCount:length(passwordCredentials[]),certCount:length(keyCredentials[])}"
     }
     Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
 
     if ($apps) {
         if (!$Details) {
-            $apps | Select-Object -Property name,appId,id,federatedSubjects,secretCount,certCount `
+            $apps | Select-Object -Property name,appId,id,federatedSubjects,issuers,secretCount,certCount `
                   | Set-Variable apps
         }
         $apps | Sort-Object -Property name,federatedSubjects,createdDateTime`
@@ -153,11 +172,11 @@ function Find-ApplicationsByName (
     $StartsWith
 ) {
     $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$filter=startswith(displayName,'${StartsWith}')&`$expand=federatedIdentityCredentials&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
-    $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedSubjects:join(',',federatedIdentityCredentials[].subject),secretCount:length(passwordCredentials[]),certCount:length(keyCredentials[])}"
+    $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedSubjects:join(',',federatedIdentityCredentials[].subject),issuers:join(',',federatedIdentityCredentials[].issuer),secretCount:length(passwordCredentials[]),certCount:length(keyCredentials[])}"
     Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
 
     if ($apps) {
-        $apps | Select-Object -Property name,appId,id,federatedSubjects,secretCount,certCount `
+        $apps | Select-Object -Property name,appId,id,federatedSubjects,issuers,secretCount,certCount `
               | Sort-Object -Property name `
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
@@ -454,23 +473,34 @@ function Find-ServicePrincipalByName (
     return $null
 }
 
-function Add-ServicePrincipalProperties (
+function Get-FederatedCredentials (
     [parameter(Mandatory=$true)]
-    [ValidateNotNull()]
-    [object]
-    $ServicePrincipal
+    [guid]
+    $AppId,
+
+    [ValidateSet("Application", "ManagedIdentity")]
+    [parameter(Mandatory=$true)]
+    [string]
+    $Type
 ) {
-    $ServicePrincipal | Add-Member -NotePropertyName principalId -NotePropertyValue $ServicePrincipal.id
-
-    if ($ServicePrincipal.servicePrincipalType -eq 'ManagedIdentity') {
-        "https://portal.azure.com/#@{0}/resource{1}" -f $TenantId, $ServicePrincipal.alternativeNames[1] | Set-Variable applicationPortalLink
+    if ($Type -eq "Application") {
+        $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$expand=federatedIdentityCredentials&`$filter=appId eq '${appId}'"
+    } elseif ($Type -eq "ManagedIdentity") {
+        $graphUrl = "https://graph.microsoft.com/v1.0/servicePrincipals?`$count=true&`$expand=federatedIdentityCredentials&`$filter=appId eq '${appId}'"
     } else {
-        "https://portal.azure.com/{0}/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/{1}" -f $TenantId, $ServicePrincipal.appId | Set-Variable applicationPortalLink
+        Write-Error "Invalid Type '$Type'"
+        exit 1
     }
-    $ServicePrincipal | Add-Member -NotePropertyName applicationPortalLink -NotePropertyValue $applicationPortalLink
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[0].federatedIdentityCredentials[]" | Set-Variable fic
+    if ($fic) {
+        Write-Verbose "Found Federated Identity Credential(s) using Microsoft Graph query:"
+        "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual" -replace "\$","```$" | Write-Verbose
+        return $fic
+    } else {
+        Write-Verbose "No Federated Identity Credential found for Service Principal with appId '${AppId}' using Microsoft Graph query"
+    }
 
-    "https://portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/{0}/appId/{1}" -f $ServicePrincipal.id, $ServicePrincipal.appId | Set-Variable servicePrincipalPortalLink
-    $ServicePrincipal | Add-Member -NotePropertyName servicePrincipalPortalLink -NotePropertyValue $servicePrincipalPortalLink
+    return $null
 }
 
 function Login-Az (
@@ -503,6 +533,8 @@ function Login-Az (
             az account show 2>$null | ConvertFrom-Json | Set-Variable azureAccount
             $TenantId.Value = $azureAccount.tenantId
         }
+    } else {
+        $TenantId.Value = $azureAccount.tenantId
     }
 }
 
