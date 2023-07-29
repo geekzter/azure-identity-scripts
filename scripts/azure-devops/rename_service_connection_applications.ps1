@@ -81,6 +81,7 @@ foreach ($serviceConnection in $serviceConnections) {
     Write-Verbose "New application name: ${newApplicationName}"
 
     # Determine whether app has been renamed
+    $serviceConnection | Add-Member "oldApplicationName" $application.displayName
     if ($application.displayName -eq $newApplicationName) {
         Write-Host "Application for service connection '$($serviceConnection.name)' has already been renamed to '${newApplicationName}'"
         continue
@@ -90,6 +91,9 @@ foreach ($serviceConnection in $serviceConnections) {
     Write-Host "Renaming application $($application.displayName) to '${newApplicationName}'..."
     az ad app update --id $application.appId `
                      --display-name $newApplicationName
+    $serviceConnection | Add-Member "newApplicationName" $newApplicationName
 }
 
-# Optionally list service connection identities in project
+# List processed service connection identities
+Write-Host "Service connections processed:"
+$serviceConnections | Format-Table -AutoSize -Property Name, oldApplicationName, newApplicationName
