@@ -209,16 +209,9 @@ az identity create -n $IdentityName `
                    | Set-Variable identity
 Write-Verbose "Created Managed Identity $($identity.id)"
 
-# Look up organizationId
-Write-Verbose "Looking up Azure DevOps organization id (required for issuer)..."
-az rest --method get `
-        --uri "${OrganizationUrl}/_apis/projectCollections?api-version=7.1-preview.1" `
-        --resource 499b84ac-1321-427f-aa17-267ca6975798 `
-        -o tsv `
-        --query "value[0].id" `
-        | Set-Variable organizationId
-
+# Determine the issuer URL
 $issuerUrl = "https://app.vstoken.visualstudio.com"
+# Get-OrganizationId -OrganizationUrl $OrganizationUrl | Set-Variable organizationId
 # $issuerUrl = "https://vstoken.dev.azure.com/${organizationId}"
 
 $federatedSubject = "sc://${organizationName}/${Project}/${ServiceConnectionName}"
