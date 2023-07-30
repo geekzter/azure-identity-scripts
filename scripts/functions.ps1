@@ -527,9 +527,9 @@ function Login-Az (
         }
         if ($TenantId.Value -and ($TenantId.Value -ne [guid]::Empty.ToString())) {
             Write-Debug "az login -t $TenantId.Value $($azLoginSwitches)"
-            az login -t $TenantId.Value -o none $($azLoginSwitches)
+            az login --allow-no-subscriptions -t $TenantId.Value -o none $($azLoginSwitches)
         } else {
-            az login $($azLoginSwitches) -o none
+            az login --allow-no-subscriptions $($azLoginSwitches) -o none
             az account show 2>$null | ConvertFrom-Json | Set-Variable azureAccount
             $TenantId.Value = $azureAccount.tenantId
         }
