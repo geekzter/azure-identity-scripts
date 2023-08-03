@@ -91,6 +91,7 @@ jobs:
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
+          ./list_identities_using_issuer.ps1
           ./list_identities_using_issuer.ps1 -Issuer https://app.vstoken.visualstudio.com -Type Application
           ./list_identities_using_issuer.ps1 -Issuer https://app.vstoken.visualstudio.com -Type ManagedIdentity
           ./list_identities_using_issuer.ps1 -Issuer https://vstoken.dev.azure.com        -Type Application
