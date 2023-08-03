@@ -5,7 +5,7 @@
 #>
 #Requires -Version 7
 param ( 
-    [parameter(Mandatory=$false,HelpMessage="Name of the Azure DevOps Organization")]
+    [parameter(Mandatory=$false,HelpMessage="Url of the Azure DevOps Organization")]
     [ValidateNotNullOrEmpty()]
     [string]
     $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI),

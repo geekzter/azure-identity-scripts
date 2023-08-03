@@ -128,14 +128,14 @@ function Find-ApplicationsByFederation (
 
     [parameter(Mandatory=$false)]
     [switch]
-    $MatchExactSubject,
+    $ExactMatch,
 
     [parameter(Mandatory=$false)]
     [switch]
     $Details
 ) {
-    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith -MatchExactSubject $MatchExactSubject -Details $Details"
-    if ($MatchExactSubject) {
+    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith ExactMatch $ExactMatch -Details $Details"
+    if ($ExactMatch) {
         $filter = "federatedIdentityCredentials/any(f:subject eq '${StartsWith}')"
     } else {
         $filter = "federatedIdentityCredentials/any(f:startsWith(f/subject,'${StartsWith}'))"
@@ -145,6 +145,64 @@ function Find-ApplicationsByFederation (
         $jmesPath = "value[]"
     } else {
         $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
+        $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedSubjects:join(',',federatedIdentityCredentials[].subject),issuers:join(',',federatedIdentityCredentials[].issuer),secretCount:length(passwordCredentials[]),certCount:length(keyCredentials[])}"
+    }
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
+
+    if ($apps) {
+        if (!$Details) {
+            $apps | Select-Object -Property name,appId,id,federatedSubjects,issuers,secretCount,certCount `
+                  | Set-Variable apps
+        }
+        $apps | Sort-Object -Property name,federatedSubjects,createdDateTime`
+              | Set-Variable apps
+        Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
+        "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose
+        return $apps
+    } else {
+        Write-Verbose "No apps found with name starting with '$StartsWith'"
+    }
+
+    return $null
+}
+
+function Find-ApplicationsByIssuer (
+    [parameter(Mandatory=$true)]
+    [string]
+    $StartsWith,
+
+    [parameter(Mandatory=$false)]
+    [switch]
+    $ExactMatch,
+
+    [parameter(Mandatory=$false)]
+    [switch]
+    $Details,
+
+    [ValidateSet("Application", "ManagedIdentity")]
+    [parameter(Mandatory=$true)]
+    [string]
+    $Type
+) {
+    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith -ExactMatch $ExactMatch -Details $Details"
+    if ($ExactMatch) {
+        $filter = "federatedIdentityCredentials/any(f:issuer eq '${StartsWith}')"
+    } else {
+        $filter = "federatedIdentityCredentials/any(f:startsWith(f/issuer,'${StartsWith}'))"
+    }
+    if ($Type -eq "Application") {
+        $object = "applications"
+    } elseif ($Type -eq "ManagedIdentity") {
+        $object = "servicePrincipals"
+    } else {
+        Write-Error "Invalid Type '$Type'"
+        exit 1
+    }
+    if ($Details) {
+        $graphUrl = "https://graph.microsoft.com/v1.0/${object}?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}"
+        $jmesPath = "value[]"
+    } else {
+        $graphUrl = "https://graph.microsoft.com/v1.0/${object}?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
         $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedSubjects:join(',',federatedIdentityCredentials[].subject),issuers:join(',',federatedIdentityCredentials[].issuer),secretCount:length(passwordCredentials[]),certCount:length(keyCredentials[])}"
     }
     Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
