@@ -80,8 +80,10 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        ./list_identities_using_issuer.ps1 -Issuer https://app.vstoken.visualstudio.com
-        ./list_identities_using_issuer.ps1 -Issuer https://vstoken.dev.azure.com
+        ./list_identities_using_issuer.ps1 -Issuer https://app.vstoken.visualstudio.com -Type Application
+        ./list_identities_using_issuer.ps1 -Issuer https://app.vstoken.visualstudio.com -Type ManagedIdentity
+        ./list_identities_using_issuer.ps1 -Issuer https://vstoken.dev.azure.com        -Type Application
+        ./list_identities_using_issuer.ps1 -Issuer https://vstoken.dev.azure.com        -Type ManagedIdentity
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
 

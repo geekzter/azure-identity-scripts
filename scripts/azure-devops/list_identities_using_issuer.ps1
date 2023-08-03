@@ -11,7 +11,7 @@ param (
 
     [parameter(Mandatory=$false,HelpMessage="Issuer url")]
     [string]
-    $Issuer="https://app.vstoken.visualstudio.com",
+    $Issuer="https://vstoken.dev.azure.com",
 
     [ValidateSet("Application", "ManagedIdentity")]
     [parameter(Mandatory=$false)]
