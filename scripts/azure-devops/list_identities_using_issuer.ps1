@@ -28,5 +28,5 @@ Login-Az -Tenant ([ref]$TenantId)
 
 Find-ApplicationsByIssuer -StartsWith $Issuer -Type $type | Set-Variable apps
 
-Write-Host "Found $($apps.Count) Applications with Federation Subject '$Issuer'"
+Write-Host "Found $($apps.Count) identities of type '${Type}' with issuer '${Issuer}'"
 $apps | Format-Table -Property name, appId, federatedSubjects, issuers
