@@ -567,15 +567,6 @@ function Get-OrganizationId (
     [uri]
     $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI)
 ) {
-    # Write-Verbose "Looking up Azure DevOps organization id..."
-    # az rest --method get `
-    #         --uri "${OrganizationUrl}/_apis/projectCollections?api-version=7.1-preview.1" `
-    #         --resource 499b84ac-1321-427f-aa17-267ca6975798 `
-    #         -o tsv `
-    #         --query "value[0].id" `
-    #         | Set-Variable organizationId
-    # return $organizationId
-    
     Write-Verbose "Retrieving member information from profile REST API..."
     $profileUrl = "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.1-preview.1"
     Write-Debug $profileUrl
