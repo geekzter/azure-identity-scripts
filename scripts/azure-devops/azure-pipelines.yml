@@ -226,7 +226,7 @@ jobs:
           $run | ConvertTo-Json | Out-String | Write-Debug
           $run | Format-List | Out-String | Write-Debug
           "{0}{1}/_build/results?buildId={2}&view=results" -f "$(System.CollectionUri)", [uri]::EscapeDataString("$(System.TeamProject)"), $run.id | Write-Host
-          Write-Host "Running pipeline run $($run.id) to complete..."
+          Write-Host "Waiting for pipeline run $($run.id) to complete..."
           do {
               Start-Sleep -Seconds 5
               az pipelines runs show --id $run.id `
