@@ -209,10 +209,9 @@ az identity create -n $IdentityName `
                    | Set-Variable identity
 Write-Verbose "Created Managed Identity $($identity.id)"
 
-# Determine the issuer URL
-$issuerUrl = "https://app.vstoken.visualstudio.com"
-# Get-OrganizationId -OrganizationUrl $OrganizationUrl | Set-Variable organizationId
-# $issuerUrl = "https://vstoken.dev.azure.com/${organizationId}"
+# Create the issuer URL
+Get-OrganizationId -OrganizationUrl $OrganizationUrl | Set-Variable organizationId
+$issuerUrl = "https://vstoken.dev.azure.com/${organizationId}"
 
 $federatedSubject = "sc://${organizationName}/${Project}/${ServiceConnectionName}"
 Write-Verbose "Configuring Managed Identity '${IdentityName}' with federated subject '${federatedSubject}'..."

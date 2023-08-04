@@ -18,8 +18,7 @@ locals {
   federation_subject           = "sc://${local.azdo_organization_name}/${var.azdo_project_name}/${local.azdo_service_connection_name}"
   principal_id                 = var.create_managed_identity ? module.managed_identity.0.principal_id : module.service_principal.0.principal_id
   principal_name               = var.create_managed_identity ? module.managed_identity.0.principal_name : module.service_principal.0.principal_name
-  issuer                       = "https://app.vstoken.visualstudio.com"
-  # issuer                       = "https://vstoken.dev.azure.com/${local.azdo_organization_id}"
+  issuer                       = "https://vstoken.dev.azure.com/${local.azdo_organization_id}"
   resource_suffix              = var.resource_suffix != null && var.resource_suffix != "" ? lower(var.resource_suffix) : random_string.suffix.result
   resource_tags                = {
     application                = "Azure Service Connection"
