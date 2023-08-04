@@ -128,14 +128,14 @@ function Find-ApplicationsByFederation (
 
     [parameter(Mandatory=$false)]
     [switch]
-    $MatchExactSubject,
+    $ExactMatch,
 
     [parameter(Mandatory=$false)]
     [switch]
     $Details
 ) {
-    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith -MatchExactSubject $MatchExactSubject -Details $Details"
-    if ($MatchExactSubject) {
+    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith ExactMatch $ExactMatch -Details $Details"
+    if ($ExactMatch) {
         $filter = "federatedIdentityCredentials/any(f:subject eq '${StartsWith}')"
     } else {
         $filter = "federatedIdentityCredentials/any(f:startsWith(f/subject,'${StartsWith}'))"
@@ -145,6 +145,64 @@ function Find-ApplicationsByFederation (
         $jmesPath = "value[]"
     } else {
         $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
+        $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedSubjects:join(',',federatedIdentityCredentials[].subject),issuers:join(',',federatedIdentityCredentials[].issuer),secretCount:length(passwordCredentials[]),certCount:length(keyCredentials[])}"
+    }
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
+
+    if ($apps) {
+        if (!$Details) {
+            $apps | Select-Object -Property name,appId,id,federatedSubjects,issuers,secretCount,certCount `
+                  | Set-Variable apps
+        }
+        $apps | Sort-Object -Property name,federatedSubjects,createdDateTime`
+              | Set-Variable apps
+        Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
+        "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose
+        return $apps
+    } else {
+        Write-Verbose "No apps found with name starting with '$StartsWith'"
+    }
+
+    return $null
+}
+
+function Find-ApplicationsByIssuer (
+    [parameter(Mandatory=$true)]
+    [string]
+    $StartsWith,
+
+    [parameter(Mandatory=$false)]
+    [switch]
+    $ExactMatch,
+
+    [parameter(Mandatory=$false)]
+    [switch]
+    $Details,
+
+    [ValidateSet("Application", "ManagedIdentity")]
+    [parameter(Mandatory=$true)]
+    [string]
+    $Type
+) {
+    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith -ExactMatch $ExactMatch -Details $Details"
+    if ($ExactMatch) {
+        $filter = "federatedIdentityCredentials/any(f:issuer eq '${StartsWith}')"
+    } else {
+        $filter = "federatedIdentityCredentials/any(f:startsWith(f/issuer,'${StartsWith}'))"
+    }
+    if ($Type -eq "Application") {
+        $object = "applications"
+    } elseif ($Type -eq "ManagedIdentity") {
+        $object = "servicePrincipals"
+    } else {
+        Write-Error "Invalid Type '$Type'"
+        exit 1
+    }
+    if ($Details) {
+        $graphUrl = "https://graph.microsoft.com/v1.0/${object}?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}"
+        $jmesPath = "value[]"
+    } else {
+        $graphUrl = "https://graph.microsoft.com/v1.0/${object}?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
         $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedSubjects:join(',',federatedIdentityCredentials[].subject),issuers:join(',',federatedIdentityCredentials[].issuer),secretCount:length(passwordCredentials[]),certCount:length(keyCredentials[])}"
     }
     Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
@@ -501,6 +559,48 @@ function Get-FederatedCredentials (
     }
 
     return $null
+}
+
+function Get-OrganizationId (
+    [parameter(Mandatory=$true,ParameterSetName="Organization",HelpMessage="Url of the Azure DevOps Organization")]
+    [ValidateNotNullOrEmpty()]
+    [uri]
+    $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI)
+) {
+    Write-Verbose "Retrieving member information from profile REST API..."
+    $profileUrl = "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.1-preview.1"
+    Write-Debug $profileUrl
+    az rest --method get `
+            --uri $profileUrl `
+            --resource 499b84ac-1321-427f-aa17-267ca6975798 `
+            -o json `
+            | Tee-Object -Variable profileJson `
+            | ConvertFrom-Json `
+            | Set-Variable profile
+    if (!$profile) {
+      Write-Error "Could not find profile for user $(az account show --query user.name -o tsv)"
+      exit 2
+    }
+    $profileJson | Write-Debug
+    
+    Write-Verbose "Retrieving organization from accounts REST API..."
+    $accountsUrl = "https://app.vssps.visualstudio.com/_apis/accounts?api-version=7.1-preview.1&memberId=$($profile.id)"
+    Write-Debug $accountsUrl
+    az rest --method get `
+            --uri $accountsUrl `
+            --resource 499b84ac-1321-427f-aa17-267ca6975798 `
+            --query "value[?accountName=='${organizationName}'] | [0]" `
+            -o json `
+            | Tee-Object -Variable accountsJson `
+            | ConvertFrom-Json `
+            | Set-Variable account
+    if (!$account) {
+      Write-Error "Could not find account for organization '${organizationName}', is $(az account show --query user.name -o tsv) a member of this organization?"
+      exit 2
+    }
+    $accountsJson | Write-Debug
+    
+    return $account.accountId
 }
 
 function Login-Az (

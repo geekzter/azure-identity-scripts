@@ -95,7 +95,7 @@ switch -regex ($IdOrName) {
     # Match Azure Pipelines federation subject
     "sc://[-\d\w]+/[-\d\w]+/[-_\d\w]+" {
         Write-Verbose "'$IdOrName' is a Federation Subject"
-        Find-ApplicationsByFederation -StartsWith $IdOrName -Details -MatchExactSubject | Set-Variable apps
+        Find-ApplicationsByFederation -StartsWith $IdOrName -Details -ExactMatch | Set-Variable apps
 
         if (($apps | Measure-Object).Count -gt 1) {
             Write-Warning "Found $($apps.Count) Applications with Federation Subject '$IdOrName', selecting oldest one"
