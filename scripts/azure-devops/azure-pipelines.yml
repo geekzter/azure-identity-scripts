@@ -212,7 +212,7 @@ jobs:
                                             --enable-for-all true
 
           Write-Host "Running the test pipeline with parameter serviceConnection=$(serviceConnectionToTest)..."
-          az pipelines run --id $serviceConnectionTestPipelineId `
+          az pipelines run --id $(serviceConnectionTestPipelineId) `
                           --parameters serviceConnection="$(serviceConnectionToTest)" `
                           -o json `
                           | ConvertFrom-Json `
