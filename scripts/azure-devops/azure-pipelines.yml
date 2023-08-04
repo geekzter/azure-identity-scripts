@@ -187,7 +187,6 @@ jobs:
     condition: and(succeededOrFailed(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
     dependsOn: createServiceConnection
     displayName: 'Test Service Connection'
-    timeoutInMinutes: 5
     pool:
       name: 'Azure Pipelines'
       vmImage: ubuntu-latest
@@ -195,6 +194,7 @@ jobs:
     steps:
     - task: AzureCLI@2
       displayName: 'Test Service Connection $(serviceConnectionToTest)'
+      timeoutInMinutes: 5
       inputs:
         azureSubscription: '$(azureConnection)'
         failOnStandardError: true
