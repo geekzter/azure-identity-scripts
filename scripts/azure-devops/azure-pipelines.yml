@@ -185,8 +185,10 @@ jobs:
 
         workingDirectory: '$(scriptDirectory)'
 
-- ${{ if and(or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) , ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty') ) }}:
+- ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
+# - ${{ if and(or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) , ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty') ) }}:
   - job: testServiceConnection
+    condition: and(succeededOrFailed(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
     dependsOn: createServiceConnection
     displayName: 'Test Service Connection'
     pool:
