@@ -181,7 +181,7 @@ jobs:
 
         workingDirectory: '$(scriptDirectory)'
 
-- ${{ if and(or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) , gt(length(variables.serviceConnectionTestPipelineId),0) ) }}:
+- ${{ if and(or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) , ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty') ) }}:
   - job: testServiceConnection
     dependsOn: createServiceConnection
     displayName: 'Test Service Connection'
