@@ -120,10 +120,6 @@ jobs:
       vmImage: ubuntu-latest
 
     steps:
-    - pwsh: |
-        Write-Host "serviceConnectionTestPipelineId: $(serviceConnectionTestPipelineId)"
-        Write-Host "variables.serviceConnectionTestPipelineId: ${{ variables.serviceConnectionTestPipelineId }}"
-        Write-Host "variables[serviceConnectionTestPipelineId]: ${{ variables['serviceConnectionTestPipelineId'] }}"
     - task: AzureCLI@2
       displayName: 'Create resource groups for Managed Identity and scope'
       name: resourceGroup
@@ -186,7 +182,6 @@ jobs:
         workingDirectory: '$(scriptDirectory)'
 
 - ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
-# - ${{ if and(or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) , ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty') ) }}:
   - job: testServiceConnection
     condition: and(succeededOrFailed(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
     dependsOn: createServiceConnection
@@ -195,16 +190,24 @@ jobs:
       name: 'Azure Pipelines'
       vmImage: ubuntu-latest
 
+    variables:
+      serviceConnectionToTest: 'bla'
+
     steps:
     - task: AzureCLI@2
-      displayName: 'Test Service Connection'
+      displayName: 'Test Service Connection $(serviceConnectionToTest)'
       inputs:
         azureSubscription: '$(azureConnection)'
         failOnStandardError: true
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
-          Write-Host "Using $(serviceConnectionNameTest)"
+          az devops configure --defaults organization=$(System.CollectionUri) project=$(System.TeamProject)
+
+          # Write-Host "Using $(serviceConnectionToTest)"
+          # az pipelines run --id $(serviceConnectionTestPipelineId) --parameters serviceConnection='$(serviceConnectionToTest)' 
+
+          az pipelines runs list --pipeline-ids $(serviceConnectionTestPipelineId)
 
 - ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
   - job: teardown
