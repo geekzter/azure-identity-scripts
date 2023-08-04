@@ -120,6 +120,10 @@ jobs:
       vmImage: ubuntu-latest
 
     steps:
+    - pwsh: |
+        Write-Host "serviceConnectionTestPipelineId: $(serviceConnectionTestPipelineId)"
+        Write-Host "variables.serviceConnectionTestPipelineId: ${{ variables.serviceConnectionTestPipelineId }}"
+        Write-Host "variables[serviceConnectionTestPipelineId]: ${{ variables['serviceConnectionTestPipelineId'] }}"
     - task: AzureCLI@2
       displayName: 'Create resource groups for Managed Identity and scope'
       name: resourceGroup
