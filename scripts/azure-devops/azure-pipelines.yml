@@ -113,6 +113,75 @@ jobs:
         workingDirectory: '$(scriptDirectory)'
 
 - ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
+  - job: createServiceConnection
+    displayName: 'Create Service Connection'
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: ubuntu-latest
+
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Create resource groups for Managed Identity and scope'
+      name: resourceGroup
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          $tags=@("application=$(application)","provisioner=azure-cli","runId=$(Build.BuildId)")
+          $managedIdentityResourceGroupName="${{ variables['organizationName'] }}-service-connections-$(Build.BuildId)"
+          Write-Host "Creating Managed Identity resource group `"$managedIdentityResourceGroupName`"..."
+          az group create --name $managedIdentityResourceGroupName `
+                          --location centralus `
+                          --tags $tags `
+                          --query id `
+                          | Set-Variable -Name managedIdentityResourceGroupId
+          Write-Host "##vso[task.setvariable variable=managedIdentityResourceGroupId;isOutput=true]${managedIdentityResourceGroupId}"
+          Write-Host "##vso[task.setvariable variable=managedIdentityResourceGroupName;isOutput=true]${managedIdentityResourceGroupName}"
+
+          $scopeResourceGroupName="${{ variables['organizationName'] }}-service-connection-test-scope-$(Build.BuildId)"
+          Write-Host "Creating Managed Identity resource group `"$managedIdentityResourceGroupName`"..."
+          az group create --name $scopeResourceGroupName `
+                          --location centralus `
+                          --tags $tags `
+                          --query id `
+                          | Set-Variable -Name scopeResourceGroupId
+          Write-Host "##vso[task.setvariable variable=scopeResourceGroupId;isOutput=true]${scopeResourceGroupId}"
+          Write-Host "##vso[task.setvariable variable=scopeResourceGroupName;isOutput=true]${scopeResourceGroupName}"
+
+    - task: AzureCLI@2
+      displayName: 'Create Managed Identity and Service Connection'
+      name: identity
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+          ./create_azurerm_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
+                                                          -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
+                                                          -IdentitySubscriptionId $(az account show --query id -o tsv) `
+                                                          -ServiceConnectionScope $(resourceGroup.scopeResourceGroupId)
+
+          az identity list -g $(resourceGroup.managedIdentityResourceGroupName) `
+                          --query [0].clientId `
+                          -o tsv `
+                          | Set-Variable -Name clientId
+          Write-Host "##vso[task.setvariable variable=clientId;isOutput=true]${clientId}"
+
+        workingDirectory: '$(scriptDirectory)'
+
+- ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
   - job: testServiceConnection
     dependsOn: createServiceConnection
     displayName: 'Test Service Connection'
