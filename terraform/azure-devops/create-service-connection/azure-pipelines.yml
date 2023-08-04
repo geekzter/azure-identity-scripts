@@ -168,7 +168,7 @@ jobs:
                          | Set-Variable run
         $run | ConvertTo-Json | Out-String | Write-Debug
         $run | Format-List | Out-String | Write-Debug
-        Write-Host "$(System.CollectionUri)$(System.TeamProject)/_build/results?buildId=$($run.id)&view=results"
+        "{0}{1}/_build/results?buildId={2}&view=results" -f $(System.CollectionUri), [uri]::EscapeDataString("$(System.TeamProject)"), $run.id | Write-Host
         Write-Host "Running pipeline run $($run.id) to complete..."
         do {
             Start-Sleep -Seconds 5
@@ -291,7 +291,7 @@ jobs:
           az devops service-endpoint list --query "[?ends_with(@.name, '-$(Build.BuildId)')].id" `
                                           -o tsv `
                                           | Set-Variable -Name serviceConnectionId
-          if (!$(terraform.azdo_service_connection_id)) {
+          if (!$serviceConnectionId) {
             Write-Host "No service connections to remove"
             exit 0
           } 
