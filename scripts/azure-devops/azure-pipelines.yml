@@ -250,7 +250,7 @@ jobs:
     condition: succeededOrFailed()
     dependsOn: 
     - createServiceConnection
-    # - testServiceConnection
+    - testServiceConnection
     displayName: 'Tear down resources'
     pool:
       name: 'Azure Pipelines'
@@ -293,5 +293,32 @@ jobs:
             }
           } else {
             Write-Host "No resources to remove"
+          }
+        failOnStandardError: true
+
+    - task: AzureCLI@2
+      displayName: 'Tear down Service Connection'
+      name: teardownAzDO
+      condition: succeededOrFailed()
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
+          az devops configure --defaults organization="$(System.CollectionUri)" project="$(System.TeamProject)"
+
+          az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(clientId)'].id" `
+                                          -o tsv `
+                                          | Set-Variable -Name serviceConnectionId
+          if (!$serviceConnectionId) {
+            Write-Host "No service connections to remove"
+            exit 0
+          } 
+
+          Write-Host "Removing service connection ${serviceConnectionId}..."
+          &{ # az writes information to stderr
+            $ErrorActionPreference = 'SilentlyContinue'
+            az devops service-endpoint delete --id $serviceConnectionId --yes 2>&1
           }
         failOnStandardError: true
