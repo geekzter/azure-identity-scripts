@@ -43,7 +43,7 @@ variables:
   value: $(Build.SourcesDirectory)/scripts/azure-devops
 - name: organizationName
   value: ${{ split(variables['System.CollectionUri'],'/')[3] }}
-- name: serviceConnectionNameTest
+- name: serviceConnectionToTest
   value: oidc-msi-test-${{ variables['Build.BuildId'] }}
 
 jobs:
@@ -169,9 +169,10 @@ jobs:
             Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
           }
           ./create_azurerm_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
-                                                          -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
-                                                          -IdentitySubscriptionId $(az account show --query id -o tsv) `
-                                                          -ServiceConnectionScope $(resourceGroup.scopeResourceGroupId)
+                                                           -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
+                                                           -IdentitySubscriptionId $(az account show --query id -o tsv) `
+                                                           -ServiceConnectionName $(serviceConnectionToTest)
+                                                           -ServiceConnectionScope $(resourceGroup.scopeResourceGroupId)
 
           az identity list -g $(resourceGroup.managedIdentityResourceGroupName) `
                           --query [0].clientId `
@@ -190,9 +191,6 @@ jobs:
       name: 'Azure Pipelines'
       vmImage: ubuntu-latest
 
-    variables:
-      serviceConnectionToTest: 'bla'
-
     steps:
     - task: AzureCLI@2
       displayName: 'Test Service Connection $(serviceConnectionToTest)'
@@ -202,12 +200,44 @@ jobs:
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
+          Write-Host "Using $(serviceConnectionToTest)"
+
           az devops configure --defaults organization=$(System.CollectionUri) project=$(System.TeamProject)
 
-          # Write-Host "Using $(serviceConnectionToTest)"
-          # az pipelines run --id $(serviceConnectionTestPipelineId) --parameters serviceConnection='$(serviceConnectionToTest)' 
+          Write-Host "Authorizing the service connection to use the pipeline..."
+          az devops service-endpoint list --query "[?name=='$(serviceConnectionToTest)'].id" `
+                                          -o tsv `
+                                          | Set-Variable serviceConnectionId
+          az devops service-endpoint update --id $serviceConnectionId `
+                                            --enable-for-all true
 
-          az pipelines runs list --pipeline-ids $(serviceConnectionTestPipelineId)
+          Write-Host "Running the test pipeline with parameter serviceConnection=$(serviceConnectionToTest)..."
+          az pipelines run --id $serviceConnectionTestPipelineId `
+                          --parameters serviceConnection="$(serviceConnectionToTest)" `
+                          -o json `
+                          | ConvertFrom-Json `
+                          | Set-Variable run
+          $run | ConvertTo-Json | Out-String | Write-Debug
+          $run | Format-List | Out-String | Write-Debug
+          Write-Host "$(System.CollectionUri)$(System.TeamProject)/_build/results?buildId=$($run.id)&view=results"
+          Write-Host "Running pipeline run $($run.id) to complete..."
+          do {
+              Start-Sleep -Seconds 5
+              az pipelines runs show --id $run.id `
+                                    -o json `
+                                    | ConvertFrom-Json `
+                                    | Set-Variable run
+              $run | ConvertTo-Json | Out-String | Write-Debug
+              $run | Format-List | Out-String | Write-Debug
+              # pause
+              Write-Host "Run status: $($run.status)"
+          } while ($run.status -ne 'completed')
+
+          if ($run.result -notmatch 'succeeded') {
+              Write-Host "##vso[task.LogIssue type=error;]Service Connection test job failed with result: $($run.result)"
+              Write-Error "Run failed with result: $($run.result)"
+              exit 1
+          }
 
 - ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
   - job: teardown
