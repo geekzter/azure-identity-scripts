@@ -32,7 +32,7 @@ schedules:
 trigger: none
 
 variables:
-- group: 'identity-ci' # Should contain 'azureConnection', 'scHasMSFTGraphPermissions'
+- group: 'identity-ci' # Should contain 'azureConnection', 'scHasMSFTGraphPermissions', 'serviceConnectionTestPipelineId'
 - name: application
   value: 'Service Connections'
 - name: AZURE_CORE_ONLY_SHOW_ERRORS
@@ -181,24 +181,24 @@ jobs:
 
         workingDirectory: '$(scriptDirectory)'
 
-# - ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
-#   - job: testServiceConnection
-#     dependsOn: createServiceConnection
-#     displayName: 'Test Service Connection'
-#     pool:
-#       name: 'Azure Pipelines'
-#       vmImage: ubuntu-latest
+- ${{ if and(or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) , gt(length(variables.serviceConnectionTestPipelineId),0) ) }}:
+  - job: testServiceConnection
+    dependsOn: createServiceConnection
+    displayName: 'Test Service Connection'
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: ubuntu-latest
 
-#     steps:
-#     - task: AzureCLI@2
-#       displayName: 'Test Service Connection'
-#       inputs:
-#         azureSubscription: '$(serviceConnectionNameTest)'
-#         failOnStandardError: true
-#         scriptType: pscore
-#         scriptLocation: inlineScript
-#         inlineScript: |
-#           Write-Host "Using $(serviceConnectionNameTest)"
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Test Service Connection'
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          Write-Host "Using $(serviceConnectionNameTest)"
 
 - ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
   - job: teardown
