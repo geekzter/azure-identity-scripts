@@ -187,6 +187,7 @@ jobs:
     condition: and(succeededOrFailed(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
     dependsOn: createServiceConnection
     displayName: 'Test Service Connection'
+    timeoutInMinutes: 5
     pool:
       name: 'Azure Pipelines'
       vmImage: ubuntu-latest
