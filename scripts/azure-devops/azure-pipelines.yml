@@ -45,7 +45,7 @@ variables:
   value: ${{ split(variables['System.CollectionUri'],'/')[3] }}
 - name: serviceConnectionToTest
   value: oidc-msi-test-$(Build.BuildId)
-  
+
 jobs:
 - ${{ if or(eq(parameters.jobsToRun, 'Non-modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
   - job: retrievalScripts
@@ -209,6 +209,11 @@ jobs:
           az devops service-endpoint list --query "[?name=='$(serviceConnectionToTest)'].id" `
                                           -o tsv `
                                           | Set-Variable serviceConnectionId
+          if (!$serviceConnectionId) {
+            Write-Host "##vso[task.LogIssue type=error]Service connection '$(serviceConnectionToTest)' not found."
+            Write-Error "Service connection '$(serviceConnectionToTest)' not found."
+            exit 1
+          }
           az devops service-endpoint update --id $serviceConnectionId `
                                             --enable-for-all true
 
@@ -235,7 +240,7 @@ jobs:
           } while ($run.status -ne 'completed')
 
           if ($run.result -notmatch 'succeeded') {
-              Write-Host "##vso[task.LogIssue type=error;]Service Connection test job failed with result: $($run.result)"
+              Write-Host "##vso[task.LogIssue type=error]Service Connection test job failed with result: $($run.result)"
               Write-Error "Run failed with result: $($run.result)"
               exit 1
           }
