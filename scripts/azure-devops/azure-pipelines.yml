@@ -203,7 +203,7 @@ jobs:
         inlineScript: |
           Write-Host "Using $(serviceConnectionToTest)"
 
-          az devops configure --defaults organization=$(System.CollectionUri) project=$(System.TeamProject)
+          az devops configure --defaults organization=$(System.CollectionUri) project="$(System.TeamProject)"
 
           Write-Host "Authorizing the service connection to use the pipeline..."
           az devops service-endpoint list --query "[?name=='$(serviceConnectionToTest)'].id" `
