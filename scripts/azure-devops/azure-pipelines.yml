@@ -44,8 +44,8 @@ variables:
 - name: organizationName
   value: ${{ split(variables['System.CollectionUri'],'/')[3] }}
 - name: serviceConnectionToTest
-  value: oidc-msi-test-${{ variables['Build.BuildId'] }}
-
+  value: oidc-msi-test-$(Build.BuildId)
+  
 jobs:
 - ${{ if or(eq(parameters.jobsToRun, 'Non-modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
   - job: retrievalScripts
