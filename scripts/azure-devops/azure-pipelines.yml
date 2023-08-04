@@ -219,10 +219,10 @@ jobs:
 
           Write-Host "Running the test pipeline with parameter serviceConnection=$(serviceConnectionToTest)..."
           az pipelines run --id $(serviceConnectionTestPipelineId) `
-                          --parameters serviceConnection="$(serviceConnectionToTest)" `
-                          -o json `
-                          | ConvertFrom-Json `
-                          | Set-Variable run
+                           --parameters serviceConnection="$(serviceConnectionToTest)" `
+                           -o json `
+                           | ConvertFrom-Json `
+                           | Set-Variable run
           $run | ConvertTo-Json | Out-String | Write-Debug
           $run | Format-List | Out-String | Write-Debug
           Write-Host "$(System.CollectionUri)$(System.TeamProject)/_build/results?buildId=$($run.id)&view=results"
@@ -230,14 +230,15 @@ jobs:
           do {
               Start-Sleep -Seconds 5
               az pipelines runs show --id $run.id `
-                                    -o json `
-                                    | ConvertFrom-Json `
-                                    | Set-Variable run
+                                     -o json `
+                                     | ConvertFrom-Json `
+                                     | Set-Variable run
               $run | ConvertTo-Json | Out-String | Write-Debug
               $run | Format-List | Out-String | Write-Debug
               # pause
               Write-Host "Run status: $($run.status)"
           } while ($run.status -ne 'completed')
+          Write-Host "Run result: $($run.result)"
 
           if ($run.result -notmatch 'succeeded') {
               Write-Host "##vso[task.LogIssue type=error]Service Connection test job failed with result: $($run.result)"
