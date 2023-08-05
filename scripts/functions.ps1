@@ -191,18 +191,18 @@ function Find-ApplicationsByIssuer (
         $filter = "federatedIdentityCredentials/any(f:startsWith(f/issuer,'${StartsWith}'))"
     }
     if ($Type -eq "Application") {
-        $object = "applications"
+        $entity = "applications"
     } elseif ($Type -eq "ManagedIdentity") {
-        $object = "servicePrincipals"
+        $entity = "servicePrincipals"
     } else {
         Write-Error "Invalid Type '$Type'"
         exit 1
     }
     if ($Details) {
-        $graphUrl = "https://graph.microsoft.com/v1.0/${object}?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}"
+        $graphUrl = "https://graph.microsoft.com/v1.0/${entity}?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}"
         $jmesPath = "value[]"
     } else {
-        $graphUrl = "https://graph.microsoft.com/v1.0/${object}?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
+        $graphUrl = "https://graph.microsoft.com/v1.0/${entity}?`$count=true&`$expand=federatedIdentityCredentials&`$filter=${filter}&`$select=id,appId,displayName,federatedIdentityCredentials,keyCredentials,passwordCredentials"
         $jmesPath = "value[].{name:displayName,appId:appId,id:id,federatedSubjects:join(',',federatedIdentityCredentials[].subject),issuers:join(',',federatedIdentityCredentials[].issuer),secretCount:length(passwordCredentials[]),certCount:length(keyCredentials[])}"
     }
     Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath $jmesPath | Set-Variable apps
