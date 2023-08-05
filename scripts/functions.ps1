@@ -603,6 +603,24 @@ function Get-OrganizationId (
     return $account.accountId
 }
 
+function Get-ApplicationOwners (
+    [parameter(Mandatory=$true)]
+    [guid]
+    $AppId
+) {
+    $graphUrl = "https://graph.microsoft.com/v1.0/applications?`$count=true&`$expand=owners&`$filter=appId eq '${appId}'"
+    Find-DirectoryObjectsByGraphUrl -GraphUrl $graphUrl -JmesPath "value[0].owners[]" | Set-Variable owners
+    if ($owners) {
+        Write-Verbose "Found owner(s) using Microsoft Graph query:"
+        "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual" -replace "\$","```$" | Write-Verbose
+        return $owners
+    } else {
+        Write-Verbose "No owner found for Service Principal with appId '${AppId}' using Microsoft Graph query"
+    }
+
+    return $null
+}
+
 function Login-Az (
     [parameter(Mandatory=$false)][ref]$TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) {
