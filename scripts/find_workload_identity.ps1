@@ -138,13 +138,13 @@ if (!$ServicePrincipalOnly -and !$app -and $sp -and ($sp.servicePrincipalType -i
     Find-ApplicationByGUID -Id $sp.appId | Set-Variable app
 }
 
-# Get Federated Credentials
+# Get Federated Credentials & owner(s)
 if (!$ServicePrincipalOnly -and $sp) {
     Get-FederatedCredentials -AppId $sp.appId -Type $sp.servicePrincipalType | Set-Variable fic
+    Get-ApplicationOwners    -AppId $sp.appId | Set-Variable owners
 }
 
 if ($app) {
-    # Get-FederatedCredentials -Application $app.appId | Set-Variable fic
     Write-Host "Found Application '$($app.displayName)' with appId '$($app.appId)'"
     $app | Format-List
 }
@@ -155,4 +155,8 @@ if ($sp) {
 if ($fic) {
     Write-Host "Federated Identity Credentials for appId '$($sp.appId)'"
     $fic | Format-List
+}
+if ($owners) {
+    Write-Host "Owners of appId '$($sp.appId)'"
+    $owners | Format-List -Property displayName, userPrincipalName, mailNickname, mail, userType
 }
