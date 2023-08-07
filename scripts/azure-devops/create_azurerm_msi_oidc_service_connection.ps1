@@ -208,27 +208,6 @@ az identity create -n $IdentityName `
                    | ConvertFrom-Json `
                    | Set-Variable identity
 Write-Verbose "Created Managed Identity $($identity.id)"
-
-# Create the issuer URL
-Get-OrganizationId -OrganizationUrl $OrganizationUrl | Set-Variable organizationId
-$issuerUrl = "https://vstoken.dev.azure.com/${organizationId}"
-
-$federatedSubject = "sc://${organizationName}/${Project}/${ServiceConnectionName}"
-Write-Verbose "Configuring Managed Identity '${IdentityName}' with federated subject '${federatedSubject}'..."
-az identity federated-credential create --name $IdentityName `
-                                        --identity-name $IdentityName  `
-                                        --resource-group $IdentityResourceGroupName `
-                                        --issuer $issuerUrl `
-                                        --subject $federatedSubject `
-                                        --subscription $IdentitySubscriptionId `
-                                        -o json `
-                                        | ConvertFrom-Json `
-                                        | Set-Variable federatedCredential
-Write-Verbose "Created federated credential $($federatedCredential.id)"
-$identity | Add-Member -NotePropertyName federatedSubject -NotePropertyValue $federatedSubject
-$identity | Add-Member -NotePropertyName role -NotePropertyValue $ServiceConnectionRole
-$identity | Add-Member -NotePropertyName scope -NotePropertyValue $ServiceConnectionScope
-$identity | Add-Member -NotePropertyName subscriptionId -NotePropertyValue $IdentitySubscriptionId
 $identity | Format-List | Out-String | Write-Debug
 
 Write-Verbose "Creating role assignment for Managed Identity '${IdentityName}' on subscription '$($subscription.name)'..."
@@ -288,11 +267,32 @@ Invoke-RestMethod -Uri $apiUri `
                   -Token (ConvertTo-SecureString $accessToken -AsPlainText) `
                   | Set-Variable serviceEndpoint
 
+Write-Debug "Issuer: $($serviceEndpoint.authorization.parameters.workloadIdentityFederationIssuer)"
+
 $serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
 if (!$serviceEndpoint) {
     Write-Error "Failed to create / update service connection '${ServiceConnectionName}'"
     exit 1
 }
+
+# Create Federated Credential
+$federatedSubject = "sc://${organizationName}/${Project}/${ServiceConnectionName}"
+Write-Verbose "Configuring Managed Identity '${IdentityName}' with federated subject '${federatedSubject}'..."
+az identity federated-credential create --name $IdentityName `
+                                        --identity-name $IdentityName  `
+                                        --resource-group $IdentityResourceGroupName `
+                                        --issuer $serviceEndpoint.authorization.parameters.workloadIdentityFederationIssuer `
+                                        --subject $federatedSubject `
+                                        --subscription $IdentitySubscriptionId `
+                                        -o json `
+                                        | ConvertFrom-Json `
+                                        | Set-Variable federatedCredential
+Write-Verbose "Created federated credential $($federatedCredential.id)"
+$identity | Add-Member -NotePropertyName federatedSubject -NotePropertyValue $federatedSubject
+$identity | Add-Member -NotePropertyName role -NotePropertyValue $ServiceConnectionRole
+$identity | Add-Member -NotePropertyName scope -NotePropertyValue $ServiceConnectionScope
+$identity | Add-Member -NotePropertyName subscriptionId -NotePropertyValue $IdentitySubscriptionId
+$identity | Format-List | Out-String | Write-Debug
 
 if ($serviceEndpointId) {
     Write-Host "Service connection '${ServiceConnectionName}' updated:"
