@@ -1,10 +1,3 @@
-output azdo_member_id {
-  # value       = data.external.azdo_member.result.id
-  value       = jsondecode(data.http.azdo_member.response_body).id
-}
-output azdo_organization_id {
-  value       = local.azdo_organization_id
-}
 output azdo_project_id {
   value       = module.service_connection.project_id
 }
@@ -22,6 +15,9 @@ output azure_resource_group_name {
 }
 output azure_scope {
   value       = local.azure_scope
+}
+output azure_scope_url {
+  value       = module.azure_access.resource_url
 }
 output azure_subscription_id {
   value       = local.target_subscription_id
