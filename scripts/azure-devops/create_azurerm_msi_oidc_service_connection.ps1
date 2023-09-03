@@ -155,7 +155,7 @@ $serviceConnectionSubscriptionId = $ServiceConnectionScope.Split('/')[2]
 
 #-----------------------------------------------------------
 # Check whether project exists
-az devops project show --project $Project --query id -o tsv | Set-Variable projectId
+az devops project show --project $Project --organization $OrganizationUrl --query id -o tsv | Set-Variable projectId
 if (!$projectId) {
     Write-Error "Project '${Project}' not found in organization '${OrganizationUrl}"
     exit 1
@@ -173,6 +173,7 @@ if (!$ServiceConnectionName) {
 }
 do {
     az devops service-endpoint list -p $Project `
+                                    --organization $OrganizationUrl `
                                     --query "[?name=='${ServiceConnectionName}'].id" `
                                     -o tsv `
                                     | Set-Variable serviceEndpointId
