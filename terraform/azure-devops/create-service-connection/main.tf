@@ -15,10 +15,8 @@ locals {
   azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
   azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-oidc-${var.create_managed_identity ? "msi" : "sp"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
   azure_scope                  = var.azure_scope != null && var.azure_scope != "" ? var.azure_scope : "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
-  federation_subject           = jsondecode(data.http.azdo_service_connection.response_body).authorization.parameters.workloadIdentityFederationSubject
   principal_id                 = var.create_managed_identity ? module.managed_identity.0.principal_id : module.service_principal.0.principal_id
   principal_name               = var.create_managed_identity ? module.managed_identity.0.principal_name : module.service_principal.0.principal_name
-  issuer                       = jsondecode(data.http.azdo_service_connection.response_body).authorization.parameters.workloadIdentityFederationIssuer
   resource_suffix              = var.resource_suffix != null && var.resource_suffix != "" ? lower(var.resource_suffix) : random_string.suffix.result
   resource_tags                = {
     application                = "Azure Service Connection"
@@ -53,8 +51,8 @@ module managed_identity {
     azurerm                    = azurerm.managed_identity
   }
   source                       = "./modules/managed-identity"
-  federation_subject           = local.federation_subject
-  issuer                       = local.issuer
+  federation_subject           = module.service_connection.service_connection_oidc_subject
+  issuer                       = module.service_connection.service_connection_oidc_issuer
   name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
   resource_group_name          = split("/", var.managed_identity_resource_group_id)[4]
   tags                         = local.resource_tags
@@ -65,8 +63,8 @@ module managed_identity {
 
 module service_principal {
   source                       = "./modules/service-principal"
-  federation_subject           = local.federation_subject
-  issuer                       = local.issuer
+  federation_subject           = module.service_connection.service_connection_oidc_subject
+  issuer                       = module.service_connection.service_connection_oidc_issuer
   multi_tenant                 = false
   name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
 

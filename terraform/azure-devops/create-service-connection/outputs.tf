@@ -33,10 +33,10 @@ output identity_application_name {
   value       = var.create_managed_identity ? null : module.service_principal.0.application_name
 }
 output identity_federation_subject {
-  value       = local.federation_subject
+  value       = module.service_connection.service_connection_oidc_subject
 }
 output identity_issuer {
-  value       = local.issuer
+  value       = module.service_connection.service_connection_oidc_issuer
 }
 output identity_object_id {
   value       = var.create_managed_identity ? null : module.service_principal.0.object_id
