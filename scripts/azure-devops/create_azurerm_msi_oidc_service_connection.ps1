@@ -59,13 +59,12 @@ Write-Verbose $MyInvocation.line
 . (Join-Path $PSScriptRoot .. functions.ps1)
 $apiVersion = "7.1-preview.4"
 
+#-----------------------------------------------------------
+# Log in to Azure
 if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
     Write-Error "Azure CLI is not installed. You can get it here: https://docs.microsoft.com/cli/azure/install-azure-cli"
     exit 1
 }
-
-#-----------------------------------------------------------
-# Log in to Azure
 az account show -o json 2>$null | ConvertFrom-Json | Set-Variable subscription
 if (!$subscription) {
     az login -o json | ConvertFrom-Json | Set-Variable subscription
@@ -120,7 +119,7 @@ if (!(az extension list --query "[?name=='azure-devops'].version" -o tsv)) {
 $accessToken | az devops login --organization $OrganizationUrl
 if ($lastexitcode -ne 0) {
     Write-Error "$($subscription.user.name) failed to log in to Azure DevOps organization '${OrganizationUrl}'"
-    exit
+    exit $lastexitcode
 }
 
 #-----------------------------------------------------------
@@ -153,7 +152,6 @@ if (!$ServiceConnectionScope) {
 }
 $serviceConnectionSubscriptionId = $ServiceConnectionScope.Split('/')[2]
 
-#-----------------------------------------------------------
 # Check whether project exists
 az devops project show --project $Project --organization $OrganizationUrl --query id -o tsv | Set-Variable projectId
 if (!$projectId) {
