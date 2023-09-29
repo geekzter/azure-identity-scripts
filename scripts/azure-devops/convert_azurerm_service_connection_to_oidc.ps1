@@ -87,9 +87,17 @@ Invoke-RestMethod -Uri $getApiUrl `
                   -ContentType 'application/json' `
                   -Authentication Bearer `
                   -Token (ConvertTo-SecureString $accessToken -AsPlainText) `
+                  -StatusCodeVariable httpStatusCode `
                   | Tee-Object -Variable serviceEndpointResponse `
                   | Select-Object -ExpandProperty value `
                   | Set-Variable serviceEndpoints
+
+Write-Debug "HTTP Status: ${httpStatusCode}"
+if (!$httpStatusCode -or ($httpStatusCode -ge 300)) {
+    Write-Error "Failed to convert service connection '$($serviceEndpoint.name)'"
+    exit 1
+}
+$serviceEndpointResponse | ConvertTo-Json -Depth 4 | Write-Debug
 $serviceEndpoints | Format-List | Out-String | Write-Debug
 if (!$serviceEndpoints -or ($serviceEndpointResponse.count-eq 0)) {
     Write-Warning "No service connections found"
@@ -105,10 +113,10 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
         Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because its App Registration was not created automatically"
         continue
     }
-    if ($serviceEndpoint.isShared) {
-        Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it is shared with with (an)other project(s)"
-        continue
-    }
+    # if ($serviceEndpoint.isShared) {
+    #     Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it is shared with with (an)other project(s)"
+    #     continue
+    # }
 
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
     $serviceEndpoint | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequest
@@ -138,14 +146,21 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
 
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
     Write-Debug "GET $putApiUrl"
+    $httpStatusCode = $null
     Invoke-RestMethod -Uri $putApiUrl `
                       -Method PUT`
                       -Body $serviceEndpointRequest `
                       -ContentType 'application/json' `
                       -Authentication Bearer `
                       -Token (ConvertTo-SecureString $accessToken -AsPlainText) `
+                      -StatusCodeVariable httpStatusCode `
                       | Set-Variable serviceEndpoint
 
+    Write-Debug "HTTP Status: ${httpStatusCode}"
+    if (!$httpStatusCode -or ($httpStatusCode -ge 300)) {
+        Write-Error "Failed to convert service connection '$($serviceEndpoint.name)'"
+        exit 1
+    }
     $serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
     if (!$serviceEndpoint) {
         Write-Error "Failed to convert service connection '$($serviceEndpoint.name)'"
