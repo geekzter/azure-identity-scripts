@@ -113,10 +113,10 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
         Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because its App Registration was not created automatically"
         continue
     }
-    # if ($serviceEndpoint.isShared) {
-    #     Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it is shared with with (an)other project(s)"
-    #     continue
-    # }
+    if ($serviceEndpoint.isShared) {
+        Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it is shared with with (an)other project(s)"
+        continue
+    }
 
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
     $serviceEndpoint | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequest
