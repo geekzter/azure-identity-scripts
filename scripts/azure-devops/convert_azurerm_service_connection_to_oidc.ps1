@@ -25,7 +25,11 @@ param (
     [parameter(Mandatory=$false,HelpMessage="Url of the Azure DevOps Organization")]
     [uri]
     [ValidateNotNullOrEmpty()]
-    $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI)
+    $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI),
+
+    [parameter(Mandatory=$false,HelpMessage="Don't show prompts")]
+    [switch]
+    $Force=$false
 ) 
 Write-Verbose $MyInvocation.line 
 . (Join-Path $PSScriptRoot .. functions.ps1)
@@ -93,18 +97,47 @@ if (!$serviceEndpoints -or ($serviceEndpointResponse.count-eq 0)) {
 }
 
 foreach ($serviceEndpoint in $serviceEndpoints) {
+    if ($serviceEndpoint.authorization.scheme -ine "ServicePrincipal") {
+        Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it does not use an App Registration (scheme is $($serviceEndpoint.authorization.scheme))"
+        continue
+    }
     if ($serviceEndpoint.data.creationMode -ine "Automatic") {
         Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because its App Registration was not created automatically"
         continue
     }
+    if ($serviceEndpoint.isShared) {
+        Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it is shared with with (an)other project(s)"
+        continue
+    }
+
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
     $serviceEndpoint | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequest
 
+    # Prompt user to confirm conversion (subscription name, spn name, etc.)
+    if (!$Force) {
+        # Prompt to continue
+        $choices = @(
+            [System.Management.Automation.Host.ChoiceDescription]::new("&Convert", "Converting service connection '$($serviceEndpoint.name)'...")
+            [System.Management.Automation.Host.ChoiceDescription]::new("&Skip", "Skipping service connection '$($serviceEndpoint.name)'...")
+            [System.Management.Automation.Host.ChoiceDescription]::new("&Exit", "Exit script")
+        )
+        $defaultChoice = 1
+        $decision = $Host.UI.PromptForChoice([string]::Empty, "Convert service connection '$($serviceEndpoint.name)'?", $choices, $defaultChoice)
+        Write-Debug "Decision: $decision"
+
+        if ($decision -eq 0) {
+            Write-Host "$($choices[$decision].HelpMessage)"
+        } elseif ($decision -eq 1) {
+            Write-Host "$($PSStyle.Formatting.Warning)$($choices[$decision].HelpMessage)$($PSStyle.Reset)"
+            continue 
+        } elseif ($decision -ge 2) {
+            Write-Host "$($PSStyle.Formatting.Warning)$($choices[$decision].HelpMessage)$($PSStyle.Reset)"
+            exit 
+        }
+    }
+
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
     Write-Debug "GET $putApiUrl"
-
-    # TODO: Prompt user to confirm conversion (subscription name, spn name, etc.)
-
     Invoke-RestMethod -Uri $putApiUrl `
                       -Method PUT`
                       -Body $serviceEndpointRequest `
