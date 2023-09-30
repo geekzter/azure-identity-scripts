@@ -97,13 +97,12 @@ Get-Content -Path (Join-Path $PSScriptRoot automaticServiceEndpointRequest.json)
 
 $serviceEndpointDescription = "Created by $($MyInvocation.MyCommand.Name) with scope ${ServiceConnectionScope}"
 $serviceEndpointRequest.authorization.parameters.tenantId = $subscription.tenantId
+$serviceEndpointRequest.authorization.parameters.scope = $ServiceConnectionScope
 $serviceEndpointRequest.authorization.scheme = $ServiceConnectionScheme
-$serviceEndpointRequest.data.resourceGroupName = $ResourceGroupName
 $serviceEndpointRequest.data.subscriptionId = $SubscriptionId
 $serviceEndpointRequest.data.subscriptionName = $subscription.name
 $serviceEndpointRequest.description = $serviceEndpointDescription
 $serviceEndpointRequest.name = $ServiceConnectionName
-$serviceEndpointRequest.serviceEndpointProjectReferences[0].description = $serviceEndpointDescription
 $serviceEndpointRequest.serviceEndpointProjectReferences[0].name = $ServiceConnectionName
 $serviceEndpointRequest.serviceEndpointProjectReferences[0].projectReference.id = $projectId
 $serviceEndpointRequest.serviceEndpointProjectReferences[0].projectReference.name = $Project

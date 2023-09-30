@@ -39,6 +39,7 @@ Write-Host "Using service connection '${ServiceConnectionName}'"
 az devops configure --defaults organization=$OrganizationUrl project="${Project}"
 
 Write-Host "Authorizing the service connection to use the pipeline..."
+
 az devops service-endpoint list --query "[?name=='${ServiceConnectionName}'].id" `
                                 -o tsv `
                                 | Set-Variable serviceConnectionId

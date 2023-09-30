@@ -12,7 +12,8 @@
     "type": "AzureRM",
     "authorization": {
         "parameters": {
-            "tenantid": ""
+            "tenantid": "",
+            "scope": ""
         },
         "scheme": "WorkloadIdentityFederation"
     },
@@ -22,8 +23,7 @@
                 "id": "",
                 "name": ""
             },
-            "name": "",
-            "description": ""
+            "name": ""
         }
     ]
 }
