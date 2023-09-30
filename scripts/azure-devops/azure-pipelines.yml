@@ -228,7 +228,7 @@ jobs:
           ./create_azurerm_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
                                                   -ServiceConnectionScheme ServicePrincipal `
                                                   -SubscriptionId $(az account show --query id -o tsv)
-          az devops service-endpoint list -p $(System.TeamProject) `
+          az devops service-endpoint list -p "$(System.TeamProject)" `
                                           --org $(System.CollectionUri) `
                                           --query "[?name=='$(serviceConnectionToConvert)'].id" `
                                           -o tsv `
@@ -349,7 +349,7 @@ jobs:
             }
           }
 
-          if ([string]::IsNullOrEmpty('$(convertedServiceConnectionId)'')) {
+          if ([string]::IsNullOrEmpty('$(convertedServiceConnectionId)')) {
             Write-Host "No converted service connection to remove"
             exit 0
           } else {
