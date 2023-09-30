@@ -58,7 +58,7 @@ az pipelines run --id $ServiceConnectionTestPipelineId `
                  | Set-Variable run
 $run | ConvertTo-Json | Out-String | Write-Debug
 $run | Format-List | Out-String | Write-Debug
-"{0}{1}/_build/results?buildId={2}&view=results" -f "$(System.CollectionUri)", [uri]::EscapeDataString("$(System.TeamProject)"), $run.id | Write-Host
+"{0}{1}/_build/results?buildId={2}&view=results" -f $OrganizationUrl, [uri]::EscapeDataString($Project), $run.id | Write-Host
 Write-Host "Waiting for pipeline run $($run.id) to complete..."
 do {
     Start-Sleep -Seconds 5
