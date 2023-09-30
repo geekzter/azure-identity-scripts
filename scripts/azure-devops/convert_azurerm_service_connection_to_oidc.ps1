@@ -97,7 +97,7 @@ if (!$httpStatusCode -or ($httpStatusCode -ge 300)) {
     Write-Error "Failed to convert service connection '$($serviceEndpoint.name)'"
     exit 1
 }
-$serviceEndpointResponse | ConvertTo-Json -Depth 4 | Write-Debug
+$serviceEndpointResponse | ConvertTo-Json -Depth 5 | Write-Debug
 $serviceEndpoints | Format-List | Out-String | Write-Debug
 if (!$serviceEndpoints -or ($serviceEndpointResponse.count-eq 0)) {
     Write-Warning "No service connections found"
@@ -105,6 +105,8 @@ if (!$serviceEndpoints -or ($serviceEndpointResponse.count-eq 0)) {
 }
 
 foreach ($serviceEndpoint in $serviceEndpoints) {
+    "{0}/{1}/_settings/adminservices?resourceId={2}" -f $OrganizationUrl, $Project, $serviceEndpoint.id | Set-Variable serviceEndpointUrl
+    Write-Verbose "Validating service connection '$($serviceEndpoint.name)' ($($serviceEndpointUrl))..."
     if ($serviceEndpoint.authorization.scheme -ine "ServicePrincipal") {
         Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it does not use an App Registration (scheme is $($serviceEndpoint.authorization.scheme))"
         continue
@@ -113,9 +115,16 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
         Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because its App Registration was not created automatically"
         continue
     }
+    "{0}/{1}/_settings/adminservices?resourceId={2}" -f $OrganizationUrl, $serviceEndpoint.serviceEndpointProjectReferences[0].projectReference.name, $serviceEndpoint.id | Set-Variable originalServiceEndpointUrl
     if ($serviceEndpoint.isShared) {
-        Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it is shared with with (an)other project(s)"
-        continue
+        if ($serviceEndpointUrl -ine $originalServiceEndpointUrl) {
+            Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it is shared from another project: ${originalServiceEndpointUrl}"
+            continue    
+        }
+        Write-Host "Service connection '$($serviceEndpoint.name)' is shared with the following projects:"
+        $serviceEndpoint.serviceEndpointProjectReferences | ForEach-Object {
+            "Service connection $($PSStyle.Bold){2}$($PSStyle.BoldOff) in project $($PSStyle.Bold){1}$($PSStyle.BoldOff) ({0}/{1}/_settings/adminservices?resourceId={3})" -f $OrganizationUrl, $_.projectReference.name, $_.name, $serviceEndpoint.id | Write-Host
+        }
     }
 
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
@@ -129,8 +138,9 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
             [System.Management.Automation.Host.ChoiceDescription]::new("&Skip", "Skipping service connection '$($serviceEndpoint.name)'...")
             [System.Management.Automation.Host.ChoiceDescription]::new("&Exit", "Exit script")
         )
-        $defaultChoice = 1
-        $decision = $Host.UI.PromptForChoice([string]::Empty, "Convert service connection '$($serviceEndpoint.name)'?", $choices, $defaultChoice)
+        $defaultChoice = $serviceEndpoint.isShared ? 1 : 0
+        $prompt = $serviceEndpoint.isShared ? "Convert shared service connection '$($serviceEndpoint.name)'?" : "Convert service connection '$($serviceEndpoint.name)'?"
+        $decision = $Host.UI.PromptForChoice([string]::Empty, $prompt, $choices, $defaultChoice)
         Write-Debug "Decision: $decision"
 
         if ($decision -eq 0) {
@@ -147,14 +157,37 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
     Write-Debug "GET $putApiUrl"
     $httpStatusCode = $null
-    Invoke-RestMethod -Uri $putApiUrl `
-                      -Method PUT`
-                      -Body $serviceEndpointRequest `
-                      -ContentType 'application/json' `
-                      -Authentication Bearer `
-                      -Token (ConvertTo-SecureString $accessToken -AsPlainText) `
-                      -StatusCodeVariable httpStatusCode `
-                      | Set-Variable serviceEndpoint
+    try {
+        throw 'bogus'
+        Invoke-RestMethod -Uri $putApiUrl `
+                          -Method PUT`
+                          -Body $serviceEndpointRequest `
+                          -ContentType 'application/json' `
+                          -Authentication Bearer `
+                          -Token (ConvertTo-SecureString $accessToken -AsPlainText) `
+                          -StatusCodeVariable httpStatusCode `
+                          | Set-Variable serviceEndpoint
+    } catch [Microsoft.PowerShell.Commands.HttpResponseException] {
+        $_.Exception | Format-List | Out-String | Write-Debug
+        $_.ErrorDetails | Format-List | Out-String | Write-Debug
+        if ($_.Exception.Response.StatusCode -eq [System.Net.HttpStatusCode]::BadRequest) {
+            if ($serviceEndpoint.isShared) {
+                # In case prior validation did not identity the original service endpoint
+                Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it is shared from another project"
+                continue
+            }
+            $_.ErrorDetails.Message | ConvertFrom-Json | Select-Object -ExpandProperty message | Set-Variable errorMessage
+        }
+        "Failed to convert service connection {0} ({1}).`nService Endpoint REST API {2} returned {3}`n{4}" -f $serviceEndpoint.name, $serviceEndpointUrl, $putApiUrl, $_.Exception.Response.StatusCode, $errorMessage | Write-Warning
+        throw $_
+        exit 1
+    } catch {
+        $_.Exception | Format-List | Out-String | Write-Debug
+        $_.ErrorDetails | Format-List | Out-String | Write-Debug
+        "Failed to convert service connection {0} ({1}).`nREST API {2}`n{3}`n{4}" -f $serviceEndpoint.name, $serviceEndpointUrl, $putApiUrl, $_.Exception.Message, $_.ErrorDetails.Message | Write-Warning
+        throw $_
+        exit 1
+    }
 
     Write-Debug "HTTP Status: ${httpStatusCode}"
     if (!$httpStatusCode -or ($httpStatusCode -ge 300)) {
