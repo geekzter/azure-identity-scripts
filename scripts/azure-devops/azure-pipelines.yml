@@ -226,7 +226,7 @@ jobs:
         workingDirectory: '$(scriptDirectory)'
         inlineScript: |
           ./create_azurerm_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
-                                                  -ServiceConnectionScheme ServicePrincipal `
+                                                  -ServiceConnectionScheme WorkloadIdentityFederation `
                                                   -SubscriptionId $(az account show --query id -o tsv)
           az devops service-endpoint list -p "$(System.TeamProject)" `
                                           --org $(System.CollectionUri) `
