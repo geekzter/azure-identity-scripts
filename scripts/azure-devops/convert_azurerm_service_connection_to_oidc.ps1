@@ -1,19 +1,38 @@
 #!/usr/bin/env pwsh
 <# 
 .SYNOPSIS 
+    Convert a single or multiple Azure Resource Manager service connection(s) to use Workload identity federation
 
 .DESCRIPTION 
+    This script converts a single or multiple Azure Resource Manager service connection(s) to use Workload identity federation instead of a App Registration secret.
+    The user will be prompted to confirm the conversion of each service connection. 
+    The script will skip service connections that are shared from another project, were not created automatically, are not using an App Registration, or in a failed state.
+
+    The user will be authenticated using the Azure CLI, which should be installed.
 
 .LINK
     https://aka.ms/azdo-rm-workload-identity-conversion
 
 .EXAMPLE
+    ./convert_azurerm_service_connection_to_oidc.ps1 -Project <project> -ServiceConnectionId 00000000-0000-0000-0000-000000000000
 
+.EXAMPLE
+    ./convert_azurerm_service_connection_to_oidc.ps1 -Project <project> -ServiceConnectionName <service connection name>
+
+.EXAMPLE
+    ./convert_azurerm_service_connection_to_oidc.ps1 -Project <project>
+
+.EXAMPLE
+    ./convert_azurerm_service_connection_to_oidc.ps1 -Project <project> -ErrorAction Stop -Verbose -Debug
 #> 
 #Requires -Version 7.2
 
 param ( 
-    [parameter(Mandatory=$false,HelpMessage="Name of the Service Connection")]
+    [parameter(Mandatory=$false,ParameterSetName="id",HelpMessage="Id of the Service Connection")]
+    [guid]
+    $ServiceConnectionId,
+
+    [parameter(Mandatory=$false,ParameterSetName="name",HelpMessage="Name of the Service Connection")]
     [string]
     $ServiceConnectionName,
 
@@ -38,7 +57,7 @@ $apiVersion = "7.1-preview.4"
 #-----------------------------------------------------------
 # Log in to Azure
 if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
-    Write-Error "Azure CLI is not installed. You can get it here: https://docs.microsoft.com/cli/azure/install-azure-cli"
+    Write-Error "Azure CLI is not installed. You can get it here: http://aka.ms/azure-cli"
     exit 1
 }
 az account show -o json 2>$null | ConvertFrom-Json | Set-Variable account
@@ -75,11 +94,14 @@ if (!$projectId) {
 
 #-----------------------------------------------------------
 # Retrieve the service connection
-$getApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints?type=azurerm&includeFailed=false&includeDetails=true&api-version=${apiVersion}"
-if ($ServiceConnectionName) {
-    $getApiUrl += "&endpointNames=${ServiceConnectionName}"
+
+$baseEndpointUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints"
+if ($ServiceConnectionId) {
+    $getApiUrl = "${baseEndpointUrl}/${ServiceConnectionId}?includeDetails=true&api-version=${apiVersion}"
+} elseif ($ServiceConnectionName) {
+    $getApiUrl = "${baseEndpointUrl}?endpointNames=${ServiceConnectionName}&type=azurerm&includeFailed=false&includeDetails=true&api-version=${apiVersion}"
 } else {
-    $getApiUrl += "&authSchemes=ServicePrincipal"
+    $getApiUrl = "${baseEndpointUrl}?authSchemes=ServicePrincipal&type=azurerm&includeFailed=false&includeDetails=true&api-version=${apiVersion}"
 }
 Write-Debug "GET $getApiUrl"
 Invoke-RestMethod -Uri $getApiUrl `
@@ -88,9 +110,13 @@ Invoke-RestMethod -Uri $getApiUrl `
                   -Authentication Bearer `
                   -Token (ConvertTo-SecureString $accessToken -AsPlainText) `
                   -StatusCodeVariable httpStatusCode `
-                  | Tee-Object -Variable serviceEndpointResponse `
-                  | Select-Object -ExpandProperty value `
-                  | Set-Variable serviceEndpoints
+                  | Set-Variable serviceEndpointResponse
+if ($ServiceConnectionId) {
+    $serviceEndpoints = @($serviceEndpointResponse)
+} else {
+    $serviceEndpointResponse | Select-Object -ExpandProperty value `
+                             | Set-Variable serviceEndpoints
+}
 
 Write-Debug "HTTP Status: ${httpStatusCode}"
 if (!$httpStatusCode -or ($httpStatusCode -ge 300)) {
@@ -127,9 +153,6 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
         }
     }
 
-    $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
-    $serviceEndpoint | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequest
-
     # Prompt user to confirm conversion (subscription name, spn name, etc.)
     if (!$Force) {
         # Prompt to continue
@@ -154,11 +177,15 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
         }
     }
 
+    # Prepare request body
+    $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
+    $serviceEndpoint | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequest
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
     Write-Debug "GET $putApiUrl"
     $httpStatusCode = $null
+
+    # Convert service connection
     try {
-        throw 'bogus'
         Invoke-RestMethod -Uri $putApiUrl `
                           -Method PUT`
                           -Body $serviceEndpointRequest `
