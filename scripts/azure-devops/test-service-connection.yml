@@ -3,40 +3,36 @@ parameters:
   type: string
 - name: serviceConnectionToTest
   type: string
-
-variables:
-  serviceConnectionToTest: ${{ parameters.serviceConnectionToTest }}
-  azureConnection: ${{ parameters.azureConnection }}
   
 steps:
 - task: AzureCLI@2
-  displayName: 'Test Service Connection $(serviceConnectionToTest)'
+  displayName: 'Test Service Connection ${{ parameters.serviceConnectionToTest }}'
   timeoutInMinutes: 5
   inputs:
-    azureSubscription: '$(azureConnection)'
+    azureSubscription: '${{ parameters.azureConnection }}'
     failOnStandardError: true
     scriptType: pscore
     scriptLocation: inlineScript
     inlineScript: |
-      Write-Host "Using $(serviceConnectionToTest)"
+      Write-Host "Using ${{ parameters.serviceConnectionToTest }}"
 
       az devops configure --defaults organization=$(System.CollectionUri) project="$(System.TeamProject)"
 
       Write-Host "Authorizing the service connection to use the pipeline..."
-      az devops service-endpoint list --query "[?name=='$(serviceConnectionToTest)'].id" `
+      az devops service-endpoint list --query "[?name=='${{ parameters.serviceConnectionToTest }}'].id" `
                                       -o tsv `
                                       | Set-Variable serviceConnectionId
       if (!$serviceConnectionId) {
-        Write-Host "##vso[task.LogIssue type=error]Service connection '$(serviceConnectionToTest)' not found."
-        Write-Error "Service connection '$(serviceConnectionToTest)' not found."
+        Write-Host "##vso[task.LogIssue type=error]Service connection '${{ parameters.serviceConnectionToTest }}' not found."
+        Write-Error "Service connection '${{ parameters.serviceConnectionToTest }}' not found."
         exit 1
       }
       az devops service-endpoint update --id $serviceConnectionId `
                                         --enable-for-all true
 
-      Write-Host "Running the test pipeline with parameter serviceConnection=$(serviceConnectionToTest)..."
+      Write-Host "Running the test pipeline with parameter serviceConnection=${{ parameters.serviceConnectionToTest }}..."
       az pipelines run --id $(serviceConnectionTestPipelineId) `
-                        --parameters serviceConnection="$(serviceConnectionToTest)" `
+                        --parameters serviceConnection="${{ parameters.serviceConnectionToTest }}" `
                         -o json `
                         | ConvertFrom-Json `
                         | Set-Variable run
