@@ -202,6 +202,7 @@ jobs:
         scriptLocation: inlineScript
         workingDirectory: '$(scriptDirectory)'
         inlineScript: |
+          Set-PSDebug -Trace 1
           ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToTest) `
                                         -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
         #   # Write-Host "Using $(serviceConnectionToTest)"
