@@ -233,9 +233,7 @@ jobs:
                                           --query "[?name=='$(serviceConnectionToConvert)'].id" `
                                           -o tsv `
                                           | Set-Variable -Name serviceConnectionId
-                
           Write-Host "##vso[task.setvariable variable=serviceConnectionId;isOutput=true]${serviceConnectionId}"
-          az ad sp create-for-rbac
 
     - task: AzureCLI@2
       displayName: 'Convert'
