@@ -17,7 +17,7 @@ param (
     $ServiceConnectionName,
 
     [parameter(Mandatory=$true)]
-    [guid]
+    [int]
     [ValidateNotNullOrEmpty()]
     $ServiceConnectionTestPipelineId,
 
