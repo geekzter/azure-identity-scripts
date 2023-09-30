@@ -235,7 +235,7 @@ $identity | Format-List -Property id, clientId, federatedSubject, role, scope, s
                                         
 # Prepare service connection REST API request body
 Write-Verbose "Creating / updating service connection '${ServiceConnectionName}'..."
-Get-Content -Path (Join-Path $PSScriptRoot serviceEndpointRequest.json) `
+Get-Content -Path (Join-Path $PSScriptRoot manualServiceEndpointRequest.json) `
             | ConvertFrom-Json `
             | Set-Variable serviceEndpointRequest
 

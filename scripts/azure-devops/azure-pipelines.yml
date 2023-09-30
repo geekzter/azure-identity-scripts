@@ -43,8 +43,10 @@ variables:
   value: $(Build.SourcesDirectory)/scripts/azure-devops
 - name: organizationName
   value: ${{ split(variables['System.CollectionUri'],'/')[3] }}
-- name: serviceConnectionToTest
+- name: serviceConnectionToCreate
   value: oidc-msi-test-$(Build.BuildId)
+- name: serviceConnectionToConvert
+  value: oidc-convert-test-$(Build.BuildId)
 
 jobs:
 - ${{ if or(eq(parameters.jobsToRun, 'Non-modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
@@ -171,7 +173,7 @@ jobs:
           ./create_azurerm_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
                                                            -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
                                                            -IdentitySubscriptionId $(az account show --query id -o tsv) `
-                                                           -ServiceConnectionName $(serviceConnectionToTest) `
+                                                           -ServiceConnectionName $(serviceConnectionToCreate) `
                                                            -ServiceConnectionScope $(resourceGroup.scopeResourceGroupId)
 
           az identity list -g $(resourceGroup.managedIdentityResourceGroupName) `
@@ -193,7 +195,7 @@ jobs:
 
     steps:
     - task: AzureCLI@2
-      displayName: 'Test Service Connection $(serviceConnectionToTest)'
+      displayName: 'Test Service Connection $(serviceConnectionToCreate)'
       timeoutInMinutes: 5
       inputs:
         azureSubscription: '$(azureConnection)'
@@ -202,66 +204,86 @@ jobs:
         scriptLocation: inlineScript
         workingDirectory: '$(scriptDirectory)'
         inlineScript: |
-          Set-PSDebug -Trace 1
-          ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToTest) `
+          ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToCreate) `
                                         -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
-        #   # Write-Host "Using $(serviceConnectionToTest)"
 
-        #   # az devops configure --defaults organization=$(System.CollectionUri) project="$(System.TeamProject)"
+- ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
+  - job: convertServiceConnection
+    displayName: 'Convert Service Connection'
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: ubuntu-latest
 
-        #   # Write-Host "Authorizing the service connection to use the pipeline..."
-        #   # az devops service-endpoint list --query "[?name=='$(serviceConnectionToTest)'].id" `
-        #   #                                 -o tsv `
-        #   #                                 | Set-Variable serviceConnectionId
-        #   # if (!$serviceConnectionId) {
-        #   #   Write-Host "##vso[task.LogIssue type=error]Service connection '$(serviceConnectionToTest)' not found."
-        #   #   Write-Error "Service connection '$(serviceConnectionToTest)' not found."
-        #   #   exit 1
-        #   # }
-        #   # az devops service-endpoint update --id $serviceConnectionId `
-        #   #                                   --enable-for-all true
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Create with secret'
+      name: create
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        workingDirectory: '$(scriptDirectory)'
+        inlineScript: |
+          ./create_azurerm_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
+                                                  -ServiceConnectionScheme ServicePrincipal `
+                                                  -SubscriptionId $(az account show --query id -o tsv)
+          az devops service-endpoint list -p $(System.TeamProject) `
+                                          --org $(System.CollectionUri) `
+                                          --query "[?name=='$(serviceConnectionToConvert)'].id" `
+                                          -o tsv `
+                                          | Set-Variable -Name serviceConnectionId
+          Write-Host "##vso[task.setvariable variable=serviceConnectionId;isOutput=true]${serviceConnectionId}"
 
-        #   # Write-Host "Running the test pipeline with parameter serviceConnection=$(serviceConnectionToTest)..."
-        #   # az pipelines run --id $(serviceConnectionTestPipelineId) `
-        #   #                  --parameters serviceConnection="$(serviceConnectionToTest)" `
-        #   #                  -o json `
-        #   #                  | ConvertFrom-Json `
-        #   #                  | Set-Variable run
-        #   # $run | ConvertTo-Json | Out-String | Write-Debug
-        #   # $run | Format-List | Out-String | Write-Debug
-        #   # "{0}{1}/_build/results?buildId={2}&view=results" -f "$(System.CollectionUri)", [uri]::EscapeDataString("$(System.TeamProject)"), $run.id | Write-Host
-        #   # Write-Host "Waiting for pipeline run $($run.id) to complete..."
-        #   # do {
-        #   #     Start-Sleep -Seconds 5
-        #   #     az pipelines runs show --id $run.id `
-        #   #                            -o json `
-        #   #                            | ConvertFrom-Json `
-        #   #                            | Set-Variable run
-        #   #     $run | ConvertTo-Json | Out-String | Write-Debug
-        #   #     $run | Format-List | Out-String | Write-Debug
-        #   #     # pause
-        #   #     Write-Host "Run status: $($run.status)"
-        #   # } while ($run.status -ne 'completed')
-        #   # Write-Host "Run result: $($run.result)"
+    - task: AzureCLI@2
+      displayName: 'Convert'
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        workingDirectory: '$(scriptDirectory)'
+        inlineScript: |
+          ./convert_azurerm_service_connection_to_oidc.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
+                                                           -Force
+- ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
+  - job: testConvertedServiceConnection
+    condition: and(succeededOrFailed(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
+    dependsOn: convertServiceConnection
+    displayName: 'Test converted Service Connection'
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: ubuntu-latest
 
-        #   # if ($run.result -notmatch 'succeeded') {
-        #   #     Write-Host "##vso[task.LogIssue type=error]Service Connection test job failed with result: $($run.result)"
-        #   #     Write-Error "Run failed with result: $($run.result)"
-        #   #     exit 1
-        #   # }
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Test Service Connection $(serviceConnectionToConvert)'
+      timeoutInMinutes: 5
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        workingDirectory: '$(scriptDirectory)'
+        inlineScript: |
+          ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
+                                        -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
 
 - ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
   - job: teardown
     condition: succeededOrFailed()
     dependsOn: 
+    - convertServiceConnection
     - createServiceConnection
+    - testConvertedServiceConnection
     - testCreatedServiceConnection
     displayName: 'Tear down resources'
     pool:
       name: 'Azure Pipelines'
       vmImage: ubuntu-latest
     variables:
-      clientId: $[ dependencies.createServiceConnection.outputs['identity.clientId'] ]
+      convertedServiceConnectionId: $[ dependencies.convertServiceConnection.outputs['convert.serviceConnectionId'] ]
+      createdClientId: $[ dependencies.createServiceConnection.outputs['identity.clientId'] ]
     steps:
     - task: AzureCLI@2
       name: teardownAzure
@@ -302,7 +324,7 @@ jobs:
         failOnStandardError: true
 
     - task: AzureCLI@2
-      displayName: 'Tear down Service Connection'
+      displayName: 'Tear down Service Connections'
       name: teardownAzDO
       condition: succeededOrFailed()
       inputs:
@@ -313,17 +335,29 @@ jobs:
           $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
           az devops configure --defaults organization="$(System.CollectionUri)" project="$(System.TeamProject)"
 
-          az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(clientId)'].id" `
+          az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(createdClientId)'].id" `
                                           -o tsv `
                                           | Set-Variable -Name serviceConnectionId
           if (!$serviceConnectionId) {
-            Write-Host "No service connections to remove"
+            Write-Host "No created service connections to remove"
             exit 0
-          } 
-
-          Write-Host "Removing service connection ${serviceConnectionId}..."
-          &{ # az writes information to stderr
-            $ErrorActionPreference = 'SilentlyContinue'
-            az devops service-endpoint delete --id $serviceConnectionId --yes 2>&1
+          } else {
+            Write-Host "Removing created service connection ${serviceConnectionId}..."
+            &{ # az writes information to stderr
+              $ErrorActionPreference = 'SilentlyContinue'
+              az devops service-endpoint delete --id $serviceConnectionId --yes 2>&1
+            }
           }
+
+          if ([string]::IsNullOrEmpty('$(convertedServiceConnectionId)'')) {
+            Write-Host "No converted service connection to remove"
+            exit 0
+          } else {
+            Write-Host "Removing converted service connection ${serviceConnectionId}..."
+            &{ # az writes information to stderr
+              $ErrorActionPreference = 'SilentlyContinue'
+              az devops service-endpoint delete --deep --yes --id $(convertedServiceConnectionId) 2>&1
+            }
+          }
+
         failOnStandardError: true

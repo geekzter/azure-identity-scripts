@@ -1,0 +1,29 @@
+{
+    "data": {
+        "resourceGroupName": "",
+        "subscriptionId": "",
+        "subscriptionName": "",
+        "environment": "AzureCloud",
+        "scopeLevel": "Subscription",
+        "creationMode": "Automatic"
+    },
+    "description": "",
+    "name": "",
+    "type": "AzureRM",
+    "authorization": {
+        "parameters": {
+            "tenantid": ""
+        },
+        "scheme": "WorkloadIdentityFederation"
+    },
+    "serviceEndpointProjectReferences": [
+        {
+            "projectReference": {
+                "id": "",
+                "name": ""
+            },
+            "name": "",
+            "description": ""
+        }
+    ]
+}
