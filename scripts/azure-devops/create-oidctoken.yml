@@ -42,7 +42,7 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        ./set_terraform_azurerm_vars.ps1 -RequestNewToken
+        ./set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
 

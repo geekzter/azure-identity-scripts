@@ -7,7 +7,7 @@
     ./set_terraform_azurerm_vars.ps1
 
     .EXAMPLE
-    ./set_terraform_azurerm_vars.ps1 -SystemAccessToken $(System.AccessToken)
+    ./set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
 #> 
 #Requires -Version 7.2
 [CmdletBinding(DefaultParameterSetName="None")]
