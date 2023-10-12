@@ -65,7 +65,10 @@ jobs:
                           -Uri "${env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${env:SYSTEM_TEAMPROJECTID}/_apis/distributedtask/hubs/build/plans/${env:SYSTEM_PLANID}/jobs/${env:SYSTEM_JOBID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionId}" `
                           -Method Post | Set-Variable oidcTokenResponse
         $oidcToken = $oidcTokenResponse.oidcToken
-        if (!$oidcToken) {
+        if ($oidcToken) {
+          Write-Host "idToken (masked):"
+          $oidcToken -replace '.','*' 
+        } else {
           throw "Failed to get OIDC token"
         }
       failOnStandardError: true
