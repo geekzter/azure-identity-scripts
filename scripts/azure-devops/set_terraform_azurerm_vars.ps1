@@ -10,12 +10,14 @@
     ./set_terraform_azurerm_vars.ps1 -SystemAccessToken $(System.AccessToken)
 #> 
 #Requires -Version 7.2
-
+[CmdletBinding(DefaultParameterSetName="None")]
 param ( 
-    [Parameter(ParameterSetName="NewToken",Mandatory=$false)]
+    [Parameter(Mandatory=$false)]
+    [Parameter(ParameterSetName="NewToken",Mandatory=$true)]
     [switch]
-    RequestNewToken=$False,
+    $RequestNewToken=$false,
 
+    [Parameter(Mandatory=$false)]
     [Parameter(ParameterSetName="NewToken",Mandatory=$true)]
     [string]
     $SystemAccessToken=$env:SYSTEM_ACCESSTOKEN
