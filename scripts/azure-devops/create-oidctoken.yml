@@ -1,15 +1,5 @@
 name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-$(SourceBranchName)-$(Build.BuildId)
 
-parameters:
-- name: jobsToRun
-  displayName: Tests to run
-  type: string
-  default: Both
-  values:
-  - 'Non-modifying tests'
-  - 'Modifying tests'
-  - Both
-
 pr:
   autoCancel: false
   branches:
@@ -32,7 +22,7 @@ schedules:
 trigger: none
 
 variables:
-- group: 'identity-ci' # Should contain 'azureConnection', 'scHasMSFTGraphPermissions', 'serviceConnectionTestPipelineId'
+- group: 'identity-ci' # Should contain 'azureConnection'
 - name: scriptDirectory
   value: $(Build.SourcesDirectory)/scripts/azure-devops
 
