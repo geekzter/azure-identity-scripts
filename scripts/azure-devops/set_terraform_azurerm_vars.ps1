@@ -49,7 +49,6 @@ function Get-OidcRequestUrl()
 function New-OidcToken()
 {
     Write-Verbose "`nRequesting OIDC token from Azure DevOps..."
-    Get-OidcRequestToken | Set-Variable oidcRequestToken
     Get-OidcRequestUrl   | Set-Variable oidcRequestUrl
     Write-Debug "OIDC Request URL: ${oidcRequestUrl}"
     Invoke-RestMethod -Headers @{
