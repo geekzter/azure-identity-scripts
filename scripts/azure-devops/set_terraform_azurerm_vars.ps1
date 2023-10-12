@@ -100,7 +100,7 @@ if ($env:ARM_CLIENT_SECRET) {
 Write-Host "`nTerraform azure provider environment variables:" -NoNewline
 Get-ChildItem -Path Env: -Recurse -Include ARM_* | ForEach-Object { 
                                                        if ($_.Name -match 'SECRET|TOKEN') {
-                                                           $_.Value = "<redacted>"
+                                                           $_.Value = '***'
                                                        } 
                                                        $_
                                                    } `
