@@ -14,7 +14,7 @@
 param ( 
     [Parameter(ParameterSetName="NewToken",Mandatory=$false)]
     [switch]
-    RequestNewToken=$False
+    RequestNewToken=$False,
 
     [Parameter(ParameterSetName="NewToken",Mandatory=$true)]
     [string]
