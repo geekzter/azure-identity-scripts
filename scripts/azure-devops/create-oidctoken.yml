@@ -47,7 +47,7 @@ jobs:
       workingDirectory: '$(scriptDirectory)'
 
   - task: AzureCLI@2
-    displayName: 'inline'
+    displayName: 'Inline script'
     inputs:
       azureSubscription: '$(azureConnection)'
       scriptType: pscore
