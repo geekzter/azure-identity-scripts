@@ -66,11 +66,27 @@ if (!$account) {
 }
 # Log in to Azure & Azure DevOps
 $OrganizationUrl = $OrganizationUrl.ToString().Trim('/')
+az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 `
+                            --query "accessToken" `
+                            --output tsv `
+                            | Set-Variable accessToken
+if (!$accessToken) {
+    Write-Error "$(account.user.name) failed to get access token for Azure DevOps"
+    exit 1
+}
+if (!(az extension list --query "[?name=='azure-devops'].version" -o tsv)) {
+    Write-Host "Adding Azure CLI extension 'azure-devops'..."
+    az extension add -n azure-devops -y -o none
+}
+$accessToken | az devops login --organization $OrganizationUrl
+if ($lastexitcode -ne 0) {
+    Write-Error "$($account.user.name) failed to log in to Azure DevOps organization '${OrganizationUrl}'"
+    exit $lastexitcode
+}
 
 #-----------------------------------------------------------
 # Check parameters
-az rest -m GET -u "${OrganizationUrl}/_apis/projects?api-version=${apiVersion}" --resource 499b84ac-1321-427f-aa17-267ca6975798 --query "value[?name=='PipelineSamples'].id" -o tsv `
-        | Set-Variable projectId
+az devops project show --project $Project --organization $OrganizationUrl --query id -o tsv | Set-Variable projectId
 if (!$projectId) {
     Write-Error "Project '${Project}' not found in organization '${OrganizationUrl}"
     exit 1
@@ -88,7 +104,13 @@ if ($ServiceConnectionId) {
     $getApiUrl = "${baseEndpointUrl}?authSchemes=ServicePrincipal&type=azurerm&includeFailed=false&includeDetails=true&api-version=${apiVersion}"
 }
 Write-Debug "GET $getApiUrl"
-az rest -u $getApiUrl -m GET -o json | ConvertFrom-Json | Set-Variable serviceEndpointResponse
+Invoke-RestMethod -Uri $getApiUrl `
+                  -Method GET `
+                  -ContentType 'application/json' `
+                  -Authentication Bearer `
+                  -Token (ConvertTo-SecureString $accessToken -AsPlainText) `
+                  -StatusCodeVariable httpStatusCode `
+                  | Set-Variable serviceEndpointResponse
 if ($ServiceConnectionId) {
     $serviceEndpoints = @($serviceEndpointResponse)
 } else {
@@ -121,7 +143,7 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     }
     "{0}/{1}/_settings/adminservices?resourceId={2}" -f $OrganizationUrl, $serviceEndpoint.serviceEndpointProjectReferences[0].projectReference.name, $serviceEndpoint.id | Set-Variable originalServiceEndpointUrl
     if ($serviceEndpoint.isShared) {
-        if ($serviceEndpointUrl -ine $originalServiceEndpointUrl) {
+        if ($serviceEndpoint.serviceEndpointProjectReferences[0].projectReference.name -ine $Project) {
             Write-Warning "Skipping service connection '$($serviceEndpoint.name)' because it is shared from another project: ${originalServiceEndpointUrl}"
             continue    
         }
@@ -159,13 +181,19 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
     $serviceEndpoint | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequest
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
-    Write-Debug "GET $putApiUrl"
+    Write-Debug "PUT $putApiUrl"
     $httpStatusCode = $null
 
     # Convert service connection
     try {
-        $serviceEndpointRequest | az rest -u $putApiUrl -m PUT -b @~ --resource 499b84ac-1321-427f-aa17-267ca6975798 -o json `
-                                | ConvertFrom-Json | Set-Variable serviceEndpoint
+        Invoke-RestMethod -Uri $putApiUrl `
+                          -Method PUT `
+                          -Body $serviceEndpointRequest `
+                          -ContentType 'application/json' `
+                          -Authentication Bearer `
+                          -Token (ConvertTo-SecureString $accessToken -AsPlainText) `
+                          -StatusCodeVariable httpStatusCode `
+                          | Set-Variable serviceEndpoint
     } catch [Microsoft.PowerShell.Commands.HttpResponseException] {
         $_.Exception | Format-List | Out-String | Write-Debug
         $_.ErrorDetails | Format-List | Out-String | Write-Debug
