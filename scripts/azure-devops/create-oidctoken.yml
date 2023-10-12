@@ -1,0 +1,81 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-$(SourceBranchName)-$(Build.BuildId)
+
+parameters:
+- name: jobsToRun
+  displayName: Tests to run
+  type: string
+  default: Both
+  values:
+  - 'Non-modifying tests'
+  - 'Modifying tests'
+  - Both
+
+pr:
+  autoCancel: false
+  branches:
+    include:
+    - '*'
+  drafts: false
+  paths:
+    exclude:
+    - '.devcontainer/**'  
+    - 'visuals/**'  
+    - '*.md'  
+schedules:
+- cron: '0 0 * * Tue,Fr'
+  displayName: 'Bi-weekly build (UTC)'
+  # Run if there are no changes
+  always: 'true'
+  branches:
+    include:
+    - master
+trigger: none
+
+variables:
+- group: 'identity-ci' # Should contain 'azureConnection', 'scHasMSFTGraphPermissions', 'serviceConnectionTestPipelineId'
+- name: scriptDirectory
+  value: $(Build.SourcesDirectory)/scripts/azure-devops
+
+jobs:
+- job: oidcTokenExample
+  displayName: 'Create OIDC token'
+
+  pool:
+    name: 'Azure Pipelines'
+    vmImage: ubuntu-latest
+
+  steps:
+  - task: AzureCLI@2
+    displayName: 'set_terraform_azurerm_vars.ps1'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        ./set_terraform_azurerm_vars.ps1 -RequestNewToken
+      failOnStandardError: true
+      workingDirectory: '$(scriptDirectory)'
+
+  - task: AzureCLI@2
+    displayName: 'inline'
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        Get-ChildItem -Path Env: -Recurse -Include ENDPOINT_DATA_* | Sort-Object -Property Name `
+                                                                   | Select-Object -First 1 -ExpandProperty Name `
+                                                                   | ForEach-Object { $_ -replace 'ENDPOINT_DATA_','' } `
+                                                                   | Set-Variable serviceConnectionId
+
+        Invoke-RestMethod -Headers @{
+                            Authorization  = "Bearer $(System.AccessToken)"
+                            'Content-Type' = 'application/json'
+                          } `
+                          -Uri "${env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${env:SYSTEM_TEAMPROJECTID}/_apis/distributedtask/hubs/build/plans/${env:SYSTEM_PLANID}/jobs/${env:SYSTEM_JOBID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionId}" `
+                          -Method Post | Set-Variable oidcTokenResponse
+        $oidcToken = $oidcTokenResponse.oidcToken
+        if (!$oidcToken) {
+          throw "Failed to get OIDC token"
+        }
+      failOnStandardError: true
