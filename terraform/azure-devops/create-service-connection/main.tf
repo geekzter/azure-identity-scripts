@@ -28,7 +28,7 @@ locals {
     runId                      = var.run_id
     workspace                  = terraform.workspace
   }
-  managed_identity_subscription_id = split("/", var.managed_identity_resource_group_id)[2]
+  managed_identity_subscription_id = var.create_managed_identity ? split("/", var.managed_identity_resource_group_id)[2] : null
   target_subscription_id       = split("/", local.azure_scope)[2]
 }
 
@@ -44,6 +44,8 @@ resource terraform_data managed_identity_validator {
       error_message            = "managed_identity_resource_group_id is required when create_managed_identity is true"
     }
   }
+
+  count                        = var.create_managed_identity ? 1 : 0  
 }
 
 module managed_identity {
