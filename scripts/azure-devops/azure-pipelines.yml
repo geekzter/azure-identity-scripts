@@ -45,6 +45,7 @@ variables:
   value: ${{ split(variables['System.CollectionUri'],'/')[3] }}
 - name: serviceConnectionToCreate
   value: oidc-msi-test-$(Build.BuildId)
+  # TODO: Convert multiple service connections
 - name: serviceConnectionToConvert
   value: oidc-convert-test-$(Build.BuildId)
 
@@ -213,6 +214,13 @@ jobs:
     pool:
       name: 'Azure Pipelines'
       vmImage: ubuntu-latest
+    # TODO: create strategy for convert_azurerm_service_connection_to_oidc_simple.ps1
+    # strategy:
+    #   matrix:
+    #     scripted:
+    #       script: 'convert_azurerm_service_connection_to_oidc.ps1'
+    #     simple:
+    #       script: 'convert_azurerm_service_connection_to_oidc_simple.ps1'
 
     steps:
     - task: AzureCLI@2
@@ -244,6 +252,7 @@ jobs:
         scriptLocation: inlineScript
         workingDirectory: '$(scriptDirectory)'
         inlineScript: |
+          # TODO: Use $(script) variable from strategy.matrix
           ./convert_azurerm_service_connection_to_oidc.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
                                                            -Force
 - ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
@@ -266,6 +275,7 @@ jobs:
         scriptLocation: inlineScript
         workingDirectory: '$(scriptDirectory)'
         inlineScript: |
+          # TODO: Test multiple service connections
           ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
                                         -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
 
@@ -282,6 +292,9 @@ jobs:
       name: 'Azure Pipelines'
       vmImage: ubuntu-latest
     variables:
+      # TODO: Take outputs of multiple jobs dependencies.convertServiceConnection.outputs['job2.convert.serviceConnectionId']
+      # convertedServiceConnectionId1: $[ dependencies.convertServiceConnection.outputs['job1.convert.serviceConnectionId'] ]
+      # convertedServiceConnectionId2: $[ dependencies.convertServiceConnection.outputs['job2.convert.serviceConnectionId'] ]
       convertedServiceConnectionId: $[ dependencies.convertServiceConnection.outputs['convert.serviceConnectionId'] ]
       createdClientId: $[ dependencies.createServiceConnection.outputs['identity.clientId'] ]
     steps:
@@ -349,6 +362,9 @@ jobs:
             }
           }
 
+          # TODO: Take outputs of multiple jobs
+          # foreach ($convertedServiceConnectionId in @('$(convertedServiceConnectionId1)','$(convertedServiceConnectionId2)')) {
+          # }
           if ([string]::IsNullOrEmpty('$(convertedServiceConnectionId)')) {
             Write-Host "No converted service connection to remove"
             exit 0
