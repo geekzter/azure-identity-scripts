@@ -8,6 +8,7 @@ parameters:
   values:
   - Managed Identity
   - Service Principal
+  - Strategy
 - name: destroy
   displayName: Destroy Infrastructure
   type: string
@@ -50,11 +51,42 @@ jobs:
     name: 'Azure Pipelines'
     vmImage: ubuntu-latest
 
+  ${{ if or(eq(parameters.identityType, 'Strategy'),not(eq(variables['Build.Reason'], 'Manual')) }}:
+    strategy:
+      matrix:
+        AutomaticMSIFederation:
+          TF_VAR_azdo_creates_identity: 'true'
+          TF_VAR_create_federation: 'true'
+          TF_VAR_create_managed_identity: 'true'
+        ManualMSIFederation:
+          TF_VAR_azdo_creates_identity: 'false'
+          TF_VAR_create_federation: 'true'
+          TF_VAR_create_managed_identity: 'true'
+        AutomaticAppRegFederation:
+          TF_VAR_azdo_creates_identity: 'true'
+          TF_VAR_create_federation: 'true'
+          TF_VAR_create_managed_identity: 'false'
+        ManualAppRegFederation:
+          TF_VAR_azdo_creates_identity: 'false'
+          TF_VAR_create_federation: 'true'
+          TF_VAR_create_managed_identity: 'false'
+        AutomaticAppRegSecret:
+          TF_VAR_azdo_creates_identity: 'true'
+          TF_VAR_create_federation: 'false'
+          TF_VAR_create_managed_identity: 'false'
+        ManualAppRegSecret:
+          TF_VAR_azdo_creates_identity: 'false'
+          TF_VAR_create_federation: 'false'
+          TF_VAR_create_managed_identity: 'false'
+
   variables:
     application: 'Azure Service Connection'
     AZURE_CORE_ONLY_SHOW_ERRORS: true
     AZURE_EXTENSION_USE_DYNAMIC_INSTALL: yes_without_prompt
-    createManagedIdentity: ${{ lower(eq(parameters['identityType'], 'Managed Identity')) }}
+    ${{ if not(or(eq(parameters.identityType, 'Strategy'),not(eq(variables['Build.Reason'], 'Manual'))) }}:
+      TF_VAR_azdo_creates_identity: 'false'
+      TF_VAR_create_federation: 'true'
+      TF_VAR_create_managed_identity: ${{ lower(eq(parameters['identityType'], 'Managed Identity')) }}
     managedIdentityResourceGroupLocation: centralus
     managedIdentityResourceGroupName: ${{ split(variables['System.CollectionUri'], '/')[3] }}-service-connections
     repository: 'azure-identity-scripts'
@@ -128,10 +160,12 @@ jobs:
       failOnStandardError: true
       workingDirectory: '$(terraformDirectory)'
     env:
+      TF_VAR_azdo_creates_identity: $(TF_VAR_azdo_creates_identity)
       # TF_VAR_azdo_organization_id: $(System.CollectionId)
       TF_VAR_azdo_organization_url: $(System.CollectionUri)
       TF_VAR_azdo_project_name: $(System.TeamProject)
-      TF_VAR_create_managed_identity: $(createManagedIdentity)
+      TF_VAR_create_federation: $(TF_VAR_create_federation)
+      TF_VAR_create_managed_identity: $(TF_VAR_create_managed_identity)
       TF_VAR_managed_identity_resource_group_id: $(managedIdentityResourceGroup.id)
       TF_VAR_resource_suffix: $(Build.BuildId)
       TF_VAR_run_id: $(Build.BuildId)
@@ -217,10 +251,12 @@ jobs:
         failOnStandardError: true
         workingDirectory: '$(terraformDirectory)'
       env:
+        TF_VAR_azdo_creates_identity: $(TF_VAR_azdo_creates_identity)
         # TF_VAR_azdo_organization_id: $(System.CollectionId)
         TF_VAR_azdo_organization_url: $(System.CollectionUri)
         TF_VAR_azdo_project_name: $(System.TeamProject)
-        TF_VAR_create_managed_identity: $(createManagedIdentity)
+        TF_VAR_create_federation: $(TF_VAR_create_federation)
+        TF_VAR_create_managed_identity: $(TF_VAR_create_managed_identity)
         TF_VAR_managed_identity_resource_group_id: $(managedIdentityResourceGroup.id)
         TF_VAR_resource_suffix: $(Build.BuildId)
         TF_VAR_run_id: $(Build.BuildId)

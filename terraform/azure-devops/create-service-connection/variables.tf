@@ -1,3 +1,8 @@
+variable azdo_creates_identity {
+  description                  = "Let Azure DevOps create App Registration"
+  default                      = false
+  type                         = bool
+}
 variable azdo_organization_id {
   default                      = null
   nullable                     = true
@@ -19,8 +24,14 @@ variable azure_role {
   nullable                     = false
 }
 
+variable create_federation {
+  description                  = "Use workload identity federation instead of a App Registration secret"
+  default                      = true
+  type                         = bool
+}
+
 variable create_managed_identity {
-  description                  = "Creates a Managed Identity instead of a Service Principal"
+  description                  = "Creates a Managed Identity instead of a App Registration"
   default                      = true
   type                         = bool
 }

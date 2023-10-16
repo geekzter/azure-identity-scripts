@@ -22,6 +22,11 @@ output principal_url {
   value       = "https://portal.azure.com/${data.azuread_client_config.current.tenant_id}/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/${azuread_service_principal.spn.id}/appId/${azuread_application.app_registration.application_id}/preferredSingleSignOnMode~/null"
 }
 
+output secret {
+  sensitive   = true
+  value       = var.create_federation ? null : azuread_application_password.secret.0.value
+}
+
 output tenant_id {
   value       = data.azuread_client_config.current.tenant_id
 }
