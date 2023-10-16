@@ -9,6 +9,15 @@ parameters:
   - 'Non-modifying tests'
   - 'Modifying tests'
   - Both
+- name: destroy
+  displayName: Tear down resources
+  type: string
+  default: Always
+  values:
+  - Always
+  - Never 
+  - 'On failure'
+  - 'On success'
 
 pr:
   autoCancel: false
@@ -279,15 +288,26 @@ jobs:
           ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
                                         -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
 
-- ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
+- ${{ if and(ne(parameters.destroy, 'Never'),or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both'))) }}:
   - job: teardown
-    condition: succeededOrFailed()
+    # condition: succeededOrFailed()
+    ${{ if ne(variables['Build.Reason'],'Manual') }}:
+      displayName: 'Tear down resources (always on pr/schedule)'
+      condition: succeededOrFailed()
+    ${{ elseif eq(parameters.destroy, 'Always') }}:
+      displayName: 'Tear down resources'
+      condition: succeededOrFailed()
+    ${{ elseif eq(parameters.destroy, 'On failure') }}:
+      displayName: 'Destroy (${{ lower(parameters.destroy) }}) infrastructure'
+      condition: failed()
+    ${{ elseif eq(parameters.destroy, 'On success') }}:
+      displayName: 'Destroy (${{ lower(parameters.destroy) }}) infrastructure'
+      condition: succeeded()
     dependsOn: 
     - convertServiceConnection
     - createServiceConnection
     - testConvertedServiceConnection
     - testCreatedServiceConnection
-    displayName: 'Tear down resources'
     pool:
       name: 'Azure Pipelines'
       vmImage: ubuntu-latest
