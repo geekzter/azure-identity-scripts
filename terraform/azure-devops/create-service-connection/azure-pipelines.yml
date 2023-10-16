@@ -43,29 +43,10 @@ trigger: none
 
 variables:
 - group: 'identity-ci' # Should contain 'azureConnection', 'serviceConnectionTestPipelineId'
-  application: 'Azure Service Connection'
-  AZURE_CORE_ONLY_SHOW_ERRORS: true
-  AZURE_EXTENSION_USE_DYNAMIC_INSTALL: yes_without_prompt
-  ${{ if and(eq(parameters.identityType, 'Managed Identity'),eq(variables['Build.Reason'], 'Manual')) }}:
-    TF_VAR_azdo_creates_identity: 'false'
-    TF_VAR_create_federation: 'true'
-    TF_VAR_create_managed_identity: 'true'
-  ${{ if and(eq(parameters.identityType, 'Service Principal'),eq(variables['Build.Reason'], 'Manual')) }}:
-    TF_VAR_azdo_creates_identity: 'false'
-    TF_VAR_create_federation: 'true'
-    TF_VAR_create_managed_identity: 'false'
-  ${{ if and(eq(parameters.identityType, 'Service Principal with secret'),eq(variables['Build.Reason'], 'Manual')) }}:
-    TF_VAR_azdo_creates_identity: 'false'
-    TF_VAR_create_federation: 'false'
-    TF_VAR_create_managed_identity: 'false'
-  managedIdentityResourceGroupLocation: centralus
-  managedIdentityResourceGroupName: ${{ split(variables['System.CollectionUri'], '/')[3] }}-service-connections
-  repository: 'azure-identity-scripts'
-  scriptDirectory: $(Build.SourcesDirectory)/scripts/azure-devops
-  terraformDirectory: $(Build.SourcesDirectory)/terraform/azure-devops/create-service-connection
-  TF_IN_AUTOMATION: true
-  TF_INPUT: 0
-  TF_WORKSPACE: ci
+- name: application
+  value: 'Azure Service Connection'
+- name: repository
+  value: 'azure-identity-scripts'
 
 jobs:
 - job: 'Provision'
@@ -103,6 +84,29 @@ jobs:
           TF_VAR_azdo_creates_identity: 'false'
           TF_VAR_create_federation: 'false'
           TF_VAR_create_managed_identity: 'false'
+
+  variables:
+    AZURE_CORE_ONLY_SHOW_ERRORS: true
+    AZURE_EXTENSION_USE_DYNAMIC_INSTALL: yes_without_prompt
+    ${{ if and(eq(parameters.identityType, 'Managed Identity'),eq(variables['Build.Reason'], 'Manual')) }}:
+      TF_VAR_azdo_creates_identity: 'false'
+      TF_VAR_create_federation: 'true'
+      TF_VAR_create_managed_identity: 'true'
+    ${{ if and(eq(parameters.identityType, 'Service Principal'),eq(variables['Build.Reason'], 'Manual')) }}:
+      TF_VAR_azdo_creates_identity: 'false'
+      TF_VAR_create_federation: 'true'
+      TF_VAR_create_managed_identity: 'false'
+    ${{ if and(eq(parameters.identityType, 'Service Principal with secret'),eq(variables['Build.Reason'], 'Manual')) }}:
+      TF_VAR_azdo_creates_identity: 'false'
+      TF_VAR_create_federation: 'false'
+      TF_VAR_create_managed_identity: 'false'
+    managedIdentityResourceGroupLocation: centralus
+    managedIdentityResourceGroupName: ${{ split(variables['System.CollectionUri'], '/')[3] }}-service-connections
+    scriptDirectory: $(Build.SourcesDirectory)/scripts/azure-devops
+    terraformDirectory: $(Build.SourcesDirectory)/terraform/azure-devops/create-service-connection
+    TF_IN_AUTOMATION: true
+    TF_INPUT: 0
+    TF_WORKSPACE: ci
 
   steps:
   - pwsh: terraform init
