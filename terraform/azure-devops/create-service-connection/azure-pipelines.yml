@@ -51,7 +51,7 @@ jobs:
     name: 'Azure Pipelines'
     vmImage: ubuntu-latest
 
-  ${{ if or(eq(parameters.identityType, 'Strategy'),not(eq(variables['Build.Reason'], 'Manual')) }}:
+  ${{ if or(eq(parameters.identityType, 'Strategy'),not(eq(variables['Build.Reason'], 'Manual'))) }}:
     strategy:
       matrix:
         AutomaticMSIFederation:
