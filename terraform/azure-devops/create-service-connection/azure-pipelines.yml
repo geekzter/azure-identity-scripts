@@ -171,7 +171,7 @@ jobs:
       TF_VAR_run_id: $(Build.BuildId)
 
   - task: AzureCLI@2
-    condition: and(succeededOrFailed(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
+    condition: and(succeeded(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
     displayName: 'Test Service Connection'
     timeoutInMinutes: 5
     inputs:
