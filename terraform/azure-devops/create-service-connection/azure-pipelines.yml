@@ -101,32 +101,32 @@ jobs:
     displayName: 'Terraform init'
     workingDirectory: '$(terraformDirectory)'
 
-  - ${{ if eq(parameters['identityType'], 'Managed Identity') }}:
-    # Create resource group for managed identity
-    - task: AzureCLI@2
-      displayName: 'Create Managed Identity resource group'
-      name: managedIdentityResourceGroup
-      inputs:
-        azureSubscription: '$(azureConnection)'
-        failOnStandardError: true
-        scriptType: pscore
-        scriptLocation: inlineScript
-        inlineScript: |
-          az group list --query "[?name == '$(managedIdentityResourceGroupName)'].id" `
-                        -o tsv `
-                        | Set-Variable -Name managedIdentityResourceGroupId
-          
-          if (!$managedIdentityResourceGroupId) {
-            Write-Host "Creating resource group `"$managedIdentityResourceGroupName`"..."
-            az group create --name $(managedIdentityResourceGroupName) `
-                            --location $(managedIdentityResourceGroupLocation) `
-                            --query id `
-                            | Set-Variable -Name managedIdentityResourceGroupId
-          } else {
-            Write-Host "Resource group `"$managedIdentityResourceGroupName`" already exists"
-          }
+  # Create resource group for managed identity
+  - task: AzureCLI@2
+    condition: and(succeeded(),eq(variables['TF_VAR_create_managed_identity'], 'true'))
+    displayName: 'Create Managed Identity resource group'
+    name: managedIdentityResourceGroup
+    inputs:
+      azureSubscription: '$(azureConnection)'
+      failOnStandardError: true
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        az group list --query "[?name == '$(managedIdentityResourceGroupName)'].id" `
+                      -o tsv `
+                      | Set-Variable -Name managedIdentityResourceGroupId
+        
+        if (!$managedIdentityResourceGroupId) {
+          Write-Host "Creating resource group `"$managedIdentityResourceGroupName`"..."
+          az group create --name $(managedIdentityResourceGroupName) `
+                          --location $(managedIdentityResourceGroupLocation) `
+                          --query id `
+                          | Set-Variable -Name managedIdentityResourceGroupId
+        } else {
+          Write-Host "Resource group `"$managedIdentityResourceGroupName`" already exists"
+        }
 
-          Write-Host "##vso[task.setvariable variable=id;isOutput=true]${managedIdentityResourceGroupId}"
+        Write-Host "##vso[task.setvariable variable=id;isOutput=true]${managedIdentityResourceGroupId}"
 
   - task: AzureCLI@2
     displayName: 'Terraform apply'
