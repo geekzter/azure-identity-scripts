@@ -180,7 +180,6 @@ jobs:
       workingDirectory: '$(terraformDirectory)'
     env:
       TF_VAR_azdo_creates_identity: $(TF_VAR_azdo_creates_identity)
-      # TF_VAR_azdo_organization_id: $(System.CollectionId)
       TF_VAR_azdo_organization_url: $(System.CollectionUri)
       TF_VAR_azdo_project_name: $(System.TeamProject)
       TF_VAR_create_federation: $(TF_VAR_create_federation)
@@ -271,7 +270,6 @@ jobs:
         workingDirectory: '$(terraformDirectory)'
       env:
         TF_VAR_azdo_creates_identity: $(TF_VAR_azdo_creates_identity)
-        # TF_VAR_azdo_organization_id: $(System.CollectionId)
         TF_VAR_azdo_organization_url: $(System.CollectionUri)
         TF_VAR_azdo_project_name: $(System.TeamProject)
         TF_VAR_create_federation: $(TF_VAR_create_federation)
