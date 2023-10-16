@@ -14,7 +14,7 @@ locals {
   authentication_scheme        = var.create_federation ? "WorkloadIdentityFederation" : "ServicePrincipal"
   azdo_organization_name       = split("/",var.azdo_organization_url)[3]
   azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
-  azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-${var.azdo_creates_identity ? "aut" : "-man"}-${var.create_federation ? "oidc-" : ""}${var.create_managed_identity ? "msi" : "sp"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
+  azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-${var.azdo_creates_identity ? "aut" : "man"}-${var.create_federation ? "oidc-" : "secret-"}${var.create_managed_identity ? "msi" : "sp"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
   azure_scope                  = var.azure_scope != null && var.azure_scope != "" ? var.azure_scope : "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
   principal_id                 = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_id : module.service_principal.0.principal_id)
   principal_name               = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_name : module.service_principal.0.principal_name)
