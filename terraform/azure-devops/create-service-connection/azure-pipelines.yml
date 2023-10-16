@@ -52,8 +52,22 @@ variables:
 - group: 'identity-ci' # Should contain 'azureConnection', 'serviceConnectionTestPipelineId'
 - name: application
   value: 'Azure Service Connection'
+- name: AZURE_CORE_ONLY_SHOW_ERRORS
+  value: 'true'
+- name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
+  value: 'yes_without_prompt'
 - name: repository
   value: 'azure-identity-scripts'
+- name: scriptDirectory
+  value: $(Build.SourcesDirectory)/scripts/azure-devops
+- name: terraformDirectory  
+  value: $(Build.SourcesDirectory)/terraform/azure-devops/create-service-connection
+- name: TF_IN_AUTOMATION
+  value: true
+- name: TF_INPUT
+  value: 0
+- name: TF_WORKSPACE
+  value: ci
 
 jobs:
 - job: 'Provision'
@@ -93,8 +107,6 @@ jobs:
           TF_VAR_create_managed_identity: 'false'
 
   variables:
-    AZURE_CORE_ONLY_SHOW_ERRORS: true
-    AZURE_EXTENSION_USE_DYNAMIC_INSTALL: yes_without_prompt
     ${{ if and(eq(parameters.identityType, 'Managed Identity'),eq(variables['Build.Reason'], 'Manual')) }}:
       TF_VAR_azdo_creates_identity: "${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}"
       TF_VAR_create_federation: 'true'
@@ -109,11 +121,6 @@ jobs:
       TF_VAR_create_managed_identity: 'false'
     managedIdentityResourceGroupLocation: centralus
     managedIdentityResourceGroupName: ${{ split(variables['System.CollectionUri'], '/')[3] }}-service-connections
-    scriptDirectory: $(Build.SourcesDirectory)/scripts/azure-devops
-    terraformDirectory: $(Build.SourcesDirectory)/terraform/azure-devops/create-service-connection
-    TF_IN_AUTOMATION: true
-    TF_INPUT: 0
-    TF_WORKSPACE: ci
 
   steps:
   - pwsh: terraform init
