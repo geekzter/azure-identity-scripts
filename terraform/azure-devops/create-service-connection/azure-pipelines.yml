@@ -10,6 +10,13 @@ parameters:
   - Service Principal
   - Service Principal with secret
   - Strategy
+- name: serviceConnectionCreationMode
+  displayName: Service Connection creation mode
+  type: string
+  default: Manual
+  values:
+  - Automatic
+  - Manual
 - name: destroy
   displayName: Destroy Infrastructure
   type: string
@@ -64,24 +71,24 @@ jobs:
         #   TF_VAR_azdo_creates_identity: 'true'
         #   TF_VAR_create_federation: 'true'
         #   TF_VAR_create_managed_identity: 'true'
-        ManualMSIFederation:
-          TF_VAR_azdo_creates_identity: 'false'
+        MSIFederation:
+          TF_VAR_azdo_creates_identity: '${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}'
           TF_VAR_create_federation: 'true'
           TF_VAR_create_managed_identity: 'true'
         # AutomaticAppRegFederation:
         #   TF_VAR_azdo_creates_identity: 'true'
         #   TF_VAR_create_federation: 'true'
         #   TF_VAR_create_managed_identity: 'false'
-        ManualAppRegFederation:
-          TF_VAR_azdo_creates_identity: 'false'
+        AppRegFederation:
+          TF_VAR_azdo_creates_identity: '${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}'
           TF_VAR_create_federation: 'true'
           TF_VAR_create_managed_identity: 'false'
         # AutomaticAppRegSecret:
         #   TF_VAR_azdo_creates_identity: 'true'
         #   TF_VAR_create_federation: 'false'
         #   TF_VAR_create_managed_identity: 'false'
-        ManualAppRegSecret:
-          TF_VAR_azdo_creates_identity: 'false'
+        AppRegSecret:
+          TF_VAR_azdo_creates_identity: '${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}'
           TF_VAR_create_federation: 'false'
           TF_VAR_create_managed_identity: 'false'
 
@@ -89,15 +96,15 @@ jobs:
     AZURE_CORE_ONLY_SHOW_ERRORS: true
     AZURE_EXTENSION_USE_DYNAMIC_INSTALL: yes_without_prompt
     ${{ if and(eq(parameters.identityType, 'Managed Identity'),eq(variables['Build.Reason'], 'Manual')) }}:
-      TF_VAR_azdo_creates_identity: 'false'
+      TF_VAR_azdo_creates_identity: '${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}'
       TF_VAR_create_federation: 'true'
       TF_VAR_create_managed_identity: 'true'
     ${{ if and(eq(parameters.identityType, 'Service Principal'),eq(variables['Build.Reason'], 'Manual')) }}:
-      TF_VAR_azdo_creates_identity: 'false'
+      TF_VAR_azdo_creates_identity: '${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}'
       TF_VAR_create_federation: 'true'
       TF_VAR_create_managed_identity: 'false'
     ${{ if and(eq(parameters.identityType, 'Service Principal with secret'),eq(variables['Build.Reason'], 'Manual')) }}:
-      TF_VAR_azdo_creates_identity: 'false'
+      TF_VAR_azdo_creates_identity: '${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}'
       TF_VAR_create_federation: 'false'
       TF_VAR_create_managed_identity: 'false'
     managedIdentityResourceGroupLocation: centralus
