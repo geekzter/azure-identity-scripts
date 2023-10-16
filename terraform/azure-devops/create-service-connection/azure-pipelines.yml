@@ -85,15 +85,15 @@ jobs:
     application: 'Azure Service Connection'
     AZURE_CORE_ONLY_SHOW_ERRORS: true
     AZURE_EXTENSION_USE_DYNAMIC_INSTALL: yes_without_prompt
-    ${{ if and(parameters.identityType, 'Managed Identity'),eq(variables['Build.Reason'], 'Manual')) }}:
+    ${{ if and(eq(parameters.identityType, 'Managed Identity'),eq(variables['Build.Reason'], 'Manual')) }}:
       TF_VAR_azdo_creates_identity: 'false'
       TF_VAR_create_federation: 'true'
       TF_VAR_create_managed_identity: 'true'
-    ${{ if and(parameters.identityType, 'Service Principal'),eq(variables['Build.Reason'], 'Manual')) }}:
+    ${{ if and(eq(parameters.identityType, 'Service Principal'),eq(variables['Build.Reason'], 'Manual')) }}:
       TF_VAR_azdo_creates_identity: 'false'
       TF_VAR_create_federation: 'true'
       TF_VAR_create_managed_identity: 'false'
-    ${{ if and(parameters.identityType, 'Service Principal with secret'),eq(variables['Build.Reason'], 'Manual')) }}:
+    ${{ if and(eq(parameters.identityType, 'Service Principal with secret'),eq(variables['Build.Reason'], 'Manual')) }}:
       TF_VAR_azdo_creates_identity: 'false'
       TF_VAR_create_federation: 'false'
       TF_VAR_create_managed_identity: 'false'
