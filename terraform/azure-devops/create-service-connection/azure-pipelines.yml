@@ -316,7 +316,7 @@ jobs:
     ${{ if eq(parameters.destroy, 'On success') }}:
       condition: succeeded()
     dependsOn: 'Provision'
-    displayName: 'Destroy'
+    displayName: 'Destroy (${{ parameters.destroy }})'
 
     pool:
       name: 'Azure Pipelines'
