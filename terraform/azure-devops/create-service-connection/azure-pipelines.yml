@@ -46,7 +46,7 @@ variables:
 
 jobs:
 - job: 'Provision'
-  displayName: 'Provision & Destroy'
+  displayName: 'Provision'
 
   pool:
     name: 'Azure Pipelines'
@@ -270,52 +270,6 @@ jobs:
         TF_VAR_managed_identity_resource_group_id: $(managedIdentityResourceGroup.id)
         TF_VAR_resource_suffix: $(Build.BuildId)
         TF_VAR_run_id: $(Build.BuildId)
-
-  - ${{ if not(eq(parameters.destroy, 'Never')) }}:
-    - task: AzureCLI@2
-      name: teardownAzure
-      ${{ if eq(parameters.destroy, 'Always') }}:
-        condition: succeededOrFailed()
-      ${{ if eq(parameters.destroy, 'On failure') }}:
-        condition: failed()
-      ${{ if eq(parameters.destroy, 'On success') }}:
-        condition: succeeded()
-      displayName: 'Tear down remaining Azure resources'
-      inputs:
-        azureSubscription: '$(azureConnection)'
-        scriptType: pscore
-        scriptLocation: inlineScript
-        inlineScript: |
-          $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
-          # Build JMESPath expression
-          $tagQuery = "[?tags.application == '$(application)' && tags.repository == '$(repository)' && tags.workspace == '$(TF_WORKSPACE)' && tags.runId == '$(Build.BuildId)' && properties.provisioningState != 'Deleting'].id"
-          Write-Host "Removing resources identified by `"$tagQuery`"..."
-
-          # Remove resource groups
-          $resourceGroupIDs = $(az group list --query "${tagQuery}" -o tsv)
-          if ($resourceGroupIDs) {
-            Write-Host "Removing resource group(s) `"${resourceGroupIDs}`"..."
-            &{ # az writes information to stderr
-              $ErrorActionPreference = 'SilentlyContinue'
-              az resource delete --ids $resourceGroupIDs 2>&1
-            }
-          } else {
-            Write-Host "No resource groups to remove"
-          }
-
-          # Remove (remaining) resources
-          $resourceIDs = $(az resource list --query "${tagQuery}" -o tsv)
-          if ($resourceIDs) {
-            Write-Host "Removing resources `"${resourceIDs}`"..."
-            &{ # az writes information to stderr
-              $ErrorActionPreference = 'SilentlyContinue'
-              az resource delete --ids $resourceIDs 2>&1
-            }
-          } else {
-            Write-Host "No resources to remove"
-          }
-        failOnStandardError: true
-        workingDirectory: '$(scriptDirectory)'
 
   - ${{ if not(eq(parameters.destroy, 'Never')) }}:
     - task: AzureCLI@2
