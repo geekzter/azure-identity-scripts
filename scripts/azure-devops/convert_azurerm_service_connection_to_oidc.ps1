@@ -125,7 +125,7 @@ if (!$httpStatusCode -or ($httpStatusCode -ge 300)) {
 }
 $serviceEndpointResponse | ConvertTo-Json -Depth 5 | Write-Debug
 $serviceEndpoints | Format-List | Out-String | Write-Debug
-if (!$serviceEndpoints -or ($serviceEndpointResponse.count-eq 0)) {
+if (!$serviceEndpoints -or ($serviceEndpointResponse.count -eq 0)) {
     Write-Warning "No service connections found"
     exit 1
 }
