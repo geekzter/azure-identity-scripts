@@ -88,7 +88,7 @@ $env:ARM_CLIENT_SECRET   ??= $env:servicePrincipalKey # requires addSpnToEnviron
 $env:ARM_OIDC_TOKEN      ??= $idToken
 $env:ARM_SUBSCRIPTION_ID ??= $account.id  
 $env:ARM_TENANT_ID       ??= $account.tenantId
-$env:ARM_USE_CLI         ??= (!($env:idToken -or $env:servicePrincipalKey)).ToString().ToLower()
+$env:ARM_USE_CLI         ??= (!($idToken -or $env:servicePrincipalKey)).ToString().ToLower()
 $env:ARM_USE_OIDC        ??= ($idToken -ne $null).ToString().ToLower()
 if ($env:ARM_CLIENT_SECRET) {
     Write-Verbose "Using ARM_CLIENT_SECRET"
