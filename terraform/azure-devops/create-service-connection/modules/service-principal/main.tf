@@ -22,4 +22,21 @@ resource azuread_application_federated_identity_credential fic {
   audiences                    = ["api://AzureADTokenExchange"]
   issuer                       = var.issuer
   subject                      = var.federation_subject
+
+  count                        = var.create_federation ? 1 : 0
+}
+
+resource time_rotating secret_expiration {
+  rotation_years               = 1
+
+  count                        = var.create_federation ? 0 : 1
+}
+resource azuread_application_password secret {
+  rotate_when_changed          = {
+    rotation                   = timeadd(time_rotating.secret_expiration.0.id, "8760h") # One year from now
+  }
+
+  application_object_id        = azuread_application.app_registration.id
+
+  count                        = var.create_federation ? 0 : 1
 }

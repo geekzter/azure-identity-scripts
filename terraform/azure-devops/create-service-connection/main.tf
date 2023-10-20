@@ -10,13 +10,14 @@ resource random_string suffix {
 }
 
 locals {
-  application_id               = var.create_managed_identity ? module.managed_identity.0.application_id : module.service_principal.0.application_id
+  application_id               = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.application_id : module.service_principal.0.application_id)
+  authentication_scheme        = var.create_federation ? "WorkloadIdentityFederation" : "ServicePrincipal"
   azdo_organization_name       = split("/",var.azdo_organization_url)[3]
   azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
-  azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-oidc-${var.create_managed_identity ? "msi" : "sp"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
+  azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-${var.azdo_creates_identity ? "aut" : "man"}-${var.create_managed_identity ? "msi" : "sp"}-${var.create_federation ? "oidc" : "secret"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
   azure_scope                  = var.azure_scope != null && var.azure_scope != "" ? var.azure_scope : "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
-  principal_id                 = var.create_managed_identity ? module.managed_identity.0.principal_id : module.service_principal.0.principal_id
-  principal_name               = var.create_managed_identity ? module.managed_identity.0.principal_name : module.service_principal.0.principal_name
+  principal_id                 = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_id : module.service_principal.0.principal_id)
+  principal_name               = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_name : module.service_principal.0.principal_name)
   resource_suffix              = var.resource_suffix != null && var.resource_suffix != "" ? lower(var.resource_suffix) : random_string.suffix.result
   resource_tags                = {
     application                = "Azure Service Connection"
@@ -65,12 +66,13 @@ module managed_identity {
 
 module service_principal {
   source                       = "./modules/service-principal"
-  federation_subject           = module.service_connection.service_connection_oidc_subject
-  issuer                       = module.service_connection.service_connection_oidc_issuer
+  create_federation            = var.create_federation
+  federation_subject           = var.create_federation ? module.service_connection.service_connection_oidc_subject : null
+  issuer                       = var.create_federation ? module.service_connection.service_connection_oidc_issuer : null
   multi_tenant                 = false
   name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
 
-  count                        = var.create_managed_identity ? 0 : 1
+  count                        = var.create_managed_identity || var.azdo_creates_identity ? 0 : 1
 }
 
 module azure_access {
@@ -78,6 +80,7 @@ module azure_access {
     azurerm                    = azurerm.target
   }
   source                       = "./modules/azure-access"
+  create_role_assignment       = !var.azdo_creates_identity
   identity_object_id           = local.principal_id
   resource_id                  = local.azure_scope
   role                         = var.azure_role
@@ -86,8 +89,11 @@ module azure_access {
 module service_connection {
   source                       = "./modules/service-connection"
   application_id               = local.application_id
+  application_secret           = var.azdo_creates_identity || var.create_federation ? null : module.service_principal.0.secret
+  authentication_scheme        = local.authentication_scheme
+  create_identity              = var.azdo_creates_identity
   project_name                 = var.azdo_project_name
-  tenant_id                    = var.create_managed_identity ? module.managed_identity.0.tenant_id : module.service_principal.0.tenant_id
+  tenant_id                    = data.azurerm_client_config.current.tenant_id
   service_connection_name      = local.azdo_service_connection_name
   subscription_id              = local.target_subscription_id
   subscription_name            = module.azure_access.subscription_name
