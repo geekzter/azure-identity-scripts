@@ -2,7 +2,7 @@ parameters:
 - name: identityType
   displayName: Identity Type
   type: string
-  default: Managed Identity
+  default: Managed Identity with federation
   values:
   - Managed Identity with federation
   - Service Principal with federation
