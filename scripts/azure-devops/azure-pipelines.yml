@@ -242,8 +242,6 @@ jobs:
         scriptLocation: inlineScript
         workingDirectory: '$(scriptDirectory)'
         inlineScript: |
-          $VerbosePreference = "Continue"
-          $DebugPreference = "Continue"
           ./create_azurerm_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
                                                   -ServiceConnectionScheme ServicePrincipal `
                                                   -SubscriptionId $(az account show --query id -o tsv)
