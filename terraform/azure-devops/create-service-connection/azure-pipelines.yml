@@ -1,5 +1,3 @@
-name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-$(SourceBranchName)-$(Build.BuildId)
-
 parameters:
 - name: identityType
   displayName: Identity Type
@@ -26,6 +24,11 @@ parameters:
   - Never 
   - 'On failure'
   - 'On success'
+
+${{ if or(eq(parameters.identityType, 'Strategy'),not(eq(variables['Build.Reason'], 'Manual'))) }}:
+  name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-strategy-$(SourceBranchName)-$(Build.BuildId)
+${{ else }}:
+  name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-${{lower(parameters.serviceConnectionCreationMode)}}-${{lower(replace(parameters.identityType,' ','-'))}}-$(SourceBranchName)-$(Build.BuildId)
 
 pr:
   autoCancel: false
@@ -80,26 +83,26 @@ jobs:
   ${{ if or(eq(parameters.identityType, 'Strategy'),not(eq(variables['Build.Reason'], 'Manual'))) }}:
     strategy:
       matrix:
-        AutomaticMSIFederation:
-          TF_VAR_azdo_creates_identity: 'true'
-          TF_VAR_create_federation: 'true'
-          TF_VAR_create_managed_identity: 'true'
+        # AutomaticMSIFederation:
+        #   TF_VAR_azdo_creates_identity: 'true'
+        #   TF_VAR_create_federation: 'true'
+        #   TF_VAR_create_managed_identity: 'true'
         MSIFederation:
           TF_VAR_azdo_creates_identity: "${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}"
           TF_VAR_create_federation: 'true'
           TF_VAR_create_managed_identity: 'true'
-        AutomaticAppRegFederation:
-          TF_VAR_azdo_creates_identity: 'true'
-          TF_VAR_create_federation: 'true'
-          TF_VAR_create_managed_identity: 'false'
+        # AutomaticAppRegFederation:
+        #   TF_VAR_azdo_creates_identity: 'true'
+        #   TF_VAR_create_federation: 'true'
+        #   TF_VAR_create_managed_identity: 'false'
         AppRegFederation:
           TF_VAR_azdo_creates_identity: "${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}"
           TF_VAR_create_federation: 'true'
           TF_VAR_create_managed_identity: 'false'
-        AutomaticAppRegSecret:
-          TF_VAR_azdo_creates_identity: 'true'
-          TF_VAR_create_federation: 'false'
-          TF_VAR_create_managed_identity: 'false'
+        # AutomaticAppRegSecret:
+        #   TF_VAR_azdo_creates_identity: 'true'
+        #   TF_VAR_create_federation: 'false'
+        #   TF_VAR_create_managed_identity: 'false'
         AppRegSecret:
           TF_VAR_azdo_creates_identity: "${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}"
           TF_VAR_create_federation: 'false'
