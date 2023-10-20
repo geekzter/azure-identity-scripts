@@ -110,6 +110,7 @@ $serviceEndpointRequest | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpoint
 Write-Debug "Service connection request body: `n${serviceEndpointRequestBody}"
 
 $apiUri = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints?api-version=${apiVersion}"
+Write-Debug "POST ${apiUri}"
 Invoke-RestMethod -Uri $apiUri `
                   -Method POST `
                   -Body $serviceEndpointRequestBody `
@@ -123,6 +124,29 @@ if (!$serviceEndpoint) {
     Write-Error "Failed to create / update service connection '${ServiceConnectionName}'"
     exit 1
 }
+$serviceConnectionGetApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?api-version=${apiVersion}"
+Write-Host "Waiting for service connection '${ServiceConnectionName}' with id $($serviceEndpoint.id) to be ready..."
+while ($serviceEndpoint.operationStatus.state -eq "InProgress") {
+    Write-Debug "GET ${serviceConnectionGetApiUrl}"
+    $serviceEndpoint = Invoke-RestMethod -Uri $serviceConnectionGetApiUrl `
+                                         -Method GET `
+                                         -ContentType 'application/json' `
+                                         -Authentication Bearer `
+                                         -Token (ConvertTo-SecureString $accessToken -AsPlainText)
+    $serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
+
+    Start-Sleep -Seconds 1
+}
+if ($serviceEndpoint.operationStatus.statusMessage) {
+    Write-Verbose $serviceEndpoint.operationStatus.statusMessage
+}
+
+if (!$serviceEndpoint.isReady) {
+    Write-Error "'${ServiceConnectionName}' with id ${serviceEndpoint} is in state '$($serviceEndpoint.operationStatus.state)'. $($serviceEndpoint.operationStatus.statusMessage)."
+    $serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Warning
+    exit 1
+}
+
 Write-Host "Service connection '${ServiceConnectionName}' created:"
 Write-Debug "Service connection data:"
 $serviceEndpoint.data | Format-List | Out-String | Write-Debug
