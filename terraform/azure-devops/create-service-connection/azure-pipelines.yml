@@ -25,7 +25,7 @@ parameters:
   - 'On failure'
   - 'On success'
 
-name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-create-${{lower(parameters.serviceConnectionCreationMode)}}-${{lower(replace(parameters.identityType,' ','-'))}}-$(SourceBranchName):$(Build.BuildId)
+name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-create-${{lower(parameters.serviceConnectionCreationMode)}}-${{lower(replace(parameters.identityType,' ','-'))}}-[$(SourceBranchName)-$(Build.BuildId)]
 
 pr:
   autoCancel: false
