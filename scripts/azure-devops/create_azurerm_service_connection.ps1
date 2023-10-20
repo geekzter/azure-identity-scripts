@@ -143,7 +143,6 @@ if ($serviceEndpoint.operationStatus.statusMessage) {
 
 if (!$serviceEndpoint.isReady) {
     Write-Error "Service Connection '${ServiceConnectionName}' with id $($serviceEndpoint.id) is in state '$($serviceEndpoint.operationStatus.state)'. $($serviceEndpoint.operationStatus.statusMessage)"
-    $serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Warning
     exit 1
 }
 
