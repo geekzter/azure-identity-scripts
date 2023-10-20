@@ -111,6 +111,7 @@ jobs:
             TF_VAR_azdo_creates_identity: 'false'
             TF_VAR_create_federation: 'false'
             TF_VAR_create_managed_identity: 'false'
+      maxParallel: 2 # Reserve concurrency for test pipeline (az pipelines run) invoked from this pipeline
 
   variables:
     ${{ if and(ne(parameters.identityType, 'Strategy'),ne(parameters.serviceConnectionCreationMode, 'Strategy'),eq(variables['Build.Reason'], 'Manual')) }}:
