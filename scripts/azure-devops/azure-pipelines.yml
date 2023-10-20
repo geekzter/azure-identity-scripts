@@ -242,6 +242,7 @@ jobs:
 #         scriptLocation: inlineScript
 #         workingDirectory: '$(scriptDirectory)'
 #         inlineScript: |
+#           # BUG: A valid refresh token for identity 00000000-0000-0000-0000-000000000000 was not found.
 #           ./create_azurerm_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
 #                                                   -ServiceConnectionScheme ServicePrincipal `
 #                                                   -SubscriptionId $(az account show --query id -o tsv)
