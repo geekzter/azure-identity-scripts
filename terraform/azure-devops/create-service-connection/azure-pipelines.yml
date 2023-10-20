@@ -115,8 +115,8 @@ jobs:
   variables:
     ${{ if and(ne(parameters.identityType, 'Strategy'),ne(parameters.serviceConnectionCreationMode, 'Strategy'),eq(variables['Build.Reason'], 'Manual')) }}:
       TF_VAR_azdo_creates_identity: ${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}
-      TF_VAR_create_federation: ${{ not(contains(parameters.identityType, 'secret')) }}
-      TF_VAR_create_managed_identity: ${{ eq(parameters.identityType, 'Managed Identity with federation') }}
+      TF_VAR_create_federation: ${{ lower(contains(parameters.identityType, 'federation')) }}
+      TF_VAR_create_managed_identity: ${{ lower(contains(parameters.identityType, 'Managed Identity')) }}
     managedIdentityResourceGroupLocation: centralus
     managedIdentityResourceGroupName: ${{ split(variables['System.CollectionUri'], '/')[3] }}-service-connections
 
