@@ -16,6 +16,10 @@ parameters:
   - Automatic
   - Manual
   - Strategy
+- name: testServiceConnection
+  displayName: Test Service Connection(s)
+  type: boolean
+  default: true
 - name: destroy
   displayName: Destroy Infrastructure
   type: string
@@ -194,58 +198,59 @@ jobs:
       TF_VAR_resource_suffix: $(Build.BuildId)
       TF_VAR_run_id: $(Build.BuildId)
 
-  - task: AzureCLI@2
-    condition: and(succeeded(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
-    displayName: 'Test Service Connection'
-    timeoutInMinutes: 5
-    inputs:
-      azureSubscription: '$(azureConnection)'
-      failOnStandardError: true
-      scriptType: pscore
-      scriptLocation: inlineScript
-      inlineScript: |
-        Write-Host "Service Connection id:   $(terraform.azdo_service_connection_id)"
-        Write-Host "Service Connection name: $(terraform.azdo_service_connection_name)"
+  - ${{ if parameters.testServiceConnection }}:
+    - task: AzureCLI@2
+      condition: and(succeeded(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
+      displayName: 'Test Service Connection'
+      timeoutInMinutes: 5
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          Write-Host "Service Connection id:   $(terraform.azdo_service_connection_id)"
+          Write-Host "Service Connection name: $(terraform.azdo_service_connection_name)"
 
-        az devops configure --defaults organization=$(System.CollectionUri) project="$(System.TeamProject)"
+          az devops configure --defaults organization=$(System.CollectionUri) project="$(System.TeamProject)"
 
-        Write-Host "Authorizing the service connection to use the pipeline..."
-        if ([string]::IsNullOrEmpty("$(terraform.azdo_service_connection_name)")) {
-          Write-Host "##vso[task.LogIssue type=error]Service connection not found"
-          Write-Error "Service connection not found"
-          exit 1
-        }
-        az devops service-endpoint update --id $(terraform.azdo_service_connection_id) `
-                                          --enable-for-all true
-
-        Write-Host "Running the test pipeline with parameter serviceConnection=$(terraform.azdo_service_connection_name)..."
-        az pipelines run --id $(serviceConnectionTestPipelineId) `
-                         --parameters serviceConnection="$(terraform.azdo_service_connection_name)" `
-                         -o json `
-                         | ConvertFrom-Json `
-                         | Set-Variable run
-        $run | ConvertTo-Json | Out-String | Write-Debug
-        $run | Format-List | Out-String | Write-Debug
-        "{0}{1}/_build/results?buildId={2}&view=results" -f "$(System.CollectionUri)", [uri]::EscapeDataString("$(System.TeamProject)"), $run.id | Write-Host
-        Write-Host "Waiting for pipeline run $($run.id) to complete..."
-        do {
-            Start-Sleep -Seconds 5
-            az pipelines runs show --id $run.id `
-                                   -o json `
-                                   | ConvertFrom-Json `
-                                   | Set-Variable run
-            $run | ConvertTo-Json | Out-String | Write-Debug
-            $run | Format-List | Out-String | Write-Debug
-            # pause
-            Write-Host "Run status: $($run.status)"
-        } while ($run.status -ne 'completed')
-        Write-Host "Run result: $($run.result)"
-
-        if ($run.result -notmatch 'succeeded') {
-            Write-Host "##vso[task.LogIssue type=error]Service Connection test job failed with result: $($run.result)"
-            Write-Error "Run failed with result: $($run.result)"
+          Write-Host "Authorizing the service connection to use the pipeline..."
+          if ([string]::IsNullOrEmpty("$(terraform.azdo_service_connection_name)")) {
+            Write-Host "##vso[task.LogIssue type=error]Service connection not found"
+            Write-Error "Service connection not found"
             exit 1
-        }
+          }
+          az devops service-endpoint update --id $(terraform.azdo_service_connection_id) `
+                                            --enable-for-all true
+
+          Write-Host "Running the test pipeline with parameter serviceConnection=$(terraform.azdo_service_connection_name)..."
+          az pipelines run --id $(serviceConnectionTestPipelineId) `
+                          --parameters serviceConnection="$(terraform.azdo_service_connection_name)" `
+                          -o json `
+                          | ConvertFrom-Json `
+                          | Set-Variable run
+          $run | ConvertTo-Json | Out-String | Write-Debug
+          $run | Format-List | Out-String | Write-Debug
+          "{0}{1}/_build/results?buildId={2}&view=results" -f "$(System.CollectionUri)", [uri]::EscapeDataString("$(System.TeamProject)"), $run.id | Write-Host
+          Write-Host "Waiting for pipeline run $($run.id) to complete..."
+          do {
+              Start-Sleep -Seconds 5
+              az pipelines runs show --id $run.id `
+                                    -o json `
+                                    | ConvertFrom-Json `
+                                    | Set-Variable run
+              $run | ConvertTo-Json | Out-String | Write-Debug
+              $run | Format-List | Out-String | Write-Debug
+              # pause
+              Write-Host "Run status: $($run.status)"
+          } while ($run.status -ne 'completed')
+          Write-Host "Run result: $($run.result)"
+
+          if ($run.result -notmatch 'succeeded') {
+              Write-Host "##vso[task.LogIssue type=error]Service Connection test job failed with result: $($run.result)"
+              Write-Error "Run failed with result: $($run.result)"
+              exit 1
+          }
 
   - ${{ if not(eq(parameters.destroy, 'Never')) }}:
     - pwsh: |
