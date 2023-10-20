@@ -106,7 +106,7 @@ jobs:
             TF_VAR_create_managed_identity: 'false'
         ${{ if or(and(or(eq(parameters.identityType, 'Service Principal with federation'),eq(parameters.identityType, 'Strategy')),or(eq(parameters.serviceConnectionCreationMode, 'Manual'),eq(parameters.serviceConnectionCreationMode, 'Strategy'))),ne(variables['Build.Reason'], 'Manual'))  }}:
           ManualAppRegFederation:
-            TF_VAR_azdo_creates_identity: false'
+            TF_VAR_azdo_creates_identity: 'false'
             TF_VAR_create_federation: 'true'
             TF_VAR_create_managed_identity: 'false'
         ${{ if and(or(eq(parameters.identityType, 'Service Principal with secret'),eq(parameters.identityType, 'Strategy')),or(eq(parameters.serviceConnectionCreationMode, 'Automatic'),eq(parameters.serviceConnectionCreationMode, 'Strategy')))  }}:
