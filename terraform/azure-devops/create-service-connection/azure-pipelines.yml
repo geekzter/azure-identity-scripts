@@ -25,10 +25,7 @@ parameters:
   - 'On failure'
   - 'On success'
 
-${{ if or(eq(parameters.identityType, 'Strategy'),not(eq(variables['Build.Reason'], 'Manual'))) }}:
-  name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-strategy-$(SourceBranchName)-$(Build.BuildId)
-${{ else }}:
-  name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-${{lower(parameters.serviceConnectionCreationMode)}}-${{lower(replace(parameters.identityType,' ','-'))}}-$(SourceBranchName)-$(Build.BuildId)
+name: $(Date:yyyyMMdd)$(Rev:.r)-$(Build.DefinitionVersion)-${{lower(parameters.serviceConnectionCreationMode)}}-${{lower(replace(parameters.identityType,' ','-'))}}-$(SourceBranchName)-$(Build.BuildId)
 
 pr:
   autoCancel: false
