@@ -18,6 +18,7 @@ data external azdo_token {
   program                      = [
     "az", "account", "get-access-token", 
     "--resource", "499b84ac-1321-427f-aa17-267ca6975798", # Azure DevOps
+    "--query","{accessToken:accessToken}",
     "-o","json"
   ]
 }
@@ -32,6 +33,7 @@ provider azurerm {
       prevent_deletion_if_contains_resources = false
     }
   }
+  # skip_provider_registration   = true
 }
 
 provider azurerm {
