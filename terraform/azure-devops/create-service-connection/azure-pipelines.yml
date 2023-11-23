@@ -184,6 +184,9 @@ jobs:
                       | Sort-Object -Property Name `
                       | Format-Table -AutoSize
 
+        # Test
+        az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 -o json | ConvertFrom-Json | Select-Object -ExcludeProperty accessToken
+
         terraform apply -auto-approve
 
         Write-Host "##vso[task.setvariable variable=azdo_service_connection_id;isOutput=true]$(terraform output -raw azdo_service_connection_id)"
