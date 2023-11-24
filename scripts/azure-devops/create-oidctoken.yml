@@ -18,7 +18,7 @@ schedules:
   always: 'true'
   branches:
     include:
-    - master
+    - main
 trigger: none
 
 variables:
@@ -36,6 +36,7 @@ jobs:
 
   steps:
   - task: AzureCLI@2
+    name: addSpnToEnvironment
     displayName: 'Scripted with addSpnToEnvironment'
     inputs:
       addSpnToEnvironment: true
@@ -43,23 +44,78 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        ./set_terraform_azurerm_vars.ps1
-        ./test_terraform_azure_environment_variables.ps1
+        Write-Host "Using Service Connection $(azureConnection)"
+        az account show -o json >"$(azureConnection).json"
+        $(scriptDirectory)/set_terraform_azurerm_vars.ps1
+
+        Write-Host "##vso[task.setvariable variable=ARM_CLIENT_ID;isoutput=true]${env:ARM_CLIENT_ID}"
+        Write-Host "##vso[task.setvariable variable=ARM_CLIENT_SECRET;isoutput=true]${env:ARM_CLIENT_SECRET}"
+        Write-Host "##vso[task.setvariable variable=ARM_OIDC_TOKEN;isoutput=true]${env:ARM_OIDC_TOKEN}"
+        Write-Host "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;isoutput=true]${env:ARM_SUBSCRIPTION_ID}"
+        Write-Host "##vso[task.setvariable variable=ARM_TENANT_ID;isoutput=true]${env:ARM_TENANT_ID}"
+        Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]${env:ARM_USE_OIDC}"
+
+        if ($env:ARM_USE_OIDC -ine 'true') {
+          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection '$(azureConnection)' is not using federation"
+        }
       failOnStandardError: true
-      workingDirectory: '$(scriptDirectory)'
+      workingDirectory: $(Build.ArtifactStagingDirectory)
+
+  - pwsh: |
+      $env:ARM_CLIENT_ID       = "$(addSpnToEnvironment.ARM_CLIENT_ID)"
+      $env:ARM_CLIENT_SECRET   = "$(addSpnToEnvironment.ARM_CLIENT_SECRET)"
+      $env:ARM_OIDC_TOKEN      = "$(addSpnToEnvironment.ARM_OIDC_TOKEN)"
+      $env:ARM_TENANT_ID       = "$(addSpnToEnvironment.ARM_TENANT_ID)"
+      $env:ARM_SUBSCRIPTION_ID = "$(addSpnToEnvironment.ARM_SUBSCRIPTION_ID)"
+      $env:ARM_USE_OIDC        = "$(addSpnToEnvironment.ARM_USE_OIDC)"
+
+      $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
+      az account show -o json >set_terraform_azurerm_vars.json
+      az logout
+    condition: and(eq(variables['addSpnToEnvironment.ARM_USE_OIDC'],'true'),succeeded())
+    displayName: 'Test addSpnToEnvironment script'
+    workingDirectory: $(Build.ArtifactStagingDirectory)
 
   - task: AzureCLI@2
+    name: restApi
     displayName: 'Scripted with REST API'
     inputs:
-      addSpnToEnvironment: false
+      addSpnToEnvironment: true
       azureSubscription: '$(azureConnection)'
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        ./set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
-        ./test_terraform_azure_environment_variables.ps1
+        Write-Host "Using Service Connection $(azureConnection)"
+        $(scriptDirectory)/set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
+
+        Write-Host "##vso[task.setvariable variable=ARM_CLIENT_ID;isoutput=true]${env:ARM_CLIENT_ID}"
+        Write-Host "##vso[task.setvariable variable=ARM_CLIENT_SECRET;isoutput=true]${env:ARM_CLIENT_SECRET}"
+        Write-Host "##vso[task.setvariable variable=ARM_OIDC_TOKEN;isoutput=true]${env:ARM_OIDC_TOKEN}"
+        Write-Host "##vso[task.setsecret]${env:ARM_OIDC_TOKEN}"
+        Write-Host "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;isoutput=true]${env:ARM_SUBSCRIPTION_ID}"
+        Write-Host "##vso[task.setvariable variable=ARM_TENANT_ID;isoutput=true]${env:ARM_TENANT_ID}"
+        Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]${env:ARM_USE_OIDC}"
+
+        if ($env:ARM_USE_OIDC -ine 'true') {
+          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection '$(azureConnection)' is not using federation"
+        }
       failOnStandardError: true
-      workingDirectory: '$(scriptDirectory)'
+      workingDirectory: $(Build.ArtifactStagingDirectory)
+
+  - pwsh: |
+      $env:ARM_CLIENT_ID       = "$(restApi.ARM_CLIENT_ID)"
+      $env:ARM_CLIENT_SECRET   = "$(restApi.ARM_CLIENT_SECRET)"
+      $env:ARM_OIDC_TOKEN      = "$(restApi.ARM_OIDC_TOKEN)"
+      $env:ARM_TENANT_ID       = "$(restApi.ARM_TENANT_ID)"
+      $env:ARM_SUBSCRIPTION_ID = "$(restApi.ARM_SUBSCRIPTION_ID)"
+      $env:ARM_USE_OIDC        = "$(restApi.ARM_USE_OIDC)"
+
+      $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
+      az account show -o json >set_terraform_azurerm_vars-RequestNewToken.json
+      az logout
+    condition: and(eq(variables['restApi.ARM_USE_OIDC'],'true'),succeeded())
+    displayName: 'Test REST API script'
+    workingDirectory: $(Build.ArtifactStagingDirectory)
 
   - task: AzureCLI@2
     displayName: 'Inline script'
@@ -72,17 +128,33 @@ jobs:
                                                                    | ForEach-Object { $_.Split("_")[2] }
                                                                    | Set-Variable serviceConnectionId
 
+        "{0}{1}/_apis/distributedtask/hubs/build/plans/{2}/jobs/{3}/oidctoken?api-version={4}&serviceConnectionId={5}" -f `
+          "$(System.TeamFoundationCollectionUri)", `
+          "$(System.TeamProjectId)", `
+          "$(System.PlanId)", `
+          "$(System.JobId)", `
+          "7.1-preview.1", `
+          "${serviceConnectionId}" ` 
+          | Set-Variable oidcTokenUrl
+        Write-Host "oidcTokenUrl: $oidcTokenUrl"
+        
         Invoke-RestMethod -Headers @{
                             Authorization  = "Bearer $(System.AccessToken)"
                             'Content-Type' = 'application/json'
                           } `
-                          -Uri "${env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${env:SYSTEM_TEAMPROJECTID}/_apis/distributedtask/hubs/build/plans/${env:SYSTEM_PLANID}/jobs/${env:SYSTEM_JOBID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionId}" `
+                          -Uri $oidcTokenUrl `
                           -Method Post | Set-Variable oidcTokenResponse
+
         $oidcToken = $oidcTokenResponse.oidcToken
         if ($oidcToken) {
           Write-Host "idToken (masked):"
           $oidcToken -replace '.','*' 
         } else {
-          throw "Failed to get OIDC token"
+          throw "Failed to request OIDC token"
         }
       failOnStandardError: true
+      workingDirectory: $(Build.ArtifactStagingDirectory)
+
+  - publish: $(Build.ArtifactStagingDirectory)
+    displayName: 'Publish json files'
+    artifact: $(azureConnection)

@@ -9,7 +9,7 @@ if ($env:ARM_USE_OIDC -ieq 'true') {
              --tenant $env:ARM_TENANT_ID `
              --allow-no-subscriptions
 } else {
-    Write-Warning "Service connection '$(azureConnection)' is configured to use a secret"
+    Write-Warning "Service connection is configured to use a secret"
     Write-Host "Testing az login -p"
     az login --service-principal `
              -u $env:ARM_CLIENT_ID `
@@ -17,4 +17,3 @@ if ($env:ARM_USE_OIDC -ieq 'true') {
              --tenant $env:ARM_TENANT_ID `
              --allow-no-subscriptions
 }
-  
