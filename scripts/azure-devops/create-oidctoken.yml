@@ -101,7 +101,7 @@ jobs:
       $env:ARM_USE_OIDC        = "$(restApi.ARM_USE_OIDC)"
 
       $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
-      az account show -o json >set_terraform_azurerm_vars.json
+      az account show -o json >set_terraform_azurerm_vars-RequestNewToken.json
     condition: and(eq(variables['restApi.ARM_USE_OIDC'],'true'),succeeded())
     displayName: 'Test REST API script'
     workingDirectory: $(Build.ArtifactStagingDirectory)
@@ -128,7 +128,7 @@ jobs:
           Write-Host "idToken (masked):"
           $oidcToken -replace '.','*' 
         } else {
-          throw "Failed to get OIDC token"
+          throw "Failed to request OIDC token"
         }
       failOnStandardError: true
       workingDirectory: $(Build.ArtifactStagingDirectory)
