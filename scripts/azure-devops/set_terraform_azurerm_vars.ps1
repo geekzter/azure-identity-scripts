@@ -76,7 +76,7 @@ if (![guid]::TryParse($account.user.name, [ref][guid]::Empty)) {
     Write-Warning "Azure CLI logged in with a User Principal instead of a Service Principal"
 }
 
-if ($RequestNewToken) {
+if ($RequestNewToken -and !$env:servicePrincipalKey) {
     $idToken = New-OidcToken    
 } else {
     $idToken = $env:idToken # requires addSpnToEnvironment: true
