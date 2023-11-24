@@ -17,4 +17,3 @@ if ($env:ARM_USE_OIDC -ieq 'true') {
              --tenant $env:ARM_TENANT_ID `
              --allow-no-subscriptions
 }
-  

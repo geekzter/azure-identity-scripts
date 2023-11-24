@@ -44,10 +44,12 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         Write-Host "Using Service Connection $(azureConnection)"
+        az account show -o json >"$(azureConnection).json"
         ./set_terraform_azurerm_vars.ps1
 
         az logout 
         ./test_terraform_azure_environment_variables.ps1
+        az account show -o json >set_terraform_azurerm_vars.json
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
 
@@ -64,6 +66,7 @@ jobs:
 
         az logout 
         ./test_terraform_azure_environment_variables.ps1
+        az account show -o json >set_terraform_azurerm_vars-RequestNewToken.json
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
 
@@ -92,3 +95,7 @@ jobs:
           throw "Failed to get OIDC token"
         }
       failOnStandardError: true
+
+  - publish: $(Build.ArtifactStagingDirectory)
+    displayName: 'Publish json files'
+    artifact: indentityInfo-$(System.PlanId)-$(System.JobId)
