@@ -48,12 +48,13 @@ jobs:
         az account show -o json >"$(azureConnection).json"
         $(scriptDirectory)/set_terraform_azurerm_vars.ps1
 
-        echo "##vso[task.setvariable variable=ARM_CLIENT_ID;isoutput=true;issecret=true]$env:ARM_CLIENT_ID"
-        echo "##vso[task.setvariable variable=ARM_CLIENT_SECRET;isoutput=true;issecret=true]$env:ARM_CLIENT_SECRET"
-        echo "##vso[task.setvariable variable=ARM_OIDC_TOKEN;isoutput=true;issecret=true]$env:ARM_OIDC_TOKEN"
-        echo "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;isoutput=true]$env:ARM_SUBSCRIPTION_ID"
-        echo "##vso[task.setvariable variable=ARM_TENANT_ID;isoutput=true]$env:ARM_TENANT_ID"
-        echo "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]$env:ARM_USE_OIDC"
+        Write-Host "##vso[task.setvariable variable=ARM_CLIENT_ID;isoutput=true;issecret=true]$env:ARM_CLIENT_ID"
+        # Write-Host "##vso[task.setvariable variable=ARM_CLIENT_SECRET;isoutput=true;issecret=true]$env:ARM_CLIENT_SECRET"
+        Write-Host "##vso[task.setvariable variable=ARM_CLIENT_SECRET;isoutput=true;issecret=true]$env:servicePrincipalKey"
+        Write-Host "##vso[task.setvariable variable=ARM_OIDC_TOKEN;isoutput=true;issecret=true]$env:ARM_OIDC_TOKEN"
+        Write-Host "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;isoutput=true]$env:ARM_SUBSCRIPTION_ID"
+        Write-Host "##vso[task.setvariable variable=ARM_TENANT_ID;isoutput=true]$env:ARM_TENANT_ID"
+        Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]$env:ARM_USE_OIDC"
 
         az logout 
         $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
@@ -71,7 +72,7 @@ jobs:
 
       $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
       az account show -o json >set_terraform_azurerm_vars.json
-    displayName: 'Test script with addSpnToEnvironment'
+    displayName: 'Test addSpnToEnvironment script'
     workingDirectory: $(Build.ArtifactStagingDirectory)
 
   - task: AzureCLI@2
@@ -86,11 +87,11 @@ jobs:
         Write-Host "Using Service Connection $(azureConnection)"
         $(scriptDirectory)/set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
 
-        echo "##vso[task.setvariable variable=ARM_CLIENT_ID;isoutput=true;issecret=true]$env:ARM_CLIENT_ID"
-        echo "##vso[task.setvariable variable=ARM_CLIENT_SECRET;isoutput=true;issecret=true]$env:ARM_CLIENT_SECRET"
-        echo "##vso[task.setvariable variable=ARM_OIDC_TOKEN;isoutput=true;issecret=true]$env:ARM_OIDC_TOKEN"
-        echo "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;isoutput=true]$env:ARM_SUBSCRIPTION_ID"
-        echo "##vso[task.setvariable variable=ARM_TENANT_ID;isoutput=true]$env:ARM_TENANT_ID"
+        Write-Host "##vso[task.setvariable variable=ARM_CLIENT_ID;isoutput=true;issecret=true]$env:ARM_CLIENT_ID"
+        Write-Host "##vso[task.setvariable variable=ARM_CLIENT_SECRET;isoutput=true;issecret=true]$env:ARM_CLIENT_SECRET"
+        Write-Host "##vso[task.setvariable variable=ARM_OIDC_TOKEN;isoutput=true;issecret=true]$env:ARM_OIDC_TOKEN"
+        Write-Host "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;isoutput=true]$env:ARM_SUBSCRIPTION_ID"
+        Write-Host "##vso[task.setvariable variable=ARM_TENANT_ID;isoutput=true]$env:ARM_TENANT_ID"
 
         az logout 
         $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
@@ -108,7 +109,7 @@ jobs:
 
       $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
       az account show -o json >set_terraform_azurerm_vars.json
-    displayName: 'Test script with addSpnToEnvironment'
+    displayName: 'Test REST API script'
     workingDirectory: $(Build.ArtifactStagingDirectory)
 
   - task: AzureCLI@2
