@@ -44,6 +44,13 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         ./set_terraform_azurerm_vars.ps1
+
+        # Test ARM_* environment variables
+        if ($env:ARM_USE_OIDC -ieq 'true') {
+          az login --service-principal -u $env:ARM_CLIENT_ID --federated-token $env:ARM_OIDC_TOKEN --tenant $env:ARM_TENANT_ID --allow-no-subscriptions
+        } else {
+          az login --service-principal -u $env:ARM_CLIENT_ID -p $env:ARM_CLIENT_SECRET --tenant $env:ARM_TENANT_ID --allow-no-subscriptions
+        }
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
 
@@ -56,7 +63,13 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         ./set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
-        az login 
+
+        # Test ARM_* environment variables
+        if ($env:ARM_USE_OIDC -ieq 'true') {
+          az login --service-principal -u $env:ARM_CLIENT_ID --federated-token $env:ARM_OIDC_TOKEN --tenant $env:ARM_TENANT_ID --allow-no-subscriptions
+        } else {
+          az login --service-principal -u $env:ARM_CLIENT_ID -p $env:ARM_CLIENT_SECRET --tenant $env:ARM_TENANT_ID --allow-no-subscriptions
+        }
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
 
