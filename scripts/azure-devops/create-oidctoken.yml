@@ -56,6 +56,7 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         ./set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
+        az login 
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
 
@@ -66,9 +67,8 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        Get-ChildItem -Path Env: -Recurse -Include ENDPOINT_DATA_* | Sort-Object -Property Name `
-                                                                   | Select-Object -First 1 -ExpandProperty Name `
-                                                                   | ForEach-Object { $_ -replace 'ENDPOINT_DATA_','' } `
+        Get-ChildItem -Path Env: -Recurse -Include ENDPOINT_DATA_* | Select-Object -First 1 -ExpandProperty Name `
+                                                                   | ForEach-Object { $_.Split("_")[2] }
                                                                    | Set-Variable serviceConnectionId
 
         Invoke-RestMethod -Headers @{
