@@ -18,7 +18,7 @@ schedules:
   always: 'true'
   branches:
     include:
-    - master
+    - main
 trigger: none
 
 variables:
