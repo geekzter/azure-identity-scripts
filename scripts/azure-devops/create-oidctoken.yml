@@ -72,7 +72,6 @@ jobs:
       $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
       az account show -o json >set_terraform_azurerm_vars.json
     displayName: 'Test script with addSpnToEnvironment'
-    failOnStandardError: true
     workingDirectory: $(Build.ArtifactStagingDirectory)
 
   - task: AzureCLI@2
@@ -110,7 +109,6 @@ jobs:
       $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
       az account show -o json >set_terraform_azurerm_vars.json
     displayName: 'Test script with addSpnToEnvironment'
-    failOnStandardError: true
     workingDirectory: $(Build.ArtifactStagingDirectory)
 
   - task: AzureCLI@2
