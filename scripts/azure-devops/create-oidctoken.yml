@@ -56,7 +56,7 @@ jobs:
         Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]${env:ARM_USE_OIDC}"
 
         if ($env:ARM_USE_OIDC -ine 'true') {
-          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because ARM_USE_OIDC is not true"
+          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection $(azureConnection) is not using federation"
         }
       failOnStandardError: true
       workingDirectory: $(Build.ArtifactStagingDirectory)
@@ -96,7 +96,7 @@ jobs:
         Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]${env:ARM_USE_OIDC}"
 
         if ($env:ARM_USE_OIDC -ine 'true') {
-          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because ARM_USE_OIDC is not true"
+          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection $(azureConnection) is not using federation"
         }
       failOnStandardError: true
       workingDirectory: $(Build.ArtifactStagingDirectory)
