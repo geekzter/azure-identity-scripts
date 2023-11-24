@@ -43,7 +43,10 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
+        Write-Host "Using Service Connection $(azureConnection)"
         ./set_terraform_azurerm_vars.ps1
+
+        az logout 
         ./test_terraform_azure_environment_variables.ps1
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
@@ -56,7 +59,10 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
+        Write-Host "Using Service Connection $(azureConnection)"
         ./set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
+
+        az logout 
         ./test_terraform_azure_environment_variables.ps1
       failOnStandardError: true
       workingDirectory: '$(scriptDirectory)'
