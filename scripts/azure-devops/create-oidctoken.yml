@@ -54,26 +54,22 @@ jobs:
         Write-Host "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;isoutput=true]${env:ARM_SUBSCRIPTION_ID}"
         Write-Host "##vso[task.setvariable variable=ARM_TENANT_ID;isoutput=true]${env:ARM_TENANT_ID}"
         Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]${env:ARM_USE_OIDC}"
-
-        az logout 
-        $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
-        az account show -o json >set_terraform_azurerm_vars.json
       failOnStandardError: true
       workingDirectory: $(Build.ArtifactStagingDirectory)
 
-  # - pwsh: |
-  #     $env:ARM_CLIENT_ID       = "$(addSpnToEnvironment.ARM_CLIENT_ID)"
-  #     $env:ARM_CLIENT_SECRET   = "$(addSpnToEnvironment.ARM_CLIENT_SECRET)"
-  #     $env:ARM_OIDC_TOKEN      = "$(addSpnToEnvironment.ARM_OIDC_TOKEN)"
-  #     $env:ARM_TENANT_ID       = "$(addSpnToEnvironment.ARM_TENANT_ID)"
-  #     $env:ARM_SUBSCRIPTION_ID = "$(addSpnToEnvironment.ARM_SUBSCRIPTION_ID)"
-  #     $env:ARM_USE_OIDC        = "$(addSpnToEnvironment.ARM_USE_OIDC)"
+  - pwsh: |
+      $env:ARM_CLIENT_ID       = "$(addSpnToEnvironment.ARM_CLIENT_ID)"
+      $env:ARM_CLIENT_SECRET   = "$(addSpnToEnvironment.ARM_CLIENT_SECRET)"
+      $env:ARM_OIDC_TOKEN      = "$(addSpnToEnvironment.ARM_OIDC_TOKEN)"
+      $env:ARM_TENANT_ID       = "$(addSpnToEnvironment.ARM_TENANT_ID)"
+      $env:ARM_SUBSCRIPTION_ID = "$(addSpnToEnvironment.ARM_SUBSCRIPTION_ID)"
+      $env:ARM_USE_OIDC        = "$(addSpnToEnvironment.ARM_USE_OIDC)"
 
-  #     $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
-  #     az account show -o json >set_terraform_azurerm_vars.json
-  #   condition: and(eq(addSpnToEnvironment.ARM_USE_OIDC,'true'),succeeded())
-  #   displayName: 'Test addSpnToEnvironment script'
-  #   workingDirectory: $(Build.ArtifactStagingDirectory)
+      $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
+      az account show -o json >set_terraform_azurerm_vars.json
+    condition: and(eq(variables['addSpnToEnvironment.ARM_USE_OIDC'],'true'),succeeded())
+    displayName: 'Test addSpnToEnvironment script'
+    workingDirectory: $(Build.ArtifactStagingDirectory)
 
   - task: AzureCLI@2
     name: restApi
@@ -93,10 +89,6 @@ jobs:
         Write-Host "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID;isoutput=true]${env:ARM_SUBSCRIPTION_ID}"
         Write-Host "##vso[task.setvariable variable=ARM_TENANT_ID;isoutput=true]${env:ARM_TENANT_ID}"
         Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]${env:ARM_USE_OIDC}"
-
-        az logout 
-        $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
-        az account show -o json >set_terraform_azurerm_vars-RequestNewToken.json
       failOnStandardError: true
       workingDirectory: $(Build.ArtifactStagingDirectory)
 
