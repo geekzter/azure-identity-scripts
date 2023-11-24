@@ -71,6 +71,7 @@ jobs:
 
   #     $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
   #     az account show -o json >set_terraform_azurerm_vars.json
+  #   condition: eq(addSpnToEnvironment.ARM_USE_OIDC,'true')
   #   displayName: 'Test addSpnToEnvironment script'
   #   workingDirectory: $(Build.ArtifactStagingDirectory)
 
@@ -109,6 +110,7 @@ jobs:
 
       $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
       az account show -o json >set_terraform_azurerm_vars.json
+    condition: eq(restApi.ARM_USE_OIDC,'true')
     displayName: 'Test REST API script'
     workingDirectory: $(Build.ArtifactStagingDirectory)
 
