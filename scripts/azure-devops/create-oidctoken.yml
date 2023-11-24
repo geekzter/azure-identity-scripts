@@ -117,12 +117,23 @@ jobs:
                                                                    | ForEach-Object { $_.Split("_")[2] }
                                                                    | Set-Variable serviceConnectionId
 
+        "{0}{1}/_apis/distributedtask/hubs/build/plans/${2}/jobs/${3}/oidctoken?api-version=${4}&serviceConnectionId=${5}" -f `
+          "$(System.TeamFoundationCollectionUri)", `
+          "$(System.TeamProjectId)", `
+          "$(System.PlanId)", `
+          "$(System.JobId)", `
+          "7.1-preview.1", `
+          "${serviceConnectionId}" ` 
+          | Set-Variable oidcTokenUrl
+        Write-Host "oidcTokenUrl: $oidcTokenUrl"
+        
         Invoke-RestMethod -Headers @{
                             Authorization  = "Bearer $(System.AccessToken)"
                             'Content-Type' = 'application/json'
                           } `
-                          -Uri "${env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${env:SYSTEM_TEAMPROJECTID}/_apis/distributedtask/hubs/build/plans/${env:SYSTEM_PLANID}/jobs/${env:SYSTEM_JOBID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionId}" `
+                          -Uri $oidcTokenUrl `
                           -Method Post | Set-Variable oidcTokenResponse
+                          
         $oidcToken = $oidcTokenResponse.oidcToken
         if ($oidcToken) {
           Write-Host "idToken (masked):"
