@@ -78,7 +78,7 @@ jobs:
     name: restApi
     displayName: 'Scripted with REST API'
     inputs:
-      addSpnToEnvironment: false
+      addSpnToEnvironment: true
       azureSubscription: '$(azureConnection)'
       scriptType: pscore
       scriptLocation: inlineScript
