@@ -34,9 +34,8 @@ if ($env:SYSTEM_DEBUG -eq "true") {
 function Get-OidcRequestUrl()
 {
     # Get Service Connection ID
-    Get-ChildItem -Path Env: -Recurse -Include ENDPOINT_DATA_* | Sort-Object -Property Name `
-                                                               | Select-Object -First 1 -ExpandProperty Name `
-                                                               | ForEach-Object { $_ -replace 'ENDPOINT_DATA_','' } `
+    Get-ChildItem -Path Env: -Recurse -Include ENDPOINT_DATA_* | Select-Object -First 1 -ExpandProperty Name `
+                                                               | ForEach-Object { $_.Split("_")[2] }
                                                                | Set-Variable serviceConnectionId
     if (!$serviceConnectionId) {
         throw "Unable to determine service connection ID"
