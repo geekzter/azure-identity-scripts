@@ -4,6 +4,8 @@
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fidentity-azdo-pwsh-ci?branchName=main&label=azdo-pwsh-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=7&branchName=main)
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fidentity-pwsh-ci?branchName=main&label=pwsh-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=6&branchName=main)
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fcreate-service-connection?branchName=main&label=terraform-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=5&branchName=main)
+[![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fterraform-azure-environment-variables?branchName=main&label=create-oidc-token-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=11&branchName=main)
+
 
 This repo contains a few [PowerShell](https://github.com/PowerShell/PowerShell) scripts that use the [Azure CLI](https://github.com/Azure/azure-cli) to create or find Azure Active Directory objects:
 
