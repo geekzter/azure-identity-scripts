@@ -45,13 +45,13 @@ jobs:
       inlineScript: |
         Write-Host "Using Service Connection $(azureConnection)"
         az account show -o json >"$(azureConnection).json"
-        ./set_terraform_azurerm_vars.ps1
+        $(scriptDirectory)/set_terraform_azurerm_vars.ps1
 
         az logout 
-        ./test_terraform_azure_environment_variables.ps1
+        $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
         az account show -o json >set_terraform_azurerm_vars.json
       failOnStandardError: true
-      workingDirectory: '$(scriptDirectory)'
+      workingDirectory: $(Build.ArtifactStagingDirectory)
 
   - task: AzureCLI@2
     displayName: 'Scripted with REST API'
@@ -62,13 +62,13 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         Write-Host "Using Service Connection $(azureConnection)"
-        ./set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
+        $(scriptDirectory)/set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
 
         az logout 
-        ./test_terraform_azure_environment_variables.ps1
+        $(scriptDirectory)/test_terraform_azure_environment_variables.ps1
         az account show -o json >set_terraform_azurerm_vars-RequestNewToken.json
       failOnStandardError: true
-      workingDirectory: '$(scriptDirectory)'
+      workingDirectory: $(Build.ArtifactStagingDirectory)
 
   - task: AzureCLI@2
     displayName: 'Inline script'
@@ -95,6 +95,7 @@ jobs:
           throw "Failed to get OIDC token"
         }
       failOnStandardError: true
+      workingDirectory: $(Build.ArtifactStagingDirectory)
 
   - publish: $(Build.ArtifactStagingDirectory)
     displayName: 'Publish json files'
