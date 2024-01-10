@@ -13,3 +13,7 @@ variable name {}
 variable owner_object_id {
   default = null
 }
+variable secret_expiration_days {
+  default = null
+  type    = number
+}

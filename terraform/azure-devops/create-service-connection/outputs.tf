@@ -54,6 +54,9 @@ output identity_secret {
   sensitive   = true
   value       = var.azdo_creates_identity || var.create_managed_identity ? null : module.service_principal.0.secret
 }
+output identity_secret_end_date {
+  value       = var.azdo_creates_identity || var.create_managed_identity ? null : module.service_principal.0.secret_end_date
+}
 output identity_url {
   value       = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.identity_url : module.service_principal.0.application_url)
 }
