@@ -35,6 +35,13 @@ variable create_managed_identity {
   default                      = true
   type                         = bool
 }
+
+variable entra_secret_expiration_days {
+  description                  = "Secret expiration in days"
+  default                      = 90
+  type                         = number
+}
+
 variable managed_identity_resource_group_id {
   default                      = null
   description                  = "The resource group to create the Managed Identity in"

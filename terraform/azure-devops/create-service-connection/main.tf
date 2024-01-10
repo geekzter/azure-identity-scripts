@@ -71,6 +71,7 @@ module service_principal {
   issuer                       = var.create_federation ? module.service_connection.service_connection_oidc_issuer : null
   multi_tenant                 = false
   name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
+  secret_expiration_days       = var.entra_secret_expiration_days
 
   count                        = var.create_managed_identity || var.azdo_creates_identity ? 0 : 1
 }

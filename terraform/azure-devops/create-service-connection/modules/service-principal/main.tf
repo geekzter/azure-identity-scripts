@@ -2,6 +2,7 @@ data azuread_client_config current {}
 
 locals {
   owner_object_id              = var.owner_object_id != null && var.owner_object_id != "" ? lower(var.owner_object_id) : data.azuread_client_config.current.object_id
+  expiration_expression        = "${var.secret_expiration_days * 24}h"
 }
 
 resource azuread_application app_registration {
@@ -11,7 +12,7 @@ resource azuread_application app_registration {
 }
 
 resource azuread_service_principal spn {
-  application_id               = azuread_application.app_registration.application_id
+  client_id                    = azuread_application.app_registration.client_id
   owners                       = [local.owner_object_id]
 }
 
@@ -27,16 +28,17 @@ resource azuread_application_federated_identity_credential fic {
 }
 
 resource time_rotating secret_expiration {
-  rotation_years               = 1
+  rotation_days                = var.secret_expiration_days
 
   count                        = var.create_federation ? 0 : 1
 }
 resource azuread_application_password secret {
+  end_date_relative            = local.expiration_expression
   rotate_when_changed          = {
-    rotation                   = timeadd(time_rotating.secret_expiration.0.id, "8760h") # One year from now
+    rotation                   = timeadd(time_rotating.secret_expiration.0.id, local.expiration_expression)
   }
 
-  application_object_id        = azuread_application.app_registration.id
+  application_id               = azuread_application.app_registration.id
 
   count                        = var.create_federation ? 0 : 1
 }
