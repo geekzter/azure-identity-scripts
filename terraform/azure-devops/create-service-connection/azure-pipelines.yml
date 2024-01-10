@@ -175,7 +175,7 @@ jobs:
         Write-Host "##vso[task.setvariable variable=id;isOutput=true]${managedIdentityResourceGroupId}"
 
   - task: AzureCLI@2
-    continueOnError: $[ variables['continueOnApplyError'] ]
+    continueOnError: ${{ variables.continueOnApplyError }}
     displayName: 'Terraform apply'
     name: terraform
     inputs:
