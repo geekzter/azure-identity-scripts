@@ -91,42 +91,36 @@ jobs:
       matrix:
         ${{ if and(or(eq(parameters.identityType, 'Managed Identity with federation'),eq(parameters.identityType, 'Strategy')),or(eq(parameters.serviceConnectionCreationMode, 'Automatic'),eq(parameters.serviceConnectionCreationMode, 'Strategy')))  }}:
           AutomaticMSIFederation:
-            continueOnApplyError: true
             TF_VAR_azdo_creates_identity: 'true'
             TF_VAR_create_federation: 'true'
             TF_VAR_create_managed_identity: 'true'
             TF_VAR_resource_suffix: '$(Build.BuildId)am'
         ${{ if or(and(or(eq(parameters.identityType, 'Managed Identity with federation'),eq(parameters.identityType, 'Strategy')),or(eq(parameters.serviceConnectionCreationMode, 'Manual'),eq(parameters.serviceConnectionCreationMode, 'Strategy'))),ne(variables['Build.Reason'], 'Manual'))  }}:
           ManualMSIFederation:
-            continueOnApplyError: false
             TF_VAR_azdo_creates_identity: 'false'
             TF_VAR_create_federation: 'true'
             TF_VAR_create_managed_identity: 'true'
             TF_VAR_resource_suffix: '$(Build.BuildId)mm'
         ${{ if and(or(eq(parameters.identityType, 'Service Principal with federation'),eq(parameters.identityType, 'Strategy')),or(eq(parameters.serviceConnectionCreationMode, 'Automatic'),eq(parameters.serviceConnectionCreationMode, 'Strategy')))  }}:
           AutomaticAppRegFederation:
-            continueOnApplyError: true
             TF_VAR_azdo_creates_identity: 'true'
             TF_VAR_create_federation: 'true'
             TF_VAR_create_managed_identity: 'false'
             TF_VAR_resource_suffix: '$(Build.BuildId)aaf'
         ${{ if or(and(or(eq(parameters.identityType, 'Service Principal with federation'),eq(parameters.identityType, 'Strategy')),or(eq(parameters.serviceConnectionCreationMode, 'Manual'),eq(parameters.serviceConnectionCreationMode, 'Strategy'))),ne(variables['Build.Reason'], 'Manual'))  }}:
           ManualAppRegFederation:
-            continueOnApplyError: false
             TF_VAR_azdo_creates_identity: 'false'
             TF_VAR_create_federation: 'true'
             TF_VAR_create_managed_identity: 'false'
             TF_VAR_resource_suffix: '$(Build.BuildId)maf'
         ${{ if and(or(eq(parameters.identityType, 'Service Principal with secret'),eq(parameters.identityType, 'Strategy')),or(eq(parameters.serviceConnectionCreationMode, 'Automatic'),eq(parameters.serviceConnectionCreationMode, 'Strategy')))  }}:
           AutomaticAppRegSecret:
-            continueOnApplyError: true
             TF_VAR_azdo_creates_identity: 'true'
             TF_VAR_create_federation: 'false'
             TF_VAR_create_managed_identity: 'false'
             TF_VAR_resource_suffix: '$(Build.BuildId)mas'
         ${{ if or(and(or(eq(parameters.identityType, 'Service Principal with secret'),eq(parameters.identityType, 'Strategy')),or(eq(parameters.serviceConnectionCreationMode, 'Manual'),eq(parameters.serviceConnectionCreationMode, 'Strategy'))),ne(variables['Build.Reason'], 'Manual'))  }}:
           ManualAppRegSecret:
-            continueOnApplyError: false
             TF_VAR_azdo_creates_identity: 'false'
             TF_VAR_create_federation: 'false'
             TF_VAR_create_managed_identity: 'false'
@@ -135,7 +129,6 @@ jobs:
 
   variables:
     ${{ if and(ne(parameters.identityType, 'Strategy'),ne(parameters.serviceConnectionCreationMode, 'Strategy'),eq(variables['Build.Reason'], 'Manual')) }}:
-      continueOnApplyError: false
       TF_VAR_azdo_creates_identity: ${{ lower(eq(parameters.serviceConnectionCreationMode, 'Automatic')) }}
       TF_VAR_create_federation: ${{ lower(contains(parameters.identityType, 'federation')) }}
       TF_VAR_create_managed_identity: ${{ lower(contains(parameters.identityType, 'Managed Identity')) }}
@@ -175,7 +168,6 @@ jobs:
         Write-Host "##vso[task.setvariable variable=id;isOutput=true]${managedIdentityResourceGroupId}"
 
   - task: AzureCLI@2
-    # continueOnError: ${{ variables.continueOnApplyError }}
     displayName: 'Terraform apply'
     name: terraform
     inputs:
