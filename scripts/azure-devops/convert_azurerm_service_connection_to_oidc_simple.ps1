@@ -1,13 +1,13 @@
 #!/usr/bin/env pwsh
 <# 
 .SYNOPSIS 
-    Convert a multiple Azure Resource Manager service connection(s) to use Workload identity federation
+    Convert multiple Azure Resource Manager service connection(s) to use Workload identity federation
 
 .LINK
     https://aka.ms/azdo-rm-workload-identity-conversion
 
 .EXAMPLE
-    ./convert_azurerm_service_connection_to_oidc.ps1 -Project <project>
+    ./convert_azurerm_service_connection_to_oidc_simple.ps1 -Project <project> -OrganizationUrl https://dev.azure.com/<organization>
 #> 
 #Requires -Version 7.3
 
@@ -31,12 +31,10 @@ az account show -o json 2>$null | ConvertFrom-Json | Set-Variable account
 if (!$account) {
     az login --allow-no-subscriptions -o json | ConvertFrom-Json | Set-Variable account
 }
-# Log in to Azure & Azure DevOps
 $OrganizationUrl = $OrganizationUrl.ToString().Trim('/')
 
 #-----------------------------------------------------------
 # Retrieve the service connection
-
 $getApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints?authSchemes=ServicePrincipal&type=azurerm&includeFailed=false&includeDetails=true&api-version=${apiVersion}"
 az rest -u $getApiUrl -m GET --resource 499b84ac-1321-427f-aa17-267ca6975798 --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
         | Tee-Object -Variable rawResponse | ConvertFrom-Json | Tee-Object -Variable serviceEndpoints | Format-List | Out-String | Write-Debug
@@ -68,7 +66,6 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     # Prepare request body
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
     $serviceEndpoint.data.PSObject.Properties.Remove('revertSchemeDeadline')
-    $serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
     $serviceEndpoint | ConvertTo-Json -Depth 4 -Compress | Set-Variable serviceEndpointRequest
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
 
