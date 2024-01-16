@@ -22,7 +22,6 @@ param (
     [ValidateNotNullOrEmpty()]
     $OrganizationUrl
 ) 
-. (Join-Path $PSScriptRoot .. functions.ps1)
 $apiVersion = "7.1"
 
 #-----------------------------------------------------------
