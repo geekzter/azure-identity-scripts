@@ -12,18 +12,18 @@
 #Requires -Version 7.3
 
 param ( 
-    [parameter(Mandatory=$false,HelpMessage="Name of the Azure DevOps Project")]
+    [parameter(Mandatory=$true,HelpMessage="Name of the Azure DevOps Project")]
     [string]
     [ValidateNotNullOrEmpty()]
-    $Project=$env:SYSTEM_TEAMPROJECT,
+    $Project,
 
-    [parameter(Mandatory=$false,HelpMessage="Url of the Azure DevOps Organization")]
+    [parameter(Mandatory=$true,HelpMessage="Url of the Azure DevOps Organization")]
     [uri]
     [ValidateNotNullOrEmpty()]
-    $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI)
+    $OrganizationUrl
 ) 
 . (Join-Path $PSScriptRoot .. functions.ps1)
-$apiVersion = "7.1-preview.4"
+$apiVersion = "7.1"
 
 #-----------------------------------------------------------
 # Log in to Azure
@@ -39,7 +39,7 @@ $OrganizationUrl = $OrganizationUrl.ToString().Trim('/')
 
 $getApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints?authSchemes=ServicePrincipal&type=azurerm&includeFailed=false&includeDetails=true&api-version=${apiVersion}"
 az rest -u $getApiUrl -m GET --resource 499b84ac-1321-427f-aa17-267ca6975798 --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
-        | ConvertFrom-Json | Tee-Object -Variable serviceEndpoints | Format-List | Out-String | Write-Debug
+        | Tee-Object -Variable rawResponse | ConvertFrom-Json | Tee-Object -Variable serviceEndpoints | Format-List | Out-String | Write-Debug
 if (!$serviceEndpoints -or ($serviceEndpoints.count-eq 0)) {
     Write-Warning "No convertible service connections found"
     exit 1
@@ -67,13 +67,15 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
 
     # Prepare request body
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
+    $serviceEndpoint.data.PSObject.Properties.Remove('revertSchemeDeadline')
+    $serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
     $serviceEndpoint | ConvertTo-Json -Depth 4 -Compress | Set-Variable serviceEndpointRequest
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
 
     # Convert service connection
-    az rest -u $putApiUrl -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource 499b84ac-1321-427f-aa17-267ca6975798 -o json`
+    az rest -u $putApiUrl -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource 499b84ac-1321-427f-aa17-267ca6975798 -o json `
             | ConvertFrom-Json | Set-Variable updatedServiceEndpoint
-
+    
     $updatedServiceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
     if (!$updatedServiceEndpoint) {
         Write-Debug "Empty response"

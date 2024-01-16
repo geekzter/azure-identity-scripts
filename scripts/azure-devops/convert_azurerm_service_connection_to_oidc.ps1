@@ -179,6 +179,7 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
 
     # Prepare request body
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
+    $serviceEndpoint.data.PSObject.Properties.Remove('revertSchemeDeadline')
     $serviceEndpoint | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequest
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
     Write-Debug "PUT $putApiUrl"
