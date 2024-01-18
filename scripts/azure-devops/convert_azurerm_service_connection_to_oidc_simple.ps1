@@ -37,7 +37,7 @@ $getApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints?auth
 Write-Debug "az rest --resource ${azdoResource} -u `"${getApiUrl}`" -m GET"
 # az rest --resource $azdoResource -u "`"${getApiUrl}`"" -m GET --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
 #         | Tee-Object -Variable rawResponse | ConvertFrom-Json | Tee-Object -Variable serviceEndpoints | Format-List | Out-String | Write-Debug
-az rest --resource $azdoResource -u $getApiUrl -m GET --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
+az rest --resource $azdoResource -u "${getApiUrl} " -m GET --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
         | Tee-Object -Variable rawResponse | ConvertFrom-Json | Tee-Object -Variable serviceEndpoints | Format-List | Out-String | Write-Debug
 if (!$serviceEndpoints -or ($serviceEndpoints.count-eq 0)) {
     Write-Warning "No convertible service connections found"
@@ -55,6 +55,7 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     $decision = $Host.UI.PromptForChoice([string]::Empty, $prompt, $choices, $serviceEndpoint.isShared ? 1 : 0)
 
     if ($decision -eq 0) {
+
         Write-Host "$($choices[$decision].HelpMessage)"
     } elseif ($decision -eq 1) {
         Write-Host "$($PSStyle.Formatting.Warning)$($choices[$decision].HelpMessage)$($PSStyle.Reset)"
@@ -74,7 +75,7 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     # Convert service connection
     # az rest -u "`"${putApiUrl}`"" -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource $azdoResource -o json `
     #         | ConvertFrom-Json | Set-Variable updatedServiceEndpoint
-    az rest -u $putApiUrl -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource $azdoResource -o json `
+    az rest -u "${putApiUrl} " -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource $azdoResource -o json `
             | ConvertFrom-Json | Set-Variable updatedServiceEndpoint
     
     $updatedServiceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
