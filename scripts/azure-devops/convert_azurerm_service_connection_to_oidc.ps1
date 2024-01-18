@@ -27,6 +27,7 @@
 #> 
 #Requires -Version 7.2
 
+[CmdletBinding(DefaultParameterSetName = 'name')]
 param ( 
     [parameter(Mandatory=$false,ParameterSetName="id",HelpMessage="Id of the Service Connection")]
     [guid]
@@ -45,6 +46,10 @@ param (
     [uri]
     [ValidateNotNullOrEmpty()]
     $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI),
+    
+    [parameter(Mandatory=$false,HelpMessage="Don't show prompts")]
+    [switch]
+    $WhatIf=$false,
 
     [parameter(Mandatory=$false,HelpMessage="Don't show prompts")]
     [switch]
@@ -52,7 +57,7 @@ param (
 ) 
 Write-Verbose $MyInvocation.line 
 . (Join-Path $PSScriptRoot .. functions.ps1)
-$apiVersion = "7.1-preview.4"
+$apiVersion = "7.1"
 
 #-----------------------------------------------------------
 # Log in to Azure
@@ -186,6 +191,10 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     $httpStatusCode = $null
 
     # Convert service connection
+    if ($WhatIf) {
+        Write-Host "WhatIf: Convert service connection '$($serviceEndpoint.name)'"
+        continue
+    }
     try {
         Invoke-RestMethod -Uri $putApiUrl `
                           -Method PUT `
