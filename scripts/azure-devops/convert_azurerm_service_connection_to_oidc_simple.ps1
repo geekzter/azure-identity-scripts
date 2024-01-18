@@ -34,9 +34,6 @@ $OrganizationUrl = $OrganizationUrl.ToString().Trim('/')
 #-----------------------------------------------------------
 # Retrieve the service connection
 $getApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints?authSchemes=ServicePrincipal&type=azurerm&includeFailed=false&includeDetails=true&api-version=${apiVersion}"
-Write-Debug "az rest --resource ${azdoResource} -u `"${getApiUrl}`" -m GET"
-# az rest --resource $azdoResource -u "`"${getApiUrl}`"" -m GET --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
-#         | Tee-Object -Variable rawResponse | ConvertFrom-Json | Tee-Object -Variable serviceEndpoints | Format-List | Out-String | Write-Debug
 az rest --resource $azdoResource -u "${getApiUrl} " -m GET --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
         | Tee-Object -Variable rawResponse | ConvertFrom-Json | Tee-Object -Variable serviceEndpoints | Format-List | Out-String | Write-Debug
 if (!$serviceEndpoints -or ($serviceEndpoints.count-eq 0)) {
@@ -71,10 +68,7 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     $serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
     $serviceEndpoint | ConvertTo-Json -Depth 4 -Compress | Set-Variable serviceEndpointRequest
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
-    Write-Debug "PUT ${putApiUrl}"
     # Convert service connection
-    # az rest -u "`"${putApiUrl}`"" -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource $azdoResource -o json `
-    #         | ConvertFrom-Json | Set-Variable updatedServiceEndpoint
     az rest -u "${putApiUrl} " -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource $azdoResource -o json `
             | ConvertFrom-Json | Set-Variable updatedServiceEndpoint
     
