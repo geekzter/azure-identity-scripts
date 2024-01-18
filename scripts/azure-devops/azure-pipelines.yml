@@ -217,7 +217,7 @@ jobs:
           ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToCreate) `
                                         -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
 
-- ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
+- ${{ if or(eq(parameters.jobsToRun, 'Non-modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
   - job: convertServiceConnection
     displayName: 'Convert Service Connections'
     strategy:
@@ -225,7 +225,7 @@ jobs:
         linux:
           pool: ubuntu-latest
         windows:
-          script: windows-latest
+          pool: windows-latest
     pool:
       name: 'Azure Pipelines'
       vmImage: $(pool)
@@ -243,29 +243,6 @@ jobs:
           ./convert_azurerm_service_connection_to_oidc.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
                                                            -Force `
                                                            -WhatIf
-- ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
-  - job: testConvertedServiceConnection
-    condition: and(succeededOrFailed(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
-    dependsOn: convertServiceConnection
-    displayName: 'Test converted Service Connection'
-    pool:
-      name: 'Azure Pipelines'
-      vmImage: ubuntu-latest
-
-    steps:
-    - task: AzureCLI@2
-      displayName: 'Test Service Connection $(serviceConnectionToConvert)'
-      timeoutInMinutes: 5
-      inputs:
-        azureSubscription: '$(azureConnection)'
-        failOnStandardError: true
-        scriptType: pscore
-        scriptLocation: inlineScript
-        workingDirectory: '$(scriptDirectory)'
-        inlineScript: |
-          # TODO: Test multiple service connections
-          ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
-                                        -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
 
 - ${{ if and(ne(parameters.destroy, 'Never'),or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both'))) }}:
   - job: teardown
