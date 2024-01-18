@@ -240,6 +240,15 @@ jobs:
         scriptLocation: inlineScript
         workingDirectory: '$(scriptDirectory)'
         inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
           ./convert_azurerm_service_connection_to_oidc.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
                                                            -Force `
                                                            -WhatIf
