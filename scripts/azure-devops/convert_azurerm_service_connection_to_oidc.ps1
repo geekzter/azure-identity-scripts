@@ -91,7 +91,7 @@ if ($lastexitcode -ne 0) {
 
 #-----------------------------------------------------------
 # Check parameters
-az devops project show --project $Project --organization $OrganizationUrl --query id -o tsv | Set-Variable projectId
+az devops project show --project "${Project}" --organization $OrganizationUrl --query id -o tsv | Set-Variable projectId
 if (!$projectId) {
     Write-Error "Project '${Project}' not found in organization '${OrganizationUrl}"
     exit 1
@@ -100,7 +100,7 @@ if (!$projectId) {
 #-----------------------------------------------------------
 # Retrieve the service connection
 
-$baseEndpointUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints"
+$baseEndpointUrl = "${OrganizationUrl}/${projectId}/_apis/serviceendpoint/endpoints"
 if ($ServiceConnectionId) {
     $getApiUrl = "${baseEndpointUrl}/${ServiceConnectionId}?includeDetails=true&api-version=${apiVersion}"
 } elseif ($ServiceConnectionName) {
@@ -186,7 +186,7 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
     $serviceEndpoint.data.PSObject.Properties.Remove('revertSchemeDeadline')
     $serviceEndpoint | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequest
-    $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
+    $putApiUrl = "${OrganizationUrl}/${projectId}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
     Write-Debug "PUT $putApiUrl"
     $httpStatusCode = $null
 
