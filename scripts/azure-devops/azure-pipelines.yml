@@ -249,9 +249,7 @@ jobs:
             
             Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
           }
-          ./convert_azurerm_service_connection_to_oidc.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
-                                                           -Force `
-                                                           -WhatIf
+          ./convert_azurerm_service_connection_to_oidc.ps1 -Force -WhatIf
 
 - ${{ if and(ne(parameters.destroy, 'Never'),or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both'))) }}:
   - job: teardown
