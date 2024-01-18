@@ -251,6 +251,29 @@ jobs:
           }
           ./convert_azurerm_service_connection_to_oidc.ps1 -Force -WhatIf
 
+    - task: AzureCLI@2
+      displayName: 'Convert simple (WhatIf)'
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        workingDirectory: '$(scriptDirectory)'
+        inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+          ./convert_azurerm_service_connection_to_oidc_simple.ps1 -OrganizationUrl $env:SYSTEM_COLLECTIONURI `
+                                                                  -Project $env:SYSTEM_TEAMPROJECT `
+                                                                  -Force `
+                                                                  -WhatIf
+
 - ${{ if and(ne(parameters.destroy, 'Never'),or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both'))) }}:
   - job: teardown
     # condition: succeededOrFailed()

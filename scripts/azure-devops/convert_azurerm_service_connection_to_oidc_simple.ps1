@@ -20,7 +20,11 @@ param (
     [parameter(Mandatory=$true,HelpMessage="Url of the Azure DevOps Organization")]
     [uri]
     [ValidateNotNullOrEmpty()]
-    $OrganizationUrl
+    $OrganizationUrl,
+    
+    [parameter(Mandatory=$false)]
+    [switch]
+    $WhatIf=$false
 ) 
 $apiVersion = "7.1"
 $PSNativeCommandArgumentPassing = "Standard" 
@@ -49,10 +53,14 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
         [System.Management.Automation.Host.ChoiceDescription]::new("&Exit", "Exit script")
     )
     $prompt = $serviceEndpoint.isShared ? "Convert shared service connection '$($serviceEndpoint.name)'?" : "Convert service connection '$($serviceEndpoint.name)'?"
-    $decision = $Host.UI.PromptForChoice([string]::Empty, $prompt, $choices, $serviceEndpoint.isShared ? 1 : 0)
+    $defaultChoice = $serviceEndpoint.isShared ? 1 : 0
+    if (!$WhatIf) {
+        $decision = $Host.UI.PromptForChoice([string]::Empty, $prompt, $choices, $defaultChoice)
+    } else {
+        $decision = $defaultChoice
+    }
 
     if ($decision -eq 0) {
-
         Write-Host "$($choices[$decision].HelpMessage)"
     } elseif ($decision -eq 1) {
         Write-Host "$($PSStyle.Formatting.Warning)$($choices[$decision].HelpMessage)$($PSStyle.Reset)"
@@ -69,6 +77,10 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     $serviceEndpoint | ConvertTo-Json -Depth 4 -Compress | Set-Variable serviceEndpointRequest
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
     # Convert service connection
+    if ($WhatIf) {
+        Write-Host "WhatIf: Would have converted service connection '$($serviceEndpoint.name)'"
+        continue
+    }
     az rest -u "${putApiUrl} " -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource $azdoResource -o json `
             | ConvertFrom-Json | Set-Variable updatedServiceEndpoint
     

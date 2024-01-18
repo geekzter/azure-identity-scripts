@@ -51,7 +51,7 @@ param (
     [switch]
     $WhatIf=$false,
 
-    [parameter(Mandatory=$false,HelpMessage="Don't show prompts")]
+    [parameter(Mandatory=$false)]
     [switch]
     $Force=$false
 ) 
