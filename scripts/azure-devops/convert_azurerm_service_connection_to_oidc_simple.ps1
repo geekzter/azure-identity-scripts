@@ -26,8 +26,8 @@ $apiVersion = "7.1"
 
 #-----------------------------------------------------------
 # Log in to Azure
-$azdoResource = "499b84ac-1321-427f-aa17-267ca6975798/.default"
-# az login --allow-no-subscriptions --scope $azdoResource
+$azdoResource = "499b84ac-1321-427f-aa17-267ca6975798"
+# az login --allow-no-subscriptions --scope ${azdoResource}/.default
 $OrganizationUrl = $OrganizationUrl.ToString().Trim('/')
 
 #-----------------------------------------------------------
