@@ -253,7 +253,7 @@ jobs:
 
     - pwsh: |
         Write-Host "`npwsh version: $($PSVersionTable.PSVersion)"
-        if (($PSVersionTable.PSVersion -lt 7.3) -and $IsLinux) {
+        if ($PSVersionTable.PSVersion -lt 7.3) {
           Write-Host "convert_azurerm_service_connection_to_oidc_simple.ps1 requires `$PSNativeCommandArgumentPassing"
           Write-Host "Upgrading PowerShell to 7.3+..."
           if ($IsLinux) {
