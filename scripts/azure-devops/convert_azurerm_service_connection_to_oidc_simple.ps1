@@ -26,16 +26,15 @@ $apiVersion = "7.1"
 
 #-----------------------------------------------------------
 # Log in to Azure
-az account show -o json 2>$null | ConvertFrom-Json | Set-Variable account
-if (!$account) {
-    az login --allow-no-subscriptions -o json | ConvertFrom-Json | Set-Variable account
-}
+$azdoResource = "499b84ac-1321-427f-aa17-267ca6975798/.default"
+# az login --allow-no-subscriptions --scope $azdoResource
 $OrganizationUrl = $OrganizationUrl.ToString().Trim('/')
 
 #-----------------------------------------------------------
 # Retrieve the service connection
 $getApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints?authSchemes=ServicePrincipal&type=azurerm&includeFailed=false&includeDetails=true&api-version=${apiVersion}"
-az rest -u $getApiUrl -m GET --resource 499b84ac-1321-427f-aa17-267ca6975798 --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
+Write-Debug "az rest  --resource ${azdoResource} -u `"${getApiUrl}`" -m GET"
+az rest --resource $azdoResource -u $getApiUrl -m GET --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
         | Tee-Object -Variable rawResponse | ConvertFrom-Json | Tee-Object -Variable serviceEndpoints | Format-List | Out-String | Write-Debug
 if (!$serviceEndpoints -or ($serviceEndpoints.count-eq 0)) {
     Write-Warning "No convertible service connections found"
@@ -69,7 +68,7 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
 
     # Convert service connection
-    az rest -u $putApiUrl -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource 499b84ac-1321-427f-aa17-267ca6975798 -o json `
+    az rest -u $putApiUrl -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource $azdoResource -o json `
             | ConvertFrom-Json | Set-Variable updatedServiceEndpoint
     
     $updatedServiceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
