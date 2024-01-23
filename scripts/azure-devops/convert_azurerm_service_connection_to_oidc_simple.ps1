@@ -20,22 +20,27 @@ param (
     [parameter(Mandatory=$true,HelpMessage="Url of the Azure DevOps Organization")]
     [uri]
     [ValidateNotNullOrEmpty()]
-    $OrganizationUrl
+    $OrganizationUrl,
+    
+    [parameter(Mandatory=$false)]
+    [switch]
+    $WhatIf=$false
 ) 
 $apiVersion = "7.1"
+$PSNativeCommandArgumentPassing = "Standard" 
 
 #-----------------------------------------------------------
 # Log in to Azure
-az account show -o json 2>$null | ConvertFrom-Json | Set-Variable account
-if (!$account) {
-    az login --allow-no-subscriptions -o json | ConvertFrom-Json | Set-Variable account
+$azdoResource = "499b84ac-1321-427f-aa17-267ca6975798"
+if (!(az account show -o json 2>$null)) {
+    az login --allow-no-subscriptions --scope ${azdoResource}/.default
 }
 $OrganizationUrl = $OrganizationUrl.ToString().Trim('/')
 
 #-----------------------------------------------------------
 # Retrieve the service connection
 $getApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints?authSchemes=ServicePrincipal&type=azurerm&includeFailed=false&includeDetails=true&api-version=${apiVersion}"
-az rest -u $getApiUrl -m GET --resource 499b84ac-1321-427f-aa17-267ca6975798 --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
+az rest --resource $azdoResource -u "${getApiUrl} " -m GET --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
         | Tee-Object -Variable rawResponse | ConvertFrom-Json | Tee-Object -Variable serviceEndpoints | Format-List | Out-String | Write-Debug
 if (!$serviceEndpoints -or ($serviceEndpoints.count-eq 0)) {
     Write-Warning "No convertible service connections found"
@@ -50,7 +55,12 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
         [System.Management.Automation.Host.ChoiceDescription]::new("&Exit", "Exit script")
     )
     $prompt = $serviceEndpoint.isShared ? "Convert shared service connection '$($serviceEndpoint.name)'?" : "Convert service connection '$($serviceEndpoint.name)'?"
-    $decision = $Host.UI.PromptForChoice([string]::Empty, $prompt, $choices, $serviceEndpoint.isShared ? 1 : 0)
+    $defaultChoice = $serviceEndpoint.isShared ? 1 : 0
+    if (!$WhatIf) {
+        $decision = $Host.UI.PromptForChoice([string]::Empty, $prompt, $choices, $defaultChoice)
+    } else {
+        $decision = $defaultChoice
+    }
 
     if ($decision -eq 0) {
         Write-Host "$($choices[$decision].HelpMessage)"
@@ -65,11 +75,15 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     # Prepare request body
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
     $serviceEndpoint.data.PSObject.Properties.Remove('revertSchemeDeadline')
+    $serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
     $serviceEndpoint | ConvertTo-Json -Depth 4 -Compress | Set-Variable serviceEndpointRequest
     $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
-
     # Convert service connection
-    az rest -u $putApiUrl -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource 499b84ac-1321-427f-aa17-267ca6975798 -o json `
+    if ($WhatIf) {
+        Write-Host "WhatIf: Would have converted service connection '$($serviceEndpoint.name)'"
+        continue
+    }
+    az rest -u "${putApiUrl} " -m PUT -b $serviceEndpointRequest --headers content-type=application/json --resource $azdoResource -o json `
             | ConvertFrom-Json | Set-Variable updatedServiceEndpoint
     
     $updatedServiceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug

@@ -27,6 +27,7 @@
 #> 
 #Requires -Version 7.2
 
+[CmdletBinding(DefaultParameterSetName = 'name')]
 param ( 
     [parameter(Mandatory=$false,ParameterSetName="id",HelpMessage="Id of the Service Connection")]
     [guid]
@@ -45,14 +46,18 @@ param (
     [uri]
     [ValidateNotNullOrEmpty()]
     $OrganizationUrl=($env:AZDO_ORG_SERVICE_URL ?? $env:SYSTEM_COLLECTIONURI),
-
+    
     [parameter(Mandatory=$false,HelpMessage="Don't show prompts")]
+    [switch]
+    $WhatIf=$false,
+
+    [parameter(Mandatory=$false)]
     [switch]
     $Force=$false
 ) 
 Write-Verbose $MyInvocation.line 
 . (Join-Path $PSScriptRoot .. functions.ps1)
-$apiVersion = "7.1-preview.4"
+$apiVersion = "7.1"
 
 #-----------------------------------------------------------
 # Log in to Azure
@@ -86,7 +91,7 @@ if ($lastexitcode -ne 0) {
 
 #-----------------------------------------------------------
 # Check parameters
-az devops project show --project $Project --organization $OrganizationUrl --query id -o tsv | Set-Variable projectId
+az devops project show --project "${Project}" --organization $OrganizationUrl --query id -o tsv | Set-Variable projectId
 if (!$projectId) {
     Write-Error "Project '${Project}' not found in organization '${OrganizationUrl}"
     exit 1
@@ -95,7 +100,7 @@ if (!$projectId) {
 #-----------------------------------------------------------
 # Retrieve the service connection
 
-$baseEndpointUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints"
+$baseEndpointUrl = "${OrganizationUrl}/${projectId}/_apis/serviceendpoint/endpoints"
 if ($ServiceConnectionId) {
     $getApiUrl = "${baseEndpointUrl}/${ServiceConnectionId}?includeDetails=true&api-version=${apiVersion}"
 } elseif ($ServiceConnectionName) {
@@ -181,11 +186,15 @@ foreach ($serviceEndpoint in $serviceEndpoints) {
     $serviceEndpoint.authorization.scheme = "WorkloadIdentityFederation"
     $serviceEndpoint.data.PSObject.Properties.Remove('revertSchemeDeadline')
     $serviceEndpoint | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequest
-    $putApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
+    $putApiUrl = "${OrganizationUrl}/${projectId}/_apis/serviceendpoint/endpoints/$($serviceEndpoint.id)?operation=ConvertAuthenticationScheme&api-version=${apiVersion}"
     Write-Debug "PUT $putApiUrl"
     $httpStatusCode = $null
 
     # Convert service connection
+    if ($WhatIf) {
+        Write-Host "WhatIf: Convert service connection '$($serviceEndpoint.name)'"
+        continue
+    }
     try {
         Invoke-RestMethod -Uri $putApiUrl `
                           -Method PUT `

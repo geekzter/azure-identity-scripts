@@ -217,77 +217,83 @@ jobs:
           ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToCreate) `
                                         -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
 
-# - ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
-#   - job: convertServiceConnection
-#     displayName: 'Convert Service Connection'
-#     pool:
-#       name: 'Azure Pipelines'
-#       vmImage: ubuntu-latest
-#     # TODO: create strategy for convert_azurerm_service_connection_to_oidc_simple.ps1
-#     # strategy:
-#     #   matrix:
-#     #     scripted:
-#     #       script: 'convert_azurerm_service_connection_to_oidc.ps1'
-#     #     simple:
-#     #       script: 'convert_azurerm_service_connection_to_oidc_simple.ps1'
+- ${{ if or(eq(parameters.jobsToRun, 'Non-modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
+  - job: convertServiceConnection
+    displayName: 'Convert Service Connections'
+    strategy:
+      matrix:
+        linux:
+          pool: ubuntu-latest
+        windows:
+          pool: windows-latest
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: $(pool)
 
-#     steps:
-#     - task: AzureCLI@2
-#       displayName: 'Create with secret'
-#       name: create
-#       inputs:
-#         azureSubscription: '$(azureConnection)'
-#         failOnStandardError: true
-#         scriptType: pscore
-#         scriptLocation: inlineScript
-#         workingDirectory: '$(scriptDirectory)'
-#         inlineScript: |
-#           # BUG: A valid refresh token for identity 00000000-0000-0000-0000-000000000000 was not found.
-#           ./create_azurerm_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
-#                                                   -ServiceConnectionScheme ServicePrincipal `
-#                                                   -SubscriptionId $(az account show --query id -o tsv)
-#           az devops service-endpoint list -p "$(System.TeamProject)" `
-#                                           --org $(System.CollectionUri) `
-#                                           --query "[?name=='$(serviceConnectionToConvert)'].id" `
-#                                           -o tsv `
-#                                           | Set-Variable -Name serviceConnectionId
-#           Write-Host "##vso[task.setvariable variable=serviceConnectionId;isOutput=true]${serviceConnectionId}"
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Convert (WhatIf)'
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        workingDirectory: '$(scriptDirectory)'
+        inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
 
-#     - task: AzureCLI@2
-#       displayName: 'Convert'
-#       inputs:
-#         azureSubscription: '$(azureConnection)'
-#         failOnStandardError: true
-#         scriptType: pscore
-#         scriptLocation: inlineScript
-#         workingDirectory: '$(scriptDirectory)'
-#         inlineScript: |
-#           # TODO: Use $(script) variable from strategy.matrix
-#           ./convert_azurerm_service_connection_to_oidc.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
-#                                                            -Force
-# - ${{ if or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
-#   - job: testConvertedServiceConnection
-#     condition: and(succeededOrFailed(),ne(coalesce(variables.serviceConnectionTestPipelineId,'empty'),'empty'))
-#     dependsOn: convertServiceConnection
-#     displayName: 'Test converted Service Connection'
-#     pool:
-#       name: 'Azure Pipelines'
-#       vmImage: ubuntu-latest
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+          ./convert_azurerm_service_connection_to_oidc.ps1 -Force -WhatIf
 
-#     steps:
-#     - task: AzureCLI@2
-#       displayName: 'Test Service Connection $(serviceConnectionToConvert)'
-#       timeoutInMinutes: 5
-#       inputs:
-#         azureSubscription: '$(azureConnection)'
-#         failOnStandardError: true
-#         scriptType: pscore
-#         scriptLocation: inlineScript
-#         workingDirectory: '$(scriptDirectory)'
-#         inlineScript: |
-#           # TODO: Test multiple service connections
-#           ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToConvert) `
-#                                         -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
+    - pwsh: |
+        Write-Host "`npwsh version: $($PSVersionTable.PSVersion)"
+        if ($PSVersionTable.PSVersion -lt 7.3) {
+          Write-Host "convert_azurerm_service_connection_to_oidc_simple.ps1 requires `$PSNativeCommandArgumentPassing"
+          Write-Host "Upgrading PowerShell to 7.3+..."
+          if ($IsLinux) {
+            bash -c 'sudo apt-get update --fix-missing'
+            bash -c 'sudo apt upgrade powershell -y'
+          }
+          if ($IsWindows) {
+            choco install powershell-core -y
+            # dotnet tool install --global PowerShell
+          }
+          Write-Host "`npwsh version: $(pwsh -v)"
+        } else {
+          Write-Host "PowerShell version is $($PSVersionTable.PSVersion), no upgrade required"
+        }
+      displayName: 'Upgrade PowerShell'
+      failOnStderr: true
+      ignoreLASTEXITCODE: false
+      retryCountOnTaskFailure: 3
+
+    - task: AzureCLI@2
+      displayName: 'Convert simple (WhatIf)'
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        workingDirectory: '$(scriptDirectory)'
+        inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+          ./convert_azurerm_service_connection_to_oidc_simple.ps1 -OrganizationUrl $env:SYSTEM_COLLECTIONURI `
+                                                                  -Project $env:SYSTEM_TEAMPROJECT `
+                                                                  -WhatIf
 
 - ${{ if and(ne(parameters.destroy, 'Never'),or(eq(parameters.jobsToRun, 'Modifying tests'),eq(parameters.jobsToRun, 'Both'))) }}:
   - job: teardown
