@@ -2,7 +2,7 @@ data azuread_client_config current {}
 
 locals {
   owner_object_id              = var.owner_object_id != null && var.owner_object_id != "" ? lower(var.owner_object_id) : data.azuread_client_config.current.object_id
-  expiration_expression        = "${var.secret_expiration_days * 24}h"
+  expiration_expression        = "${var.secret_expiration_days * 24}h01m"
 }
 
 resource azuread_application app_registration {
@@ -28,7 +28,7 @@ resource azuread_application_federated_identity_credential fic {
 }
 
 resource time_rotating secret_expiration {
-  rotation_days                = var.secret_expiration_days
+  rotation_days                = max(var.secret_expiration_days,1)
 
   count                        = var.create_federation ? 0 : 1
 }
