@@ -93,7 +93,7 @@ jobs:
           az account show -o json | ConvertFrom-Json | Set-Variable account
 
           Write-Host "`nList Service Connection in subscription '$($account.name)'"
-          ./list_service_connections.ps1 -TenantId $account.tenantId
+          ./list_service_connections.ps1
 
         failOnStandardError: true
         workingDirectory: '$(scriptDirectory)'
