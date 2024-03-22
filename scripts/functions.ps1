@@ -1,3 +1,13 @@
+function Add-ApplicationProperties (
+    [parameter(Mandatory=$true)]
+    [ValidateNotNull()]
+    [object]
+    $App
+) {
+    "https://portal.azure.com/{0}/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/{1}" -f $TenantId, $App.appId | Set-Variable applicationPortalLink
+    $App | Add-Member -NotePropertyName applicationPortalLink -NotePropertyValue $applicationPortalLink
+}
+
 function Add-ServicePrincipalProperties (
     [parameter(Mandatory=$true)]
     [ValidateNotNull()]
@@ -134,7 +144,7 @@ function Find-ApplicationsByFederation (
     [switch]
     $Details
 ) {
-    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith ExactMatch $ExactMatch -Details $Details"
+    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith -ExactMatch $ExactMatch -Details $Details"
     if ($ExactMatch) {
         $filter = "federatedIdentityCredentials/any(f:subject eq '${StartsWith}')"
     } else {
@@ -154,13 +164,18 @@ function Find-ApplicationsByFederation (
             $apps | Select-Object -Property name,appId,id,federatedSubjects,issuers,secretCount,certCount `
                   | Set-Variable apps
         }
-        $apps | Sort-Object -Property name,federatedSubjects,createdDateTime`
+        $apps | Sort-Object -Property name,federatedSubjects `
+              | Foreach-Object {
+                  Add-ApplicationProperties -App $_
+                  $_
+                }
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose
         return $apps
     } else {
         Write-Verbose "No apps found with name starting with '$StartsWith'"
+        exit
     }
 
     return $null
@@ -212,7 +227,11 @@ function Find-ApplicationsByIssuer (
             $apps | Select-Object -Property name,appId,id,federatedSubjects,issuers,secretCount,certCount `
                   | Set-Variable apps
         }
-        $apps | Sort-Object -Property name,federatedSubjects,createdDateTime`
+        $apps | Sort-Object -Property name,federatedSubjects`
+              | Foreach-Object {
+                  Add-ApplicationProperties -App $_
+                  $_
+                }
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose
@@ -236,6 +255,10 @@ function Find-ApplicationsByName (
     if ($apps) {
         $apps | Select-Object -Property name,appId,id,federatedSubjects,issuers,secretCount,certCount `
               | Sort-Object -Property name `
+              | Foreach-Object {
+                  Add-ApplicationProperties -App $_
+                  $_
+                }
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose
