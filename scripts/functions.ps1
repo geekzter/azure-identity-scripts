@@ -1,3 +1,13 @@
+function Add-ApplicationProperties (
+    [parameter(Mandatory=$true)]
+    [ValidateNotNull()]
+    [object]
+    $App
+) {
+    "https://portal.azure.com/{0}/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/{1}" -f $TenantId, $App.appId | Set-Variable applicationPortalLink
+    $App | Add-Member -NotePropertyName applicationPortalLink -NotePropertyValue $applicationPortalLink
+}
+
 function Add-ServicePrincipalProperties (
     [parameter(Mandatory=$true)]
     [ValidateNotNull()]
@@ -155,6 +165,10 @@ function Find-ApplicationsByFederation (
                   | Set-Variable apps
         }
         $apps | Sort-Object -Property name,federatedSubjects,createdDateTime`
+              | Foreach-Object {
+                  Add-ApplicationProperties -App $_
+                  $_
+                }
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose
@@ -213,6 +227,10 @@ function Find-ApplicationsByIssuer (
                   | Set-Variable apps
         }
         $apps | Sort-Object -Property name,federatedSubjects,createdDateTime`
+              | Foreach-Object {
+                  Add-ApplicationProperties -App $_
+                  $_
+                }
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose
@@ -236,6 +254,10 @@ function Find-ApplicationsByName (
     if ($apps) {
         $apps | Select-Object -Property name,appId,id,federatedSubjects,issuers,secretCount,certCount `
               | Sort-Object -Property name `
+              | Foreach-Object {
+                  Add-ApplicationProperties -App $_
+                  $_
+                }
               | Set-Variable apps
         Write-Verbose "Found Managed Identity with resourceId '$Id' using Microsoft Graph query:"
         "az rest --method get --url `"${GraphUrl}`" --headers ConsistencyLevel=eventual --query `"${jmesPath}`"" -replace "\$","```$" | Write-Verbose

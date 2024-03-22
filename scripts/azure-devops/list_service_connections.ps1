@@ -39,6 +39,10 @@ param (
     [switch]
     $HasNoSecrets=$false,
 
+    [parameter(Mandatory=$false)]
+    [guid[]]
+    $AppId,
+
     [parameter(Mandatory=$false,HelpMessage="Azure subscription id")]
     [ValidateNotNullOrEmpty()]
     [guid]
@@ -46,7 +50,12 @@ param (
 
     [parameter(Mandatory=$false,HelpMessage="Azure Active Directory tenant id")]
     [guid]
-    $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID ?? [guid]::Empty)
+    $TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID ?? [guid]::Empty),
+
+    [parameter(Mandatory=$false)]
+    [ValidateSet('List', 'Table')]
+    [string]
+    $Format='Table'
 ) 
 
 Write-Debug $MyInvocation.line
@@ -85,8 +94,15 @@ if ($HasFederation) {
     Find-ApplicationsByName -StartsWith $namePrefix | Set-Variable msftGraphObjects
 }
 
+# Filters
+if ($AppId) {
+    $AppId | Foreach-Object {$_.ToString().ToLower()} | Set-Variable AppId
+}
 Write-Host "${message}:"
 $msftGraphObjects | Where-Object { 
+    # We already check federation on organization/project, so we can ignore it here
+    !$AppId -or ($_.appId.ToLower() -in $AppId)
+} | Where-Object { 
     # We already check federation on organization/project, so we can ignore it here
     !$HasFederation -or $_.name -match "${Organization}-[^-]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
 } | Where-Object { 
@@ -103,4 +119,13 @@ $msftGraphObjects | Where-Object {
     $_.secretCount -ge ($HasSecrets ? 1 : 0)
 } | Where-Object { 
     !$HasNoSecrets -or $_.secretCount -eq 0
-} | Format-Table -AutoSize
+} | Set-Variable msftGraphFilteredObjects
+
+switch ($Format) {
+    'List' {
+        $msftGraphFilteredObjects | Format-List
+    }
+    'Table' {
+        $msftGraphFilteredObjects | Format-Table -AutoSize
+    }
+}
