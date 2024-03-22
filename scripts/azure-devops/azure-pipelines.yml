@@ -92,8 +92,23 @@ jobs:
         inlineScript: |
           az account show -o json | ConvertFrom-Json | Set-Variable account
 
-          Write-Host "`nList Managed Identities in subscription '$($account.name)'"
+          Write-Host "`nList Service Connection in subscription '$($account.name)'"
           ./list_service_connections.ps1 -TenantId $account.tenantId
+
+        failOnStandardError: true
+        workingDirectory: '$(scriptDirectory)'
+
+    - task: AzureCLI@2
+      displayName: 'list_service_connection_identities.ps1'
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          az account show -o json | ConvertFrom-Json | Set-Variable account
+
+          Write-Host "`nList Service Connection Identities in tenant '$($account.name)'"
+          ./list_service_connection_identities.ps1 -TenantId $account.tenantId
 
         failOnStandardError: true
         workingDirectory: '$(scriptDirectory)'
