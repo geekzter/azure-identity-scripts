@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS 
-    Find Azure DevOps Service Connections
+    List Azure DevOps Service Connections
 .DESCRIPTION 
     Use the Microsoft Graph API to find Azure DevOps Service Connections by organization & project, using Azure DevOps Service Connection naming convention
 #>
@@ -104,7 +104,7 @@ $msftGraphObjects | Where-Object {
     !$AppId -or ($_.appId.ToLower() -in $AppId)
 } | Where-Object { 
     # We already check federation on organization/project, so we can ignore it here
-    !$HasFederation -or $_.name -match "${Organization}-[^-]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
+    $HasFederation -or $_.name -match "${Organization}-[^-]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" 
 } | Where-Object { 
     !$SubscriptionId -or $_.name -match $SubscriptionId
 } | Where-Object { 
@@ -120,6 +120,10 @@ $msftGraphObjects | Where-Object {
 } | Where-Object { 
     !$HasNoSecrets -or $_.secretCount -eq 0
 } | Set-Variable msftGraphFilteredObjects
+
+$msftGraphFilteredObjects | Format-Table
+exit
+
 
 switch ($Format) {
     'List' {

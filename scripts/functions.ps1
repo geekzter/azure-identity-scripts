@@ -144,7 +144,7 @@ function Find-ApplicationsByFederation (
     [switch]
     $Details
 ) {
-    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith ExactMatch $ExactMatch -Details $Details"
+    Write-Debug "Find-ApplicationsByFederation -StartsWith $StartsWith -ExactMatch $ExactMatch -Details $Details"
     if ($ExactMatch) {
         $filter = "federatedIdentityCredentials/any(f:subject eq '${StartsWith}')"
     } else {
@@ -164,7 +164,7 @@ function Find-ApplicationsByFederation (
             $apps | Select-Object -Property name,appId,id,federatedSubjects,issuers,secretCount,certCount `
                   | Set-Variable apps
         }
-        $apps | Sort-Object -Property name,federatedSubjects,createdDateTime`
+        $apps | Sort-Object -Property name,federatedSubjects `
               | Foreach-Object {
                   Add-ApplicationProperties -App $_
                   $_
@@ -175,6 +175,7 @@ function Find-ApplicationsByFederation (
         return $apps
     } else {
         Write-Verbose "No apps found with name starting with '$StartsWith'"
+        exit
     }
 
     return $null
@@ -226,7 +227,7 @@ function Find-ApplicationsByIssuer (
             $apps | Select-Object -Property name,appId,id,federatedSubjects,issuers,secretCount,certCount `
                   | Set-Variable apps
         }
-        $apps | Sort-Object -Property name,federatedSubjects,createdDateTime`
+        $apps | Sort-Object -Property name,federatedSubjects`
               | Foreach-Object {
                   Add-ApplicationProperties -App $_
                   $_
