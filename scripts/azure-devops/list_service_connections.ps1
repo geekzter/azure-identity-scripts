@@ -30,7 +30,7 @@ param (
     [parameter(Mandatory=$false)]
     [ValidateSet('List', 'Table')]
     [string]
-    $Format='Table'
+    $Format='List'
 ) 
 Write-Verbose $MyInvocation.line 
 . (Join-Path $PSScriptRoot .. functions.ps1)
