@@ -61,7 +61,7 @@ foreach ($azdoProject in $Project) {
         # Do not rename service connections shared from another project
         "{0}/{1}/_settings/adminservices?resourceId={2}" -f $OrganizationUrl, $serviceConnection.serviceEndpointProjectReferences[0].projectReference.name, $serviceConnection.id | Set-Variable originalServiceEndpointUrl
         if ($serviceConnection.isShared) {
-            if ($serviceConnection.serviceEndpointProjectReferences[0].projectReference.name -ine $azdoProject) {
+            if ($serviceConnection.name.EndsWith("-${azdoProject}")) {
                 Write-Host "Skipping service connection '$($PSStyle.Bold)$($serviceConnection.name)$($PSStyle.BoldOff)' because it is shared from project $($PSStyle.Bold)$($serviceConnection.serviceEndpointProjectReferences[0].projectReference.name)$($PSStyle.BoldOff) : ${originalServiceEndpointUrl}"
                 continue
             }
@@ -85,6 +85,7 @@ foreach ($azdoProject in $Project) {
         }
         $application | Format-List | Out-String | Write-Debug
         Write-Verbose "Application displayName: $($application.displayName)"
+        $serviceConnection | Add-Member "oldApplicationName" $application.displayName
 
         # Determine default and new application names
         "{0}-{1}-{2}" -f $organizationName, $azdoProject, $serviceConnection.data.subscriptionId `
@@ -97,16 +98,15 @@ foreach ($azdoProject in $Project) {
                         | Set-Variable -Name newApplicationName
         }
         Write-Verbose "New application name: ${newApplicationName}"
-
+        $serviceConnection | Add-Member "newApplicationName" $newApplicationName
+ 
         # Determine whether app has been renamed
-        $serviceConnection | Add-Member "oldApplicationName" $application.displayName
         if ($application.displayName -eq $newApplicationName) {
             Write-Host "Application for service connection '$($PSStyle.Bold)$($serviceConnection.name)$($PSStyle.BoldOff)' has already been renamed to '$($PSStyle.Bold)${newApplicationName}$($PSStyle.BoldOff)'"
             continue
         }
 
         # Rename app
-        $serviceConnection | Add-Member "newApplicationName" $newApplicationName
         Write-Host "Renaming application $($PSStyle.Bold)$($application.displayName)$($PSStyle.BoldOff) to '$($PSStyle.Bold)${newApplicationName}$($PSStyle.BoldOff)'..." -Nonewline
         if ($WhatIf) {
             Write-Host " skipped (WhatIf specified)"
@@ -115,7 +115,7 @@ foreach ($azdoProject in $Project) {
             Write-Host ""
         }
         az ad app update --id $application.appId `
-                        --display-name $newApplicationName
+                         --display-name $newApplicationName
     }
 
     # List processed service connection identities
