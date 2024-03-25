@@ -47,11 +47,11 @@ foreach ($azdoProject in $Project) {
     # Get owned service connections using AAD tenant
 
     az devops service-endpoint list --project $azdoProject `
-                                --organization $OrganizationUrl `
-                                --query "[?authorization.parameters.serviceprincipalid!=null && authorization.parameters.tenantid=='${TenantId}' && createdBy.uniqueName=='${userName}']" `
-                                -o json `
-                                | ConvertFrom-Json `
-                                | Set-Variable -Name serviceConnections
+                                    --organization $OrganizationUrl `
+                                    --query "[?(authorization.parameters.serviceprincipalid!=null || authorization.parameters.servicePrincipalId!=null) && (authorization.parameters.tenantid=='${TenantId}' || authorization.parameters.tenantId=='${TenantId}') && createdBy.uniqueName=='${userName}']" `
+                                    -o json `
+                                    | ConvertFrom-Json `
+                                    | Set-Variable -Name serviceConnections
 
     $serviceConnections | Format-Table -AutoSize -Property Name | Out-String | Write-Debug
 
