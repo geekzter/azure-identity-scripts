@@ -120,5 +120,5 @@ foreach ($azdoProject in $Project) {
 
     # List processed service connection identities
     "`nService connections processed referencing an AAD application in {0}/{1}/_settings/adminservices created by {2}:" -f $OrganizationUrl, [uri]::EscapeDataString($azdoProject), $userName | Write-Host
-    $serviceConnections | Format-Table -AutoSize -Property Name, @{Name="clientId";Expression={$_.authorization.parameters.serviceprincipalid}}, oldApplicationName, newApplicationName
+    $serviceConnections | Format-Table -AutoSize -Property Name, @{Name="clientId";Expression={$_.authorization.parameters.serviceprincipalid}}, oldApplicationName, newApplicationName, type
 }
