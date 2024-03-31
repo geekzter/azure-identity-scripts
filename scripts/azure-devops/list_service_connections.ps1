@@ -81,7 +81,7 @@ if (!$projectId) {
 # Retrieve the service connection
 
 $getApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints?type=azurerm&includeFailed=true&includeDetails=true&api-version=${apiVersion}"
-az rest --resource 499b84ac-1321-427f-aa17-267ca6975798 -u "${getApiUrl} " -m GET --query "sort_by(value[?authorization.scheme=='ServicePrincipal' && data.creationMode=='Automatic' && !(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
+az rest --resource 499b84ac-1321-427f-aa17-267ca6975798 -u "${getApiUrl} " -m GET --query "sort_by(value[?!(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
         | Tee-Object -Variable rawResponse `
         | ConvertFrom-Json `
         | Tee-Object -Variable serviceEndpoints `
@@ -93,11 +93,12 @@ if (!$serviceEndpoints -or ($serviceEndpoints.count-eq 0)) {
 
 $serviceEndpoints | ForEach-Object {
     "https://portal.azure.com/{0}/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/{1}" -f $_.authorization.parameters.tenantId, $_.authorization.parameters.servicePrincipalId | Set-Variable applicationPortalLink
+    $_ | Add-Member -NotePropertyName appId -NotePropertyValue $_.authorization.parameters.servicePrincipalId?.ToLower()
     $_ | Add-Member -NotePropertyName applicationPortalLink -NotePropertyValue $applicationPortalLink
+    $_ | Add-Member -NotePropertyName authorizationScheme -NotePropertyValue $_.authorization.scheme
+    $_ | Add-Member -NotePropertyName creationMode -NotePropertyValue $_.data.creationMode
     "{0}/{1}/_settings/adminservices?resourceId={2}" -f $OrganizationUrl, $_.serviceEndpointProjectReferences[0].projectReference.id, $_.id | Set-Variable serviceConnectionPortalLink
     $_ | Add-Member -NotePropertyName serviceConnectionPortalLink -NotePropertyValue $serviceConnectionPortalLink
-    $_ | Add-Member -NotePropertyName authorizationScheme -NotePropertyValue $_.authorization.scheme
-    $_ | Add-Member -NotePropertyName appId -NotePropertyValue $_.authorization.parameters.servicePrincipalId.ToLower()
     
     $_
 } | Where-Object { 
@@ -110,7 +111,7 @@ switch ($Format) {
         $filteredServiceEndpoints | Format-List 
     }
     'Table' {
-        $filteredServiceEndpoints | Format-Table -AutoSize -Property name, authorizationScheme, appId
+        $filteredServiceEndpoints | Format-Table -AutoSize -Property name, authorizationScheme, creationMode, appId
     }
 }
 $filteredServiceEndpoints | ForEach-Object {
