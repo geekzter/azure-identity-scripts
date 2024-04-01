@@ -79,15 +79,15 @@ if (!$projectId) {
 
 #-----------------------------------------------------------
 # Retrieve the service connection
-
 $getApiUrl = "${OrganizationUrl}/${Project}/_apis/serviceendpoint/endpoints?type=azurerm&includeFailed=true&includeDetails=true&api-version=${apiVersion}"
-az rest --resource 499b84ac-1321-427f-aa17-267ca6975798 -u "${getApiUrl} " -m GET --query "sort_by(value[?!(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)" -o json `
+$query = "sort_by(value[?!(isShared && serviceEndpointProjectReferences[0].projectReference.name!='${Project}')],&name)"
+az rest --resource 499b84ac-1321-427f-aa17-267ca6975798 -u "${getApiUrl} " -m GET --query "${query}" -o json `
         | Tee-Object -Variable rawResponse `
         | ConvertFrom-Json `
         | Tee-Object -Variable serviceEndpoints `
         | Format-List | Out-String | Write-Debug
 if (!$serviceEndpoints -or ($serviceEndpoints.count-eq 0)) {
-    Write-Warning "No convertible service connections found"
+    Write-Warning "No service connections found"
     exit 1
 }
 
@@ -99,7 +99,7 @@ $serviceEndpoints | ForEach-Object {
     $_ | Add-Member -NotePropertyName creationMode -NotePropertyValue $_.data.creationMode
     "{0}/{1}/_settings/adminservices?resourceId={2}" -f $OrganizationUrl, $_.serviceEndpointProjectReferences[0].projectReference.id, $_.id | Set-Variable serviceConnectionPortalLink
     $_ | Add-Member -NotePropertyName serviceConnectionPortalLink -NotePropertyValue $serviceConnectionPortalLink
-    
+    $_ | Add-Member -NotePropertyName tenantId -NotePropertyValue $_.authorization.parameters.tenantId?.ToLower()    
     $_
 } | Where-Object { 
     # We already check federation on organization/project, so we can ignore it here
@@ -111,7 +111,7 @@ switch ($Format) {
         $filteredServiceEndpoints | Format-List 
     }
     'Table' {
-        $filteredServiceEndpoints | Format-Table -AutoSize -Property name, authorizationScheme, creationMode, appId
+        $filteredServiceEndpoints | Format-Table -AutoSize -Property name, authorizationScheme, creationMode, appId, tenantId
     }
 }
 $filteredServiceEndpoints | ForEach-Object {
