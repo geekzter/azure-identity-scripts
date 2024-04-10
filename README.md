@@ -21,8 +21,8 @@ This repo contains a few [PowerShell](https://github.com/PowerShell/PowerShell) 
 - Use Microsoft Graph to list Managed Identities with [list_managed_identities.ps1](scripts/list_managed_identities.ps1), using:
   - Azure subscription and optional resource group
   - Name (pattern)
-- Purge deleted directory objects (e.g. applications) [purge_deleted_objects.ps1](scripts/purge_deleted_objects.ps1)
-- Add IT Service Management data (reference, co-owner) to applications [add_app_itsm_information.ps1](scripts/add_app_itsm_information.ps1)
+- Purge deleted directory objects (e.g. applications): [purge_deleted_objects.ps1](scripts/purge_deleted_objects.ps1)
+- Add IT Service Management data (reference, co-owner) to applications: [add_app_itsm_information.ps1](scripts/add_app_itsm_information.ps1)
 
 ## Azure DevOps
 
