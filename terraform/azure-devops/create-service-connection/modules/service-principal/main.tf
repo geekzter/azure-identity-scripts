@@ -12,7 +12,7 @@ resource azuread_application app_registration {
 }
 
 resource azuread_service_principal spn {
-  client_id                    = azuread_application.app_registration.client_id
+  application_id               = azuread_application.app_registration.client_id
   owners                       = [local.owner_object_id]
 }
 
@@ -38,7 +38,7 @@ resource azuread_application_password secret {
     rotation                   = timeadd(time_rotating.secret_expiration.0.id, local.expiration_expression)
   }
 
-  application_id               = azuread_application.app_registration.id
+  application_object_id        = azuread_application.app_registration.id
 
   count                        = var.create_federation ? 0 : 1
 }
