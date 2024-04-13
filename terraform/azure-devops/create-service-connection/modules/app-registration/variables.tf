@@ -1,6 +1,7 @@
 variable create_federation {
   type   = bool
 }
+variable description {}
 variable issuer {}
 variable federation_subject {}
 # If true, the Service Principal will be created as multi-tenant
@@ -10,10 +11,11 @@ variable multi_tenant {
   type   = bool
 }
 variable name {}
-variable owner_object_id {
-  default = null
+variable owner_object_ids {
+  type    = list(string)
 }
 variable secret_expiration_days {
   default = null
   type    = number
 }
+variable service_management_reference {}

@@ -602,6 +602,18 @@ function Get-ApplicationOwners (
     return $null
 }
 
+function Get-TerraformDirectory {
+    return (Join-Path (Split-Path $PSScriptRoot -Parent) terraform azure-devops create-service-connection)
+}
+
+function Invoke (
+    [string]$cmd
+) {
+    Write-Host "`n$cmd" -ForegroundColor Green 
+    Invoke-Expression $cmd
+    Validate-ExitCode $cmd
+}
+
 function Login-Az (
     [parameter(Mandatory=$false)][ref]$TenantId=($env:ARM_TENANT_ID ?? $env:AZURE_TENANT_ID)
 ) {
@@ -634,6 +646,16 @@ function Login-Az (
         }
     } else {
         $TenantId.Value = $azureAccount.tenantId
+    }
+}
+
+function Validate-ExitCode (
+    [string]$cmd
+) {
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        Write-Warning "'$cmd' exited with status $exitCode"
+        exit $exitCode
     }
 }
 

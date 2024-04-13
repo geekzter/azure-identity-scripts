@@ -1,24 +1,28 @@
 data azuread_client_config current {}
 
 locals {
-  owner_object_id              = var.owner_object_id != null && var.owner_object_id != "" ? lower(var.owner_object_id) : data.azuread_client_config.current.object_id
-  expiration_expression        = "${var.secret_expiration_days * 24}h01m"
+  owner_object_ids              = var.owner_object_ids != null ? var.owner_object_ids : [data.azuread_client_config.current.object_id]
+  expiration_expression        = "${(var.secret_expiration_days * 24) + 1}h01m"
 }
 
 resource azuread_application app_registration {
   display_name                 = var.name
-  owners                       = [local.owner_object_id]
+  notes                        = var.description
+  owners                       = local.owner_object_ids
+  prevent_duplicate_names      = true
+  service_management_reference = var.service_management_reference
   sign_in_audience             = var.multi_tenant ? "AzureADMultipleOrgs" : null
 }
 
 resource azuread_service_principal spn {
   client_id                    = azuread_application.app_registration.client_id
-  owners                       = [local.owner_object_id]
+  notes                        = var.description
+  owners                       = local.owner_object_ids
 }
 
 resource azuread_application_federated_identity_credential fic {
-  application_object_id        = azuread_application.app_registration.object_id
-  description                  = "Created by Terraform"
+  application_id               = azuread_application.app_registration.id
+  description                  = var.description
   display_name                 = replace(var.federation_subject,"/[:/ ]+/","-")
   audiences                    = ["api://AzureADTokenExchange"]
   issuer                       = var.issuer

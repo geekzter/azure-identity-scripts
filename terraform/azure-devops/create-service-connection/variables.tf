@@ -36,10 +36,21 @@ variable create_managed_identity {
   type                         = bool
 }
 
+variable entra_owner_object_ids {
+  default                      = null
+  description                  = "The object ids of the users that will be owners of the Entra ID app registration"
+  type                         = list(string)
+}
+
 variable entra_secret_expiration_days {
   description                  = "Secret expiration in days"
   default                      = 90
   type                         = number
+}
+
+variable entra_service_management_reference {
+  description                  = "IT Service Management Reference"
+  default                      = null
 }
 
 variable managed_identity_resource_group_id {
