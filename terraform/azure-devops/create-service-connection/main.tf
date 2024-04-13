@@ -68,11 +68,12 @@ module managed_identity {
 module service_principal {
   source                       = "./modules/service-principal"
   create_federation            = var.create_federation
-  description                  = "Azure DevOps Service Connection ${local.azdo_service_connection_name} in project ${local.azdo_project_url}. Created by Terraform: https://github.com/geekzter/azure-identity-scripts/tree/main/terraform/azure-devops/create-service-connection."
+  description                  = "Azure DevOps Service Connection ${local.azdo_service_connection_name}${var.entra_secret_expiration_days == 0 ? " (with short-lived secret)" : " "} in project ${local.azdo_project_url}. Managed by Terraform: https://github.com/geekzter/azure-identity-scripts/tree/main/terraform/azure-devops/create-service-connection."
   federation_subject           = var.create_federation ? module.service_connection.service_connection_oidc_subject : null
   issuer                       = var.create_federation ? module.service_connection.service_connection_oidc_issuer : null
   multi_tenant                 = false
   name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
+  owner_object_ids             = var.entra_owner_object_ids
   secret_expiration_days       = var.entra_secret_expiration_days
   service_management_reference = var.entra_service_management_reference
 

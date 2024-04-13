@@ -12,7 +12,6 @@ variable multi_tenant {
 }
 variable name {}
 variable owner_object_ids {
-  default = null
   type    = list(string)
 }
 variable secret_expiration_days {

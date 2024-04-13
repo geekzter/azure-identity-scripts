@@ -38,7 +38,7 @@ variable create_managed_identity {
 
 variable entra_owner_object_ids {
   default                      = null
-  description                  = "The object IDs of the owners of the Entra ID app registration"
+  description                  = "The object ids of the users that will be owners of the Entra ID app registration"
   type                         = list(string)
 }
 
