@@ -36,6 +36,12 @@ variable create_managed_identity {
   type                         = bool
 }
 
+variable entra_owner_object_ids {
+  default                      = null
+  description                  = "The object IDs of the owners of the Entra ID app registration"
+  type                         = list(string)
+}
+
 variable entra_secret_expiration_days {
   description                  = "Secret expiration in days"
   default                      = 90
