@@ -10,15 +10,15 @@ resource random_string suffix {
 }
 
 locals {
-  application_id               = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.application_id : module.service_principal.0.application_id)
+  application_id               = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.application_id : module.entra_app.0.application_id)
   authentication_scheme        = var.create_federation ? "WorkloadIdentityFederation" : "ServicePrincipal"
   azdo_organization_name       = split("/",var.azdo_organization_url)[3]
   azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
   azdo_project_url             = "${local.azdo_organization_url}/${urlencode(var.azdo_project_name)}"
   azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-${var.azdo_creates_identity ? "aut" : "man"}-${var.create_managed_identity ? "msi" : "sp"}-${var.create_federation ? "oidc" : "secret"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
   azure_scope                  = var.azure_scope != null && var.azure_scope != "" ? var.azure_scope : "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
-  principal_id                 = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_id : module.service_principal.0.principal_id)
-  principal_name               = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_name : module.service_principal.0.principal_name)
+  principal_id                 = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_id : module.entra_app.0.principal_id)
+  principal_name               = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_name : module.entra_app.0.principal_name)
   resource_suffix              = var.resource_suffix != null && var.resource_suffix != "" ? lower(var.resource_suffix) : random_string.suffix.result
   resource_tags                = {
     application                = "Azure Service Connection"
@@ -65,8 +65,8 @@ module managed_identity {
   depends_on                   = [terraform_data.managed_identity_validator]
 }
 
-module service_principal {
-  source                       = "./modules/service-principal"
+module entra_app {
+  source                       = "./modules/app-registration"
   create_federation            = var.create_federation
   description                  = "Azure DevOps Service Connection ${local.azdo_service_connection_name}${var.entra_secret_expiration_days == 0 ? " (with short-lived secret)" : " "} in project ${local.azdo_project_url}. Managed by Terraform: https://github.com/geekzter/azure-identity-scripts/tree/main/terraform/azure-devops/create-service-connection."
   federation_subject           = var.create_federation ? module.service_connection.service_connection_oidc_subject : null
@@ -94,7 +94,7 @@ module azure_access {
 module service_connection {
   source                       = "./modules/service-connection"
   application_id               = local.application_id
-  application_secret           = var.azdo_creates_identity || var.create_federation ? null : module.service_principal.0.secret
+  application_secret           = var.azdo_creates_identity || var.create_federation ? null : module.entra_app.0.secret
   authentication_scheme        = local.authentication_scheme
   create_identity              = var.azdo_creates_identity
   project_name                 = var.azdo_project_name
