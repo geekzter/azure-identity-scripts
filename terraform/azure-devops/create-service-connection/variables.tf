@@ -42,6 +42,11 @@ variable entra_secret_expiration_days {
   type                         = number
 }
 
+variable entra_service_management_reference {
+  description                  = "IT Service Management Reference"
+  default                      = null
+}
+
 variable managed_identity_resource_group_id {
   default                      = null
   description                  = "The resource group to create the Managed Identity in"

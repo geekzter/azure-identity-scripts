@@ -72,6 +72,7 @@ module service_principal {
   multi_tenant                 = false
   name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
   secret_expiration_days       = var.entra_secret_expiration_days
+  service_management_reference = var.entra_service_management_reference
 
   count                        = var.create_managed_identity || var.azdo_creates_identity ? 0 : 1
 }

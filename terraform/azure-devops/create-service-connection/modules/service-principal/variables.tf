@@ -17,3 +17,4 @@ variable secret_expiration_days {
   default = null
   type    = number
 }
+variable service_management_reference {}
