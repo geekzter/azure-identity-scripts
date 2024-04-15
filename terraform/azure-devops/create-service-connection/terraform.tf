@@ -10,6 +10,7 @@ terraform {
     http                       = "~> 3.4"
     random                     = "~> 3.5"
     time                       = "~> 0.9"
+    tls                        = "~> 3.4"
   }
   required_version             = "~> 1.3"
 }
