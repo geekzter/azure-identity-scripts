@@ -21,7 +21,13 @@ variable azure_scope {
 
 variable azure_role {
   default                      = "Contributor"
-  nullable                     = false
+  nullable                     = true
+}
+
+variable azure_role_assignments {
+  default                      = []
+  nullable                     = true
+  type                         = set(object({scope=string, role=string}))
 }
 
 variable create_federation {

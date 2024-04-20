@@ -85,10 +85,23 @@ module azure_access {
     azurerm                    = azurerm.target
   }
   source                       = "./modules/azure-access"
-  create_role_assignment       = !var.azdo_creates_identity
+  create_role_assignment       = !var.azdo_creates_identity && var.azure_role != null && var.azure_role != ""
   identity_object_id           = local.principal_id
   resource_id                  = local.azure_scope
   role                         = var.azure_role
+}
+
+module azure_role_assignments {
+  providers                    = {
+    azurerm                    = azurerm.target
+  }
+  source                       = "./modules/azure-access"
+  create_role_assignment       = !var.azdo_creates_identity
+  identity_object_id           = local.principal_id
+  resource_id                  = each.value.scope
+  role                         = each.value.role
+
+  for_each                     = { for ra in var.azure_role_assignments : format("%s-%s", ra.scope, ra.role) => ra }
 }
 
 module service_connection {
