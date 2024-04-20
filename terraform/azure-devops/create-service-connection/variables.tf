@@ -24,6 +24,12 @@ variable azure_role {
   nullable                     = false
 }
 
+variable azure_role_assignments {
+  default                      = []
+  nullable                     = true
+  type                         = set(object({scope=string, role=string}))
+}
+
 variable create_federation {
   description                  = "Use workload identity federation instead of a App Registration secret"
   default                      = true
