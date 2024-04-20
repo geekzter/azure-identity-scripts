@@ -85,7 +85,8 @@ module azure_access {
     azurerm                    = azurerm.target
   }
   source                       = "./modules/azure-access"
-  create_role_assignment       = !var.azdo_creates_identity && var.azure_role != null && var.azure_role != ""
+  # create_role_assignment       = !var.azdo_creates_identity
+  create_role_assignment       = true
   identity_object_id           = local.principal_id
   resource_id                  = local.azure_scope
   role                         = var.azure_role

@@ -21,7 +21,7 @@ variable azure_scope {
 
 variable azure_role {
   default                      = "Contributor"
-  nullable                     = true
+  nullable                     = false
 }
 
 variable azure_role_assignments {
