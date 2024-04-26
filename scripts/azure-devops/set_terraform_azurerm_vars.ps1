@@ -33,14 +33,10 @@ if ($env:SYSTEM_DEBUG -eq "true") {
 
 function Get-OidcRequestUrl()
 {
-    # Get Service Connection ID
-    Get-ChildItem -Path Env: -Recurse -Include ENDPOINT_DATA_* | Select-Object -First 1 -ExpandProperty Name `
-                                                               | ForEach-Object { $_.Split("_")[2] }
-                                                               | Set-Variable serviceConnectionId
-    if (!$serviceConnectionId) {
+    if (!$env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID) {
         throw "Unable to determine service connection ID"
     }
-    $oidcRequestUrl = "${env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${env:SYSTEM_TEAMPROJECTID}/_apis/distributedtask/hubs/build/plans/${env:SYSTEM_PLANID}/jobs/${env:SYSTEM_JOBID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionId}"
+    $oidcRequestUrl = "${env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${env:SYSTEM_TEAMPROJECTID}/_apis/distributedtask/hubs/build/plans/${env:SYSTEM_PLANID}/jobs/${env:SYSTEM_JOBID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
     Write-Debug "OIDC Request URL: ${oidcRequestUrl}"
     return $oidcRequestUrl
 }
