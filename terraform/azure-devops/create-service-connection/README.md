@@ -35,7 +35,11 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 
 ## Terraform Configuration
 
+<<<<<<< HEAD
 #### Providers
+=======
+## Providers
+>>>>>>> 574baada326a9e9ac04bb7b7fa43f4afde04c49d
 
 | Name | Version |
 |------|---------|
@@ -44,7 +48,11 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 | <a name="provider_random"></a> [random](#provider_random) | 3.6.0 |
 | <a name="provider_terraform"></a> [terraform](#provider_terraform) | n/a |
 
+<<<<<<< HEAD
 #### Modules
+=======
+## Modules
+>>>>>>> 574baada326a9e9ac04bb7b7fa43f4afde04c49d
 
 | Name | Source | Version |
 |------|--------|---------|
@@ -54,7 +62,11 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 | <a name="module_managed_identity"></a> [managed_identity](#module_managed_identity) | ./modules/managed-identity | n/a |
 | <a name="module_service_connection"></a> [service_connection](#module_service_connection) | ./modules/service-connection | n/a |
 
+<<<<<<< HEAD
 #### Inputs
+=======
+## Inputs
+>>>>>>> 574baada326a9e9ac04bb7b7fa43f4afde04c49d
 
 | Name | Description | Type |
 |------|-------------|------|
@@ -74,7 +86,11 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 | <a name="input_resource_suffix"></a> [resource_suffix](#input_resource_suffix) | The suffix to append to resource names created | `string` |
 | <a name="input_run_id"></a> [run_id](#input_run_id) | The ID that identifies the pipeline / workflow that invoked Terraform (used in CI/CD) | `number` |
 
+<<<<<<< HEAD
 #### Outputs
+=======
+## Outputs
+>>>>>>> 574baada326a9e9ac04bb7b7fa43f4afde04c49d
 
 | Name | Description |
 |------|-------------|
