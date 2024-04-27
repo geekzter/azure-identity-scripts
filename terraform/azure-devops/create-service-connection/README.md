@@ -22,7 +22,7 @@ Terraform employs a provider model which enable all changes to be made by a sing
 
 Terraform is a declarative tool that is capable if inferring dependencies to create resources in the correct order.
 
-![](../graph.png)
+![](graph.png)
 
 ## Provisioning
 
