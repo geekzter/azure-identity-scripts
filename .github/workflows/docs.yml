@@ -1,7 +1,6 @@
 name: Generate terraform docs
 on:
   - pull_request
-  - push
 
 jobs:
   docs:
@@ -13,7 +12,7 @@ jobs:
 
     - name: Setup Graphviz
       uses: ts-graphviz/setup-graphviz@v2
-      
+
     - name: Generate diagram
       run: | 
         terraform init
