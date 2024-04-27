@@ -23,6 +23,7 @@ Terraform employs a provider model which enable all changes to be made declarati
 
 To understand how the Terraform configuration can be created in automation, review
 [tf_create_azurerm_service_connection.ps1](../../../scripts/azure-devops/tf_create_azurerm_service_connection.ps1) and the
-[CI pipeline](azure-pipelines.yml).
+[CI pipeline](azure-pipelines.yml). See [Securing the pipeline and CI/CD workflow](https://learn.microsoft.com/azure/cloud-adoption-framework/secure/best-practices/secure-devops) for infrastructure-as-code best practices.
+
 
 ## Terraform Configuration
