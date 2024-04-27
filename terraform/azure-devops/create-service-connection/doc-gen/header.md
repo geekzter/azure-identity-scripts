@@ -19,9 +19,9 @@ Terraform employs a provider model which enable all changes to be made by a sing
 | Azure DevOps | [azuredevops](https://registry.terraform.io/providers/microsoft/azuredevops/latest/docs) | [Azure DevOps REST API](https://learn.microsoft.com/rest/api/azure/devops/serviceendpoint/endpoints) |
 | Entra ID     | [azuread](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs)     | [Microsoft Graph API](https://learn.microsoft.com/graph/use-the-api) |
 
-Terraform is a declarative tool that is capable if inferring dependencies to create resources in the correct order.
+Terraform is a declarative tool that is capable if inferring dependencies to create resources in the correct order. This is the output from `terraform graph | dot -Tpng >graph.png`:
 
-![](graph.png)
+![Terraform graph](graph.png)
 
 ## Provisioning
 

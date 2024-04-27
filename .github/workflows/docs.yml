@@ -17,3 +17,10 @@ jobs:
         output-file: README.md
         output-method: inject
         git-push: "true"
+
+    - name: Generate diagram
+      run: | 
+        terraform graph | dot -Tpng >graph.png
+        git push
+      shell: bash
+      working-directory: terraform/azure-devops/create-service-connection
