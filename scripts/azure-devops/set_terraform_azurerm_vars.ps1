@@ -38,6 +38,7 @@ function Get-OidcRequestUrl()
     }
     $apiVersion = "7.1-preview.1"
     $oidcRequestUrl = "${env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${env:SYSTEM_TEAMPROJECTID}/_apis/distributedtask/hubs/build/plans/${env:SYSTEM_PLANID}/jobs/${env:SYSTEM_JOBID}/oidctoken?api-version=${apiVersion}&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
+    # $oidcRequestUrl = "${env:SYSTEM_OIDCREQUESTURI}?api-version=${apiVersion}&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
     Write-Debug "OIDC Request URL: ${oidcRequestUrl}"
     return $oidcRequestUrl
 }
@@ -46,19 +47,19 @@ function New-OidcToken()
 {
     Write-Verbose "`nRequesting OIDC token from Azure DevOps..."
     Get-OidcRequestUrl   | Set-Variable oidcRequestUrl
-    Write-Debug "OIDC Request URL: ${oidcRequestUrl}"
     Invoke-RestMethod -Headers @{
                         Authorization  = "Bearer ${SystemAccessToken}"
                         'Content-Type' = 'application/json'
                       } `
                       -Uri "${oidcRequestUrl}" `
-                      -Method Post | Set-Variable oidcTokenResponse
+                      -Method Post `
+                      | Set-Variable oidcTokenResponse
     $oidcToken = $oidcTokenResponse.oidcToken
     if (!$oidcToken) {
-        throw "Could not get OIDC token"
+        throw "Could not get OIDC token from ${oidcRequestUrl}"
     }
     if ($oidcToken -notmatch "^ey") {
-        throw "OIDC token in unexpected format"
+        throw "OIDC token from ${oidcRequestUrl} has unexpected format"
     }
     return $oidcToken
 }
