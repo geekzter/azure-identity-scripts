@@ -1,6 +1,7 @@
 name: Generate terraform docs
 on:
   - pull_request
+  - push
 
 jobs:
   docs:
