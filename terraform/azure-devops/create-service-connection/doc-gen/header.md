@@ -1,4 +1,4 @@
-# Create governed Azure Service Connection with Terraform
+# Terraform governed Azure Service Connection
 
 Many large customers have additional requirements around the Entra ID object that a service connection creates and the permissions it is assigned.
 
