@@ -1,14 +1,14 @@
-# Terraform governed Azure Service Connection
+# Terraform managed Azure Service Connection
 
-Many large customers have additional requirements around the Entra ID object that a service connection creates and the permissions it is assigned.
+Many large customers have additional requirements around the management of the Entra ID object that a service connection creates and the permissions it is assigned to.
 
 These are a few common requirements and constraints:
 
 - Specific secret expiration and auto-rotation control
-- Custom role assignments for Azure [data plane](https://learn.microsoft.com/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations) access e.g. [Key Vault](https://learn.microsoft.com/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations), [Kusto](https://learn.microsoft.com/azure/data-explorer/kusto/access-control/role-based-access-control), [Storage](https://learn.microsoft.com/azure/storage/blobs/assign-azure-role-data-access?tabs=portal)
-- Creation of app registrations is [blocked in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications) or the use of Managed Identities is explicitly mandated for Azure access
+- Custom role assignments for Azure [data plane](https://learn.microsoft.com/azure/azure-resource-manager/management/control-plane-and-data-plane#data-plane) access e.g. [Key Vault](https://learn.microsoft.com/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations), [Kusto](https://learn.microsoft.com/azure/data-explorer/kusto/access-control/role-based-access-control), [Storage](https://learn.microsoft.com/azure/storage/blobs/assign-azure-role-data-access?tabs=portal)
+- Creation of app registrations is [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications) or the use of Managed Identities for Azure access is explicitly mandated
 - Required ITSM metadata on Entra ID app registration (IT Service Management Reference, naming convention, notes)
-- Co-owners are required to be set on Entra ID app registration
+- Co-owners are required to exist for Entra ID app registrations
 - The organization has an IT fulfillment process where identities are automatically created based on a service request
 
 Terraform employs a provider model which enable all changes to be made by a single tool and configuration:
@@ -25,7 +25,7 @@ Terraform employs a provider model which enable all changes to be made by a sing
 Terraform is a declarative tool that is capable if inferring dependencies to create resources in the correct order. This is the output from `terraform graph`:
 ![Terraform graph](graph.png)
 
-Provisioning is a matter of specifying [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#input_azdo_organization_url) below) running `terraform apply`. 
+Provisioning is a matter of specifying [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#input_azdo_organization_url) below) and running `terraform apply`. 
 
 - To understand how the Terraform configuration can be created in automation, review
 [tf_create_azurerm_service_connection.ps1](../../../scripts/azure-devops/tf_create_azurerm_service_connection.ps1) and the
