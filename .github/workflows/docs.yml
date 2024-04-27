@@ -1,0 +1,31 @@
+name: Generate terraform docs
+on:
+  - pull_request
+  - push
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+
+    - name: Setup Graphviz
+      uses: ts-graphviz/setup-graphviz@v2
+
+    - name: Generate diagram
+      run: | 
+        terraform init
+        terraform graph | dot -Tpng >graph.png
+        git push
+      shell: bash
+      working-directory: terraform/azure-devops/create-service-connection
+
+    - name: Render terraform docs and push changes back to PR
+      uses: terraform-docs/gh-actions@main
+      with:
+        working-dir: terraform/azure-devops/create-service-connection
+        output-file: README.md
+        output-method: inject
+        git-push: "true"
