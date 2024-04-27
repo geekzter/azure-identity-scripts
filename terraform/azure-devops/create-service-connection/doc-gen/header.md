@@ -22,13 +22,16 @@ Terraform employs a provider model which enable all changes to be made by a sing
 
 ## Provisioning
 
-Terraform is a declarative tool that is capable if inferring dependencies to create resources in the correct order. This is the output from `terraform graph | dot -Tpng >graph.png`:
+Terraform is a declarative tool that is capable if inferring dependencies to create resources in the correct order. This is the output from `terraform graph`:
 ![Terraform graph](graph.png)
 
-Provisioning is a matter of specifying variables (see [inputs](#input_azdo_organization_url) below) running `terraform apply`. To understand how the Terraform configuration can be created in automation, review
+Provisioning is a matter of specifying [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#input_azdo_organization_url) below) running `terraform apply`. 
+
+- To understand how the Terraform configuration can be created in automation, review
 [tf_create_azurerm_service_connection.ps1](../../../scripts/azure-devops/tf_create_azurerm_service_connection.ps1) and the
 [CI pipeline](azure-pipelines.yml).  
-For infrastructure-as-code best practices, review [Securing the pipeline and CI/CD workflow](https://learn.microsoft.com/azure/cloud-adoption-framework/secure/best-practices/secure-devops).
+- For more information on using Terraform with Azure and other Microsoft services, see [Overview of Terraform on Azure - What is Terraform?](https://learn.microsoft.com/azure/developer/terraform/overview)
+- For infrastructure-as-code best practices, review [Securing the pipeline and CI/CD workflow](https://learn.microsoft.com/azure/cloud-adoption-framework/secure/best-practices/secure-devops).
 
 
 ## Terraform Configuration
