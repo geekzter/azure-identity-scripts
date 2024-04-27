@@ -20,13 +20,12 @@ Terraform employs a provider model which enable all changes to be made by a sing
 | Azure DevOps | [azuredevops](https://registry.terraform.io/providers/microsoft/azuredevops/latest/docs) | [Azure DevOps REST API](https://learn.microsoft.com/rest/api/azure/devops/serviceendpoint/endpoints) |
 | Entra ID     | [azuread](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs)     | [Microsoft Graph API](https://learn.microsoft.com/graph/use-the-api) |
 
-Terraform is a declarative tool that is capable if inferring dependencies to create resources in the correct order.
-
-![](graph.png)
-
 ## Provisioning
 
-To understand how the Terraform configuration can be created in automation, review
+Terraform is a declarative tool that is capable if inferring dependencies to create resources in the correct order. This is the output from `terraform graph | dot -Tpng >graph.png`:
+![Terraform graph](graph.png)
+
+Provisioning is a matter of specifying variables (see [inputs](#input_azdo_organization_url) below) running `terraform apply`. To understand how the Terraform configuration can be created in automation, review
 [tf_create_azurerm_service_connection.ps1](../../../scripts/azure-devops/tf_create_azurerm_service_connection.ps1) and the
 [CI pipeline](azure-pipelines.yml).  
 For infrastructure-as-code best practices, review [Securing the pipeline and CI/CD workflow](https://learn.microsoft.com/azure/cloud-adoption-framework/secure/best-practices/secure-devops).
