@@ -11,6 +11,18 @@ These are a few common requirements and constraints:
 - Co-owners are required to be set on Entra ID app registration
 - The organization has an IT fulfillment process where identities are automatically created based on a service request
 
-With the help of Terraform [azurerm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs), [azuread](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs) and [azuredevops](https://registry.terraform.io/providers/microsoft/azuredevops/latest/docs) providers all required changes can be performed with a single configuration.
+Terraform employs a provider model which enable all changes to be made declaratively by a single tool and configuration:
+
+| Service      | Provider | API |
+|--------------|----------|-----|
+| Azure        | [azurerm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)     | [Azure Resource Manager REST API](https://learn.microsoft.com/rest/api/resources/) |
+| Azure DevOps | [azuredevops](https://registry.terraform.io/providers/microsoft/azuredevops/latest/docs) | [Azure DevOps REST API](https://learn.microsoft.com/rest/api/azure/devops/serviceendpoint/endpoints) |
+| Entra ID     | [azuread](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs)     | [Microsoft Graph API](https://learn.microsoft.com/graph/use-the-api) |
+
+## Provisioning
+
+To understand how the Terraform configuration can be created in automation, review
+[tf_create_azurerm_service_connection.ps1](../../../scripts/azure-devops/tf_create_azurerm_service_connection.ps1) and the
+[CI pipeline](azure-pipelines.yml).
 
 ## Terraform Configuration
