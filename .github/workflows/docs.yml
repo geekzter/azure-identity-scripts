@@ -21,6 +21,7 @@ jobs:
 
     - name: Generate diagram
       run: | 
+        terraform init
         terraform graph | dot -Tpng >graph.png
         git push
       shell: bash
