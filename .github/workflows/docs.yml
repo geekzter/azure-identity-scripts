@@ -35,7 +35,7 @@ jobs:
         git add README.md
         git config --local user.email ""
         git config --local user.name "GitHub Actions"
-        git commit -m "Update docs"
+        git diff-index --quiet HEAD || git commit -m "Update docs"
         git push
       shell: bash
       working-directory: terraform/azure-devops/create-service-connection
