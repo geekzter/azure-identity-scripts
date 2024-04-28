@@ -19,7 +19,8 @@ locals {
   azdo_organization_name       = split("/",var.azdo_organization_url)[3]
   azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
   azdo_project_url             = "${local.azdo_organization_url}/${urlencode(var.azdo_project_name)}"
-  azdo_service_connection_name = "${replace(data.azurerm_subscription.target.display_name,"/ +/","-")}-${var.azdo_creates_identity ? "aut" : "man"}-${var.create_managed_identity ? "msi" : "sp"}-${var.create_federation ? "oidc" : "secret"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
+  # azdo_service_connection_name = "${replace(data.azurerm_subscription.target.display_name,"/ +/","-")}-${var.azdo_creates_identity ? "aut" : "man"}-${var.create_managed_identity ? "msi" : "sp"}-${var.create_federation ? "oidc" : "secret"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
+  azdo_service_connection_name = "${replace(data.azurerm_subscription.target.display_name,"/ +/","-")}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
   azure_role_assignments       = length(var.azure_role_assignments) > 0 ? var.azure_role_assignments : [
     {
       # Default role assignment
