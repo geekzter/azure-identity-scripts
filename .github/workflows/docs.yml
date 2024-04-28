@@ -36,6 +36,7 @@ jobs:
       run: |
         git config user.name github-actions
         git config user.email github-actions@github.com
+        sudo chmod -R ugo+rwX .git
         git add graph.png
         git add README.md
         git diff-index --quiet HEAD || git commit -m "Update docs"
