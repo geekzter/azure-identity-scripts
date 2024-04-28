@@ -102,7 +102,7 @@ managed_identity_resource_group_id = "/subscriptions/00000000-0000-0000-0000-000
 
 ## Terraform Configuration
 
-Generated with [terraform-docs](https://terraform-docs.io/).
+Generated with [terraform-docs](https://terraform-docs.io/)
 
 ### Providers
 
