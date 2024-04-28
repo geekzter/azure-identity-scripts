@@ -34,6 +34,12 @@ variable create_managed_identity {
   type                         = bool
 }
 
+variable entra_app_notes {
+  default                      = null
+  description                  = "Description to put in the Entra ID app registration notes field"
+  type                         = string
+}
+
 variable entra_owner_object_ids {
   default                      = null
   description                  = "Object ids of the users that will be co-owners of the Entra ID app registration"

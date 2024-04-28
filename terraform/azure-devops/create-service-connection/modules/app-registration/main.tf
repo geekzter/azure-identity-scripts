@@ -7,7 +7,7 @@ locals {
 
 resource azuread_application app_registration {
   display_name                 = var.name
-  notes                        = var.description
+  notes                        = var.notes
   owners                       = local.owner_object_ids
   prevent_duplicate_names      = true
   service_management_reference = var.service_management_reference
@@ -16,13 +16,13 @@ resource azuread_application app_registration {
 
 resource azuread_service_principal spn {
   client_id                    = azuread_application.app_registration.client_id
-  notes                        = var.description
+  notes                        = var.notes
   owners                       = local.owner_object_ids
 }
 
 resource azuread_application_federated_identity_credential fic {
   application_id               = azuread_application.app_registration.id
-  description                  = var.description
+  description                  = var.notes
   display_name                 = replace(var.federation_subject,"/[:/ ]+/","-")
   audiences                    = ["api://AzureADTokenExchange"]
   issuer                       = var.issuer
