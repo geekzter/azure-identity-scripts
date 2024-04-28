@@ -48,7 +48,6 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_azure_access"></a> [azure_access](#module_azure_access) | ./modules/azure-access | n/a |
 | <a name="module_azure_role_assignments"></a> [azure_role_assignments](#module_azure_role_assignments) | ./modules/azure-access | n/a |
 | <a name="module_entra_app"></a> [entra_app](#module_entra_app) | ./modules/app-registration | n/a |
 | <a name="module_managed_identity"></a> [managed_identity](#module_managed_identity) | ./modules/managed-identity | n/a |
@@ -61,9 +60,7 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 | <a name="input_azdo_organization_url"></a> [azdo_organization_url](#input_azdo_organization_url) | The Azure DevOps organization URL (e.g. https://dev.azure.com/contoso) | `string` |
 | <a name="input_azdo_project_name"></a> [azdo_project_name](#input_azdo_project_name) | The Azure DevOps project name to create the service connection in | `string` |
 | <a name="input_azdo_creates_identity"></a> [azdo_creates_identity](#input_azdo_creates_identity) | Let Azure DevOps create identity for service connection | `bool` |
-| <a name="input_azure_role"></a> [azure_role](#input_azure_role) | The Azure RBAC role to assign to the service connection's identity | `string` |
-| <a name="input_azure_role_assignments"></a> [azure_role_assignments](#input_azure_role_assignments) | Additional role assignments to create for the service connection's identity | `set(object({scope=string, role=string}))` |
-| <a name="input_azure_scope"></a> [azure_scope](#input_azure_scope) | The Azure scope to assign access to | `string` |
+| <a name="input_azure_role_assignments"></a> [azure_role_assignments](#input_azure_role_assignments) | Role assignments to create for the service connection's identity. If this is empty, the Contributor role will be assigned on the azurerm provider subscription. | `set(object({scope=string, role=string}))` |
 | <a name="input_create_federation"></a> [create_federation](#input_create_federation) | Use workload identity federation instead of a App Registration secret | `bool` |
 | <a name="input_create_managed_identity"></a> [create_managed_identity](#input_create_managed_identity) | Creates a Managed Identity instead of a App Registration | `bool` |
 | <a name="input_entra_owner_object_ids"></a> [entra_owner_object_ids](#input_entra_owner_object_ids) | Object ids of the users that will be co-owners of the Entra ID app registration | `list(string)` |
@@ -82,9 +79,7 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 | <a name="output_azdo_service_connection_id"></a> [azdo_service_connection_id](#output_azdo_service_connection_id) | The Azure DevOps service connection id |
 | <a name="output_azdo_service_connection_name"></a> [azdo_service_connection_name](#output_azdo_service_connection_name) | The Azure DevOps service connection name |
 | <a name="output_azdo_service_connection_url"></a> [azdo_service_connection_url](#output_azdo_service_connection_url) | The Azure DevOps service connection portal URL |
-| <a name="output_azure_resource_group_name"></a> [azure_resource_group_name](#output_azure_resource_group_name) | The name of the resource group the service connection was granted access to |
-| <a name="output_azure_scope"></a> [azure_scope](#output_azure_scope) | The Azure scope the service connection was granted access to |
-| <a name="output_azure_scope_url"></a> [azure_scope_url](#output_azure_scope_url) | The Azure scope portal URL the service connection was granted access to |
+| <a name="output_azure_role_assignments"></a> [azure_role_assignments](#output_azure_role_assignments) | Role assignments created for the service connection's identity |
 | <a name="output_azure_subscription_id"></a> [azure_subscription_id](#output_azure_subscription_id) | The Azure subscription id the service connection was granted access to |
 | <a name="output_azure_subscription_name"></a> [azure_subscription_name](#output_azure_subscription_name) | The Azure subscription name the service connection was granted access to |
 | <a name="output_identity_application_id"></a> [identity_application_id](#output_identity_application_id) | The app/client id of the service connection's identity |
