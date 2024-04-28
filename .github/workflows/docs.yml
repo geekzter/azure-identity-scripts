@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      # with:
-      #   ref: ${{ github.event.pull_request.head.ref }}
 
     - name: Setup Graphviz
       uses: ts-graphviz/setup-graphviz@v2
@@ -22,13 +20,13 @@ jobs:
       shell: bash
       working-directory: terraform/azure-devops/create-service-connection
 
-    - name: Render terraform docs and push changes back to PR
+    - name: Render terraform docs
       uses: terraform-docs/gh-actions@main
       with:
         config-file: doc-gen/.terraform-docs.yml
         working-dir: terraform/azure-devops/create-service-connection
         output-format: markdown table
-        git-push: true
+        git-push: false
 
     - name: Commit changes
       run: |
