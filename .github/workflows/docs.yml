@@ -33,6 +33,8 @@ jobs:
       run: |
         git add graph.png
         git add README.md
+        git config --local user.email "
+        git config --local user.name "GitHub Actions"
         git commit -m "Update docs"
         git push
       shell: bash
