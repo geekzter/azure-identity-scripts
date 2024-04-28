@@ -58,10 +58,10 @@ sections:
 #
 #   {{ .Inputs }}
 
-# # see: https://terraform-docs.io/user-guide/configuration/output
-# output:
-#   file: README.md
-#   mode: inject
+# see: https://terraform-docs.io/user-guide/configuration/output
+output:
+  file: README.md
+  mode: inject
 #   template: |-
 #     <!-- BEGIN_TF_DOCS -->
 #     The template can be customized with aribitrary markdown content.

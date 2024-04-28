@@ -26,7 +26,7 @@ jobs:
       uses: terraform-docs/gh-actions@main
       with:
         working-dir: terraform/azure-devops/create-service-connection
-        output-file: README.md
+        # output-file: README.md
         output-format: markdown table
-        output-method: inject
+        # output-method: inject
         git-push: true
