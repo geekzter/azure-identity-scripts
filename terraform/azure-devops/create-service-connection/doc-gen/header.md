@@ -27,13 +27,11 @@ Terraform is a declarative tool that is capable if inferring dependencies to cre
 More information:
 
 - [Overview of Terraform on Azure - What is Terraform?](https://learn.microsoft.com/azure/developer/terraform/overview)
-- [Cloud Adoption Framework Infrastructure-as-Code CI/CD guidance](https://learn.microsoft.com/azure/cloud-adoption-framework/secure/best-practices/secure-devops)
+- [Cloud Adoption Framework Infrastructure-as-Code CI/CD security guidance](https://learn.microsoft.com/azure/cloud-adoption-framework/secure/best-practices/secure-devops)
 
 ## Provisioning
 
-Provisioning is a matter of specifying [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#input_azdo_organization_url) below) and running `terraform apply`. 
-
-To understand how the Terraform configuration can be created in automation, review
+Provisioning is a matter of specifying [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#input_azdo_organization_url) below) and running `terraform apply`. To understand how the Terraform configuration can be created in automation, review
 [tf_create_azurerm_service_connection.ps1](../../../scripts/azure-devops/tf_create_azurerm_service_connection.ps1) and the
 [CI pipeline](azure-pipelines.yml).  
 
@@ -41,18 +39,7 @@ To understand how the Terraform configuration can be created in automation, revi
 
 Terraform variable can be provided as a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
 
-#### Short-lived secret
-
-```hcl
-azdo_creates_identity          = false
-azdo_organization_url          = "https://dev.azure.com/my-organization"
-azdo_project_name              = "my-project"
-create_federation              = false
-create_managed_identity        = false
-entra_secret_expiration_days   = 0 # secret lasts 1 hours
-```
-
-#### App registration with ITSM data
+#### App registration with Federated Credential and ITSM data
 
 ```hcl
 azdo_creates_identity          = false
@@ -60,14 +47,6 @@ azure_role_assignments         = [
     {
         scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000" 
         role                   = "Contributor"
-    },
-    {
-        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg" 
-        role                   = "AcrPush"
-    },
-    {
-        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg" 
-        role                   = "Key Vault Secrets User"
     },
     {
         scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg" 
@@ -82,7 +61,24 @@ entra_owner_object_ids         = ["00000000-0000-0000-0000-000000000000","111111
 entra_service_management_reference = "11111111-1111-1111-1111-111111111111"
 ```
 
-#### Managed Identity with Federated Credentials
+#### App registration with short-lived secret
+
+```hcl
+azdo_creates_identity          = false
+azdo_organization_url          = "https://dev.azure.com/my-organization"
+azdo_project_name              = "my-project"
+azure_role_assignments         = [
+    {
+        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
+        role                   = "Reader"
+    }
+]
+create_federation              = false
+create_managed_identity        = false
+entra_secret_expiration_days   = 0 # secret lasts 1 hour
+```
+
+#### Managed Identity with Federated Credential
 
 ```hcl
 azdo_creates_identity          = false
@@ -95,15 +91,7 @@ azure_role_assignments         = [
     },
     {
         scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg" 
-        role                   = "AcrPush"
-    },
-    {
-        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg" 
         role                   = "Key Vault Secrets User"
-    },
-    {
-        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg" 
-        role                   = "Storage Blob Data Contributor"
     }
 ]
 create_federation              = true
@@ -112,3 +100,5 @@ managed_identity_resource_group_id = "/subscriptions/00000000-0000-0000-0000-000
 ```
 
 ## Terraform Configuration
+
+Generated with [terraform-docs](https://terraform-docs.io/).
