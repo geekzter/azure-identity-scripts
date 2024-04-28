@@ -41,7 +41,7 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 
 Terraform variable can be provided as a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
 
-#### Managed Identity with Federated Credential and custom RBAC
+#### Managed Identity with Federated Identity Credential and custom RBAC
 
 ```hcl
 azdo_creates_identity          = false
@@ -66,7 +66,7 @@ create_managed_identity        = true
 managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/msi-rg"
 ```
 
-#### App registration with Federated Credential and ITSM data
+#### App registration with Federated Identity Credential and ITSM data
 
 ```hcl
 azdo_creates_identity          = false
