@@ -18,7 +18,6 @@ jobs:
       run: | 
         terraform init
         terraform graph | dot -Tpng >graph.png
-        git push
       shell: bash
       working-directory: terraform/azure-devops/create-service-connection
 
@@ -27,7 +26,13 @@ jobs:
       with:
         config-file: doc-gen/.terraform-docs.yml
         working-dir: terraform/azure-devops/create-service-connection
-        # output-file: README.md
         output-format: markdown table
-        # output-method: inject
-        git-push: true
+        git-push: false
+
+    - name: Commit changes
+      run: |
+        git add graph.png
+        git add README.md
+        git commit -m "Update docs"
+        git push
+      shell: bash
