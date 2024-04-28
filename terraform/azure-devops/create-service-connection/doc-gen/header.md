@@ -60,7 +60,7 @@ azdo_project_name              = "my-project"
 create_federation              = true
 create_managed_identity        = false
 entra_app_notes                = "Service connection for business application ABC deployment to XYZ environment"
-entra_owner_object_ids         = ["00000000-0000-0000-0000-000000000000","11111111-1111-1111-1111-111111111111"]
+entra_app_owner_object_ids     = ["00000000-0000-0000-0000-000000000000","11111111-1111-1111-1111-111111111111"]
 entra_service_management_reference = "11111111-1111-1111-1111-111111111111"
 ```
 
