@@ -28,13 +28,11 @@ Terraform is a declarative tool that is capable if inferring dependencies to cre
 More information:
 
 - [Overview of Terraform on Azure - What is Terraform?](https://learn.microsoft.com/azure/developer/terraform/overview)
-- [Cloud Adoption Framework Infrastructure-as-Code CI/CD guidance](https://learn.microsoft.com/azure/cloud-adoption-framework/secure/best-practices/secure-devops)
+- [Cloud Adoption Framework Infrastructure-as-Code CI/CD security guidance](https://learn.microsoft.com/azure/cloud-adoption-framework/secure/best-practices/secure-devops)
 
 ## Provisioning
 
-Provisioning is a matter of specifying [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#input_azdo_organization_url) below) and running `terraform apply`.
-
-To understand how the Terraform configuration can be created in automation, review
+Provisioning is a matter of specifying [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#input_azdo_organization_url) below) and running `terraform apply`. To understand how the Terraform configuration can be created in automation, review
 [tf_create_azurerm_service_connection.ps1](../../../scripts/azure-devops/tf_create_azurerm_service_connection.ps1) and the
 [CI pipeline](azure-pipelines.yml).  
 
@@ -42,18 +40,7 @@ To understand how the Terraform configuration can be created in automation, revi
 
 Terraform variable can be provided as a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
 
-#### Short-lived secret
-
-```hcl
-azdo_creates_identity          = false
-azdo_organization_url          = "https://dev.azure.com/my-organization"
-azdo_project_name              = "my-project"
-create_federation              = false
-create_managed_identity        = false
-entra_secret_expiration_days   = 0 # secret lasts 1 hours
-```
-
-#### App registration with ITSM data
+#### App registration with Federated Credential and ITSM data
 
 ```hcl
 azdo_creates_identity          = false
@@ -61,14 +48,6 @@ azure_role_assignments         = [
     {
         scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000"
         role                   = "Contributor"
-    },
-    {
-        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
-        role                   = "AcrPush"
-    },
-    {
-        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
-        role                   = "Key Vault Secrets User"
     },
     {
         scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
@@ -83,7 +62,24 @@ entra_owner_object_ids         = ["00000000-0000-0000-0000-000000000000","111111
 entra_service_management_reference = "11111111-1111-1111-1111-111111111111"
 ```
 
-#### Managed Identity with Federated Credentials
+#### App registration with short-lived secret
+
+```hcl
+azdo_creates_identity          = false
+azdo_organization_url          = "https://dev.azure.com/my-organization"
+azdo_project_name              = "my-project"
+azure_role_assignments         = [
+    {
+        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
+        role                   = "Reader"
+    }
+]
+create_federation              = false
+create_managed_identity        = false
+entra_secret_expiration_days   = 0 # secret lasts 1 hour
+```
+
+#### Managed Identity with Federated Credential
 
 ```hcl
 azdo_creates_identity          = false
@@ -96,15 +92,7 @@ azure_role_assignments         = [
     },
     {
         scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
-        role                   = "AcrPush"
-    },
-    {
-        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
         role                   = "Key Vault Secrets User"
-    },
-    {
-        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
-        role                   = "Storage Blob Data Contributor"
     }
 ]
 create_federation              = true
@@ -113,6 +101,8 @@ managed_identity_resource_group_id = "/subscriptions/00000000-0000-0000-0000-000
 ```
 
 ## Terraform Configuration
+
+Generated with [terraform-docs](https://terraform-docs.io/).
 
 ## Providers
 
@@ -134,21 +124,21 @@ managed_identity_resource_group_id = "/subscriptions/00000000-0000-0000-0000-000
 
 ## Inputs
 
-| Name | Description | Type |
-|------|-------------|------|
-| <a name="input_azdo_organization_url"></a> [azdo_organization_url](#input_azdo_organization_url) | The Azure DevOps organization URL (e.g. https://dev.azure.com/contoso) | `string` |
-| <a name="input_azdo_project_name"></a> [azdo_project_name](#input_azdo_project_name) | The Azure DevOps project name to create the service connection in | `string` |
-| <a name="input_azdo_creates_identity"></a> [azdo_creates_identity](#input_azdo_creates_identity) | Let Azure DevOps create identity for service connection | `bool` |
-| <a name="input_azure_role_assignments"></a> [azure_role_assignments](#input_azure_role_assignments) | Role assignments to create for the service connection's identity. If this is empty, the Contributor role will be assigned on the azurerm provider subscription. | `set(object({scope=string, role=string}))` |
-| <a name="input_create_federation"></a> [create_federation](#input_create_federation) | Use workload identity federation instead of a App Registration secret | `bool` |
-| <a name="input_create_managed_identity"></a> [create_managed_identity](#input_create_managed_identity) | Creates a Managed Identity instead of a App Registration | `bool` |
-| <a name="input_entra_owner_object_ids"></a> [entra_owner_object_ids](#input_entra_owner_object_ids) | Object ids of the users that will be co-owners of the Entra ID app registration | `list(string)` |
-| <a name="input_entra_secret_expiration_days"></a> [entra_secret_expiration_days](#input_entra_secret_expiration_days) | Secret expiration in days | `number` |
-| <a name="input_entra_service_management_reference"></a> [entra_service_management_reference](#input_entra_service_management_reference) | IT Service Management Reference to add to the App Registration | `string` |
-| <a name="input_managed_identity_resource_group_id"></a> [managed_identity_resource_group_id](#input_managed_identity_resource_group_id) | The resource group to create the Managed Identity in | `string` |
-| <a name="input_resource_prefix"></a> [resource_prefix](#input_resource_prefix) | The prefix to put in front of resource names created | `string` |
-| <a name="input_resource_suffix"></a> [resource_suffix](#input_resource_suffix) | The suffix to append to resource names created | `string` |
-| <a name="input_run_id"></a> [run_id](#input_run_id) | The ID that identifies the pipeline / workflow that invoked Terraform (used in CI/CD) | `number` |
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_azdo_organization_url"></a> [azdo_organization_url](#input_azdo_organization_url) | The Azure DevOps organization URL (e.g. https://dev.azure.com/contoso) | `string` | n/a | yes |
+| <a name="input_azdo_project_name"></a> [azdo_project_name](#input_azdo_project_name) | The Azure DevOps project name to create the service connection in | `string` | n/a | yes |
+| <a name="input_azdo_creates_identity"></a> [azdo_creates_identity](#input_azdo_creates_identity) | Let Azure DevOps create identity for service connection | `bool` | `false` | no |
+| <a name="input_azure_role_assignments"></a> [azure_role_assignments](#input_azure_role_assignments) | Role assignments to create for the service connection's identity. If this is empty, the Contributor role will be assigned on the azurerm provider subscription. | `set(object({scope=string, role=string}))` | `[]` | no |
+| <a name="input_create_federation"></a> [create_federation](#input_create_federation) | Use workload identity federation instead of a App Registration secret | `bool` | `true` | no |
+| <a name="input_create_managed_identity"></a> [create_managed_identity](#input_create_managed_identity) | Creates a Managed Identity instead of a App Registration | `bool` | `true` | no |
+| <a name="input_entra_owner_object_ids"></a> [entra_owner_object_ids](#input_entra_owner_object_ids) | Object ids of the users that will be co-owners of the Entra ID app registration | `list(string)` | `null` | no |
+| <a name="input_entra_secret_expiration_days"></a> [entra_secret_expiration_days](#input_entra_secret_expiration_days) | Secret expiration in days | `number` | `90` | no |
+| <a name="input_entra_service_management_reference"></a> [entra_service_management_reference](#input_entra_service_management_reference) | IT Service Management Reference to add to the App Registration | `string` | `null` | no |
+| <a name="input_managed_identity_resource_group_id"></a> [managed_identity_resource_group_id](#input_managed_identity_resource_group_id) | The resource group to create the Managed Identity in | `string` | `null` | no |
+| <a name="input_resource_prefix"></a> [resource_prefix](#input_resource_prefix) | The prefix to put in front of resource names created | `string` | `"demo"` | no |
+| <a name="input_resource_suffix"></a> [resource_suffix](#input_resource_suffix) | The suffix to append to resource names created | `string` | `""` | no |
+| <a name="input_run_id"></a> [run_id](#input_run_id) | The ID that identifies the pipeline / workflow that invoked Terraform (used in CI/CD) | `number` | `null` | no |
 
 ## Outputs
 
