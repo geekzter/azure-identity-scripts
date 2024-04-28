@@ -104,7 +104,7 @@ managed_identity_resource_group_id = "/subscriptions/00000000-0000-0000-0000-000
 
 Generated with [terraform-docs](https://terraform-docs.io/).
 
-## Providers
+### Providers
 
 | Name | Version |
 |------|---------|
@@ -113,7 +113,7 @@ Generated with [terraform-docs](https://terraform-docs.io/).
 | <a name="provider_random"></a> [random](#provider_random) | 3.6.1 |
 | <a name="provider_terraform"></a> [terraform](#provider_terraform) | n/a |
 
-## Modules
+### Modules
 
 | Name | Source | Version |
 |------|--------|---------|
@@ -122,7 +122,7 @@ Generated with [terraform-docs](https://terraform-docs.io/).
 | <a name="module_managed_identity"></a> [managed_identity](#module_managed_identity) | ./modules/managed-identity | n/a |
 | <a name="module_service_connection"></a> [service_connection](#module_service_connection) | ./modules/service-connection | n/a |
 
-## Inputs
+### Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
@@ -140,7 +140,7 @@ Generated with [terraform-docs](https://terraform-docs.io/).
 | <a name="input_resource_suffix"></a> [resource_suffix](#input_resource_suffix) | The suffix to append to resource names created | `string` | `""` | no |
 | <a name="input_run_id"></a> [run_id](#input_run_id) | The ID that identifies the pipeline / workflow that invoked Terraform (used in CI/CD) | `number` | `null` | no |
 
-## Outputs
+### Outputs
 
 | Name | Description |
 |------|-------------|
