@@ -1,0 +1,30 @@
+# Rename to <name>.auto.tfvars to process automatically
+
+azdo_creates_identity          = false
+azdo_organization_url          = "https://dev.azure.com/myorg"
+azdo_project_name              = "my-organization"
+azure_role_assignments         = [
+    {
+        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000" 
+        role                   = "Contributor"
+    },
+    {
+        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg" 
+        role                   = "AcrPush"
+    },
+    {
+        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg" 
+        role                   = "Key Vault Secrets User"
+    },
+    {
+        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg" 
+        role                   = "Storage Blob Data Contributor"
+    }
+]
+create_federation              = true
+create_managed_identity        = true
+entra_owner_object_ids         = ["00000000-0000-0000-0000-000000000000","11111111-1111-1111-1111-111111111111"]
+entra_secret_expiration_days   = 0
+entra_service_management_reference = "11111111-1111-1111-1111-111111111111"
+managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/my-service-connections"
+resource_prefix                = "myalias"
