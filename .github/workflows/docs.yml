@@ -1,16 +1,16 @@
 name: Generate terraform docs
 on:
-  - pull_request
+  # - pull_request
   - push
-  - workflow_dispatch
+  # - workflow_dispatch
 
 jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event.pull_request.head.ref }}
+      # with:
+      #   ref: ${{ github.event.pull_request.head.ref }}
 
     - name: Setup Graphviz
       uses: ts-graphviz/setup-graphviz@v2
@@ -34,8 +34,8 @@ jobs:
       run: |
         git add graph.png
         git add README.md
-        git config --local user.email ""
-        git config --local user.name "GitHub Actions"
+        git config user.name github-actions
+        git config user.email github-actions@github.com
         git diff-index --quiet HEAD || git commit -m "Update docs"
         git push
       shell: bash
