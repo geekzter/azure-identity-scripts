@@ -40,7 +40,7 @@ variable entra_app_notes {
   type                         = string
 }
 
-variable entra_owner_object_ids {
+variable entra_app_owner_object_ids {
   default                      = null
   description                  = "Object ids of the users that will be co-owners of the Entra ID app registration"
   type                         = list(string)

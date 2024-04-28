@@ -84,7 +84,7 @@ module entra_app {
   issuer                       = var.create_federation ? module.service_connection.service_connection_oidc_issuer : null
   multi_tenant                 = false
   name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
-  owner_object_ids             = var.entra_owner_object_ids
+  owner_object_ids             = var.entra_app_owner_object_ids
   secret_expiration_days       = var.entra_secret_expiration_days
   service_management_reference = var.entra_service_management_reference
 
