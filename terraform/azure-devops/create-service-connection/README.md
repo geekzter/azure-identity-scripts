@@ -42,10 +42,12 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 
 Terraform variable can be provided as a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
 
-#### App registration with Federated Credential and ITSM data
+#### Managed Identity with Federated Identity Credential and custom RBAC
 
 ```hcl
 azdo_creates_identity          = false
+azdo_organization_url          = "https://dev.azure.com/my-organization"
+azdo_project_name              = "my-project"
 azure_role_assignments         = [
     {
         scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000"
@@ -54,8 +56,21 @@ azure_role_assignments         = [
     {
         scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
         role                   = "Storage Blob Data Contributor"
+    },
+    {
+        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
+        role                   = "Key Vault Secrets User"
     }
 ]
+create_federation              = true
+create_managed_identity        = true
+managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/msi-rg"
+```
+
+#### App registration with Federated Identity Credential and ITSM data
+
+```hcl
+azdo_creates_identity          = false
 azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 create_federation              = true
@@ -65,7 +80,7 @@ entra_app_owner_object_ids     = ["00000000-0000-0000-0000-000000000000","111111
 entra_service_management_reference = "11111111-1111-1111-1111-111111111111"
 ```
 
-#### App registration with short-lived secret
+#### App registration with short-lived secret and constrained RBAC
 
 ```hcl
 azdo_creates_identity          = false
@@ -80,27 +95,6 @@ azure_role_assignments         = [
 create_federation              = false
 create_managed_identity        = false
 entra_secret_expiration_days   = 0 # secret lasts 1 hour
-```
-
-#### Managed Identity with Federated Credential
-
-```hcl
-azdo_creates_identity          = false
-azdo_organization_url          = "https://dev.azure.com/my-organization"
-azdo_project_name              = "my-project"
-azure_role_assignments         = [
-    {
-        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000"
-        role                   = "Contributor"
-    },
-    {
-        scope                  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg"
-        role                   = "Key Vault Secrets User"
-    }
-]
-create_federation              = true
-create_managed_identity        = true
-managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/msi-rg"
 ```
 
 ## Terraform Configuration
