@@ -1,7 +1,7 @@
 variable create_federation {
   type   = bool
 }
-variable description {}
+variable notes {}
 variable issuer {}
 variable federation_subject {}
 # If true, the Service Principal will be created as multi-tenant

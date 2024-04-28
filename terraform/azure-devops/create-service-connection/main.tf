@@ -29,6 +29,7 @@ locals {
     }
   ]
   managed_identity_subscription_id = var.create_managed_identity ? split("/", var.managed_identity_resource_group_id)[2] : null
+  notes                        = coalesce(var.entra_app_notes,"Azure DevOps Service Connection ${local.azdo_service_connection_name}${var.entra_secret_expiration_days == 0 ? " (with short-lived secret)" : " "} in project ${local.azdo_project_url}. Managed by Terraform: https://github.com/geekzter/azure-identity-scripts/tree/main/terraform/azure-devops/create-service-connection.")
   principal_id                 = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_id : module.entra_app.0.principal_id)
   principal_name               = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_name : module.entra_app.0.principal_name)
   resource_suffix              = var.resource_suffix != null && var.resource_suffix != "" ? lower(var.resource_suffix) : random_string.suffix.result
@@ -78,12 +79,12 @@ module managed_identity {
 module entra_app {
   source                       = "./modules/app-registration"
   create_federation            = var.create_federation
-  description                  = "Azure DevOps Service Connection ${local.azdo_service_connection_name}${var.entra_secret_expiration_days == 0 ? " (with short-lived secret)" : " "} in project ${local.azdo_project_url}. Managed by Terraform: https://github.com/geekzter/azure-identity-scripts/tree/main/terraform/azure-devops/create-service-connection."
+  notes                        = local.notes
   federation_subject           = var.create_federation ? module.service_connection.service_connection_oidc_subject : null
   issuer                       = var.create_federation ? module.service_connection.service_connection_oidc_issuer : null
   multi_tenant                 = false
   name                         = "${var.resource_prefix}-azure-service-connection-${terraform.workspace}-${local.resource_suffix}"
-  owner_object_ids             = var.entra_owner_object_ids
+  owner_object_ids             = var.entra_app_owner_object_ids
   secret_expiration_days       = var.entra_secret_expiration_days
   service_management_reference = var.entra_service_management_reference
 

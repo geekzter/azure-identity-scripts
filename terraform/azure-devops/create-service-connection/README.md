@@ -60,7 +60,8 @@ azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 create_federation              = true
 create_managed_identity        = false
-entra_owner_object_ids         = ["00000000-0000-0000-0000-000000000000","11111111-1111-1111-1111-111111111111"]
+entra_app_notes                = "Service connection for business application ABC deployment to XYZ environment"
+entra_app_owner_object_ids     = ["00000000-0000-0000-0000-000000000000","11111111-1111-1111-1111-111111111111"]
 entra_service_management_reference = "11111111-1111-1111-1111-111111111111"
 ```
 
@@ -134,7 +135,8 @@ Generated with [terraform-docs](https://terraform-docs.io/).
 | <a name="input_azure_role_assignments"></a> [azure_role_assignments](#input_azure_role_assignments) | Role assignments to create for the service connection's identity. If this is empty, the Contributor role will be assigned on the azurerm provider subscription. | `set(object({scope=string, role=string}))` | `[]` | no |
 | <a name="input_create_federation"></a> [create_federation](#input_create_federation) | Use workload identity federation instead of a App Registration secret | `bool` | `true` | no |
 | <a name="input_create_managed_identity"></a> [create_managed_identity](#input_create_managed_identity) | Creates a Managed Identity instead of a App Registration | `bool` | `true` | no |
-| <a name="input_entra_owner_object_ids"></a> [entra_owner_object_ids](#input_entra_owner_object_ids) | Object ids of the users that will be co-owners of the Entra ID app registration | `list(string)` | `null` | no |
+| <a name="input_entra_app_notes"></a> [entra_app_notes](#input_entra_app_notes) | Description to put in the Entra ID app registration notes field | `string` | `null` | no |
+| <a name="input_entra_app_owner_object_ids"></a> [entra_app_owner_object_ids](#input_entra_app_owner_object_ids) | Object ids of the users that will be co-owners of the Entra ID app registration | `list(string)` | `null` | no |
 | <a name="input_entra_secret_expiration_days"></a> [entra_secret_expiration_days](#input_entra_secret_expiration_days) | Secret expiration in days | `number` | `90` | no |
 | <a name="input_entra_service_management_reference"></a> [entra_service_management_reference](#input_entra_service_management_reference) | IT Service Management Reference to add to the App Registration | `string` | `null` | no |
 | <a name="input_managed_identity_resource_group_id"></a> [managed_identity_resource_group_id](#input_managed_identity_resource_group_id) | The resource group to create the Managed Identity in | `string` | `null` | no |
@@ -153,6 +155,7 @@ Generated with [terraform-docs](https://terraform-docs.io/).
 | <a name="output_azure_role_assignments"></a> [azure_role_assignments](#output_azure_role_assignments) | Role assignments created for the service connection's identity |
 | <a name="output_azure_subscription_id"></a> [azure_subscription_id](#output_azure_subscription_id) | The Azure subscription id the service connection was granted access to |
 | <a name="output_azure_subscription_name"></a> [azure_subscription_name](#output_azure_subscription_name) | The Azure subscription name the service connection was granted access to |
+| <a name="output_entra_app_notes"></a> [entra_app_notes](#output_entra_app_notes) | Description provided in the app registration notes field |
 | <a name="output_identity_application_id"></a> [identity_application_id](#output_identity_application_id) | The app/client id of the service connection's identity |
 | <a name="output_identity_application_name"></a> [identity_application_name](#output_identity_application_name) | The name of the service connection's identity |
 | <a name="output_identity_federation_subject"></a> [identity_federation_subject](#output_identity_federation_subject) | The federation subject |

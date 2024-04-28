@@ -27,6 +27,11 @@ output azure_subscription_name {
   value       = data.azurerm_subscription.target.display_name
 }
 
+output entra_app_notes {
+  description = "Description provided in the app registration notes field"
+  value       = var.azdo_creates_identity || var.create_managed_identity ? null : local.notes
+}
+
 output identity_application_id {
   description = "The app/client id of the service connection's identity"
   value       = local.application_id
