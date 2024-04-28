@@ -28,7 +28,7 @@ jobs:
         config-file: doc-gen/.terraform-docs.yml
         working-dir: terraform/azure-devops/create-service-connection
         output-format: markdown table
-        git-push: false
+        git-push: true
 
     - name: Commit changes
       run: |
