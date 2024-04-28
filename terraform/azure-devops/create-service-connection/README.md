@@ -1,6 +1,8 @@
 <!-- BEGIN_TF_DOCS -->
 # Terraform-managed Azure Service Connection
 
+[![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fcreate-service-connection?branchName=main&label=terraform-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=5&branchName=main)
+
 Many large customers have additional requirements around the management of the Entra ID object that a service connection creates and the permissions it is assigned to.
 
 These are a few common requirements and constraints:
@@ -97,12 +99,12 @@ azure_role_assignments         = [
 ]
 create_federation              = true
 create_managed_identity        = true
-managed_identity_resource_group_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-msi-rg"
+managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/msi-rg"
 ```
 
 ## Terraform Configuration
 
-Generated with [terraform-docs](https://terraform-docs.io/)
+Generated with [terraform-docs](https://terraform-docs.io/).
 
 ### Providers
 
