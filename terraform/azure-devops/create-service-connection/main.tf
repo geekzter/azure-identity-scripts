@@ -1,4 +1,8 @@
 data azurerm_client_config current {}
+data azurerm_subscription current {}
+data azurerm_subscription target {
+  subscription_id              = split("/",tolist(local.azure_role_assignments)[0].scope)[2]
+}
 
 # Random resource suffix, this will prevent name collisions when creating resources in parallel
 resource random_string suffix {
@@ -15,8 +19,16 @@ locals {
   azdo_organization_name       = split("/",var.azdo_organization_url)[3]
   azdo_organization_url        = replace(var.azdo_organization_url,"/\\/$/","")
   azdo_project_url             = "${local.azdo_organization_url}/${urlencode(var.azdo_project_name)}"
-  azdo_service_connection_name = "${replace(module.azure_access.subscription_name,"/ +/","-")}-${var.azdo_creates_identity ? "aut" : "man"}-${var.create_managed_identity ? "msi" : "sp"}-${var.create_federation ? "oidc" : "secret"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
-  azure_scope                  = var.azure_scope != null && var.azure_scope != "" ? var.azure_scope : "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
+  # azdo_service_connection_name = "${replace(data.azurerm_subscription.target.display_name,"/ +/","-")}-${var.azdo_creates_identity ? "aut" : "man"}-${var.create_managed_identity ? "msi" : "sp"}-${var.create_federation ? "oidc" : "secret"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
+  azdo_service_connection_name = "${replace(data.azurerm_subscription.target.display_name,"/ +/","-")}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
+  azure_role_assignments       = length(var.azure_role_assignments) > 0 ? var.azure_role_assignments : [
+    {
+      # Default role assignment
+      role                     = "Contributor"
+      scope                    = data.azurerm_subscription.current.id
+    }
+  ]
+  managed_identity_subscription_id = var.create_managed_identity ? split("/", var.managed_identity_resource_group_id)[2] : null
   principal_id                 = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_id : module.entra_app.0.principal_id)
   principal_name               = var.azdo_creates_identity ? null : (var.create_managed_identity ? module.managed_identity.0.principal_name : module.entra_app.0.principal_name)
   resource_suffix              = var.resource_suffix != null && var.resource_suffix != "" ? lower(var.resource_suffix) : random_string.suffix.result
@@ -30,8 +42,6 @@ locals {
     runId                      = var.run_id
     workspace                  = terraform.workspace
   }
-  managed_identity_subscription_id = var.create_managed_identity ? split("/", var.managed_identity_resource_group_id)[2] : null
-  target_subscription_id       = split("/", local.azure_scope)[2]
 }
 
 resource terraform_data managed_identity_validator {
@@ -80,18 +90,6 @@ module entra_app {
   count                        = var.create_managed_identity || var.azdo_creates_identity ? 0 : 1
 }
 
-module azure_access {
-  providers                    = {
-    azurerm                    = azurerm.target
-  }
-  source                       = "./modules/azure-access"
-  # create_role_assignment       = !var.azdo_creates_identity
-  create_role_assignment       = true
-  identity_object_id           = local.principal_id
-  resource_id                  = local.azure_scope
-  role                         = var.azure_role
-}
-
 module azure_role_assignments {
   providers                    = {
     azurerm                    = azurerm.target
@@ -102,7 +100,7 @@ module azure_role_assignments {
   resource_id                  = each.value.scope
   role                         = each.value.role
 
-  for_each                     = { for ra in var.azure_role_assignments : format("%s-%s", ra.scope, ra.role) => ra }
+  for_each                     = { for ra in local.azure_role_assignments : format("%s-%s", ra.scope, ra.role) => ra }
 }
 
 module service_connection {
@@ -114,6 +112,6 @@ module service_connection {
   project_name                 = var.azdo_project_name
   tenant_id                    = data.azurerm_client_config.current.tenant_id
   service_connection_name      = local.azdo_service_connection_name
-  subscription_id              = local.target_subscription_id
-  subscription_name            = module.azure_access.subscription_name
+  subscription_id              = data.azurerm_subscription.target.subscription_id
+  subscription_name            = data.azurerm_subscription.target.display_name
 }

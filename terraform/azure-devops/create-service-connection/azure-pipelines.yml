@@ -19,7 +19,7 @@ parameters:
 - name: concurrency
   displayName: Concurrency
   type: number
-  default: 2
+  default: 1
 - name: testServiceConnection
   displayName: Test Service Connection(s)
   type: boolean

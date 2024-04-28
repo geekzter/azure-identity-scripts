@@ -58,10 +58,10 @@ sections:
 #
 #   {{ .Inputs }}
 
-# # see: https://terraform-docs.io/user-guide/configuration/output
-# output:
-#   file: README.md
-#   mode: inject
+# see: https://terraform-docs.io/user-guide/configuration/output
+output:
+  file: README.md
+  mode: inject
 #   template: |-
 #     <!-- BEGIN_TF_DOCS -->
 #     The template can be customized with aribitrary markdown content.
@@ -85,8 +85,10 @@ sort:
 
 # see: https://terraform-docs.io/user-guide/configuration/settings
 settings:
-  indent: 4
+  indent: 3
   escape: false
-  default: false
-  required: false
+  default: true
+  lockfile: true
+  required: true
+  sensitive: true
   type: true

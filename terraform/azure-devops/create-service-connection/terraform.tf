@@ -53,5 +53,5 @@ provider azurerm {
       prevent_deletion_if_contains_resources = false
     }
   }
-  subscription_id              = local.target_subscription_id
+  subscription_id              = data.azurerm_subscription.target.subscription_id
 }
