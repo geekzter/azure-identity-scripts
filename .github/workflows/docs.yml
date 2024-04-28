@@ -25,6 +25,7 @@ jobs:
     - name: Render terraform docs and push changes back to PR
       uses: terraform-docs/gh-actions@main
       with:
+        config-file: doc-gen/.terraform-docs.yml
         working-dir: terraform/azure-devops/create-service-connection
         # output-file: README.md
         output-format: markdown table
