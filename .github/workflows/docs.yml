@@ -1,7 +1,7 @@
 name: Generate terraform docs
 on:
-  - pull_request
-  # - push
+  # - pull_request
+  - push
   # - workflow_dispatch
 
 jobs:
@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event.pull_request.head.ref }} 
+      # with:
+      #   ref: ${{ github.event.pull_request.head.ref }} 
 
     - name: Setup Graphviz
       uses: ts-graphviz/setup-graphviz@v2
@@ -33,7 +33,6 @@ jobs:
         git-push: false
 
     - name: Fix .git permissions
-      # Fix "error: insufficient permission for adding an object to repository database .git/objects"
       run: sudo chmod -R ugo+rwX .git
     
     - name: Commit changes
