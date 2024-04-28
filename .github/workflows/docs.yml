@@ -27,5 +27,6 @@ jobs:
       with:
         working-dir: terraform/azure-devops/create-service-connection
         output-file: README.md
+        output-format: markdown table
         output-method: inject
-        git-push: "true"
+        git-push: true
