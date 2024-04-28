@@ -67,7 +67,7 @@ create_managed_identity        = true
 managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/msi-rg"
 ```
 
-#### App registration with Federated Identity Credential and ITSM data
+#### App registration with Federated Identity Credential and ITSM information
 
 ```hcl
 azdo_creates_identity          = false
