@@ -14,25 +14,17 @@ output azdo_service_connection_url {
   description = "The Azure DevOps service connection portal URL"
   value       = module.service_connection.service_connection_url
 }
-output azure_resource_group_name {
-  description = "The name of the resource group the service connection was granted access to"
-  value       = try(split("/", local.azure_scope)[4],null)
-}
-output azure_scope {
-  description = "The Azure scope the service connection was granted access to"
-  value       = local.azure_scope
-}
-output azure_scope_url {
-  description = "The Azure scope portal URL the service connection was granted access to"
-  value       = module.azure_access.resource_url
+output azure_role_assignments {
+  description = "Role assignments created for the service connection's identity"
+  value       = local.azure_role_assignments
 }
 output azure_subscription_id {
   description = "The Azure subscription id the service connection was granted access to"
-  value       = local.target_subscription_id
+  value       = data.azurerm_subscription.target.subscription_id
 }
 output azure_subscription_name {
   description = "The Azure subscription name the service connection was granted access to"
-  value       = module.azure_access.subscription_name
+  value       = data.azurerm_subscription.target.display_name
 }
 
 output identity_application_id {

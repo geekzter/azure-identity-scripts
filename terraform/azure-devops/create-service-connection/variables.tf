@@ -15,23 +15,10 @@ variable azdo_project_name {
   type                         = string
 }
 
-variable azure_scope {
-  default                      = null
-  description                  = "The Azure scope to assign access to"
-  type                         = string
-}
-
-variable azure_role {
-  default                      = "Contributor"
-  description                  = "The Azure RBAC role to assign to the service connection's identity"
-  nullable                     = false
-  type                         = string
-}
-
 variable azure_role_assignments {
   default                      = []
-  description                  = "Additional role assignments to create for the service connection's identity"
-  nullable                     = true
+  description                  = "Role assignments to create for the service connection's identity. If this is empty, the Contributor role will be assigned on the azurerm provider subscription."
+  nullable                     = false
   type                         = set(object({scope=string, role=string}))
 }
 
