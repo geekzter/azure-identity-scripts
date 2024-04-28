@@ -41,7 +41,7 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 
 Terraform variable can be provided as a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
 
-#### Managed Identity with Federated Credential and custom Azure RBAC
+#### Managed Identity with Federated Credential and custom RBAC
 
 ```hcl
 azdo_creates_identity          = false
@@ -79,7 +79,7 @@ entra_app_owner_object_ids     = ["00000000-0000-0000-0000-000000000000","111111
 entra_service_management_reference = "11111111-1111-1111-1111-111111111111"
 ```
 
-#### App registration with short-lived secret
+#### App registration with short-lived secret and constrained RBAC
 
 ```hcl
 azdo_creates_identity          = false
