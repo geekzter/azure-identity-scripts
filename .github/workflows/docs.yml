@@ -36,7 +36,8 @@ jobs:
         git config user.email github-actions@github.com
         git add graph.png
         git add README.md
-        git diff-index --quiet HEAD || git commit -m "Update docs"
-        git push
+        # git diff-index --quiet HEAD || git commit -m "Update docs"
+        # git push
+        git diff-index --quiet HEAD || (git add -A && git commit -m'[bot] update files' --allow-empty && git push -f)
       shell: bash
       working-directory: terraform/azure-devops/create-service-connection
