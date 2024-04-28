@@ -36,3 +36,4 @@ jobs:
         git commit -m "Update docs"
         git push
       shell: bash
+      working-directory: terraform/azure-devops/create-service-connection
