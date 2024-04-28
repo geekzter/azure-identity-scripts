@@ -100,7 +100,7 @@ module azure_role_assignments {
   resource_id                  = each.value.scope
   role                         = each.value.role
 
-  for_each                     = { for ra in var.azure_role_assignments : format("%s-%s", ra.scope, ra.role) => ra }
+  for_each                     = { for ra in local.azure_role_assignments : format("%s-%s", ra.scope, ra.role) => ra }
 }
 
 module service_connection {
