@@ -31,7 +31,7 @@ HCL, the language used, is declarative and the tool is capable if inferring depe
 More information:
 
 - [Overview of Terraform on Azure - What is Terraform?](https://learn.microsoft.com/azure/developer/terraform/overview)
-- [Cloud Adoption Framework Infrastructure-as-Code CI/CD security guidance](https://learn.microsoft.com/azure/cloud-adoption-framework/secure/best-practices/secure-devops)
+- [Cloud Adoption Framework - Infrastructure-as-Code CI/CD security guidance](https://learn.microsoft.com/azure/cloud-adoption-framework/secure/best-practices/secure-devops)
 
 ## Provisioning
 
