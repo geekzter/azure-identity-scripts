@@ -31,22 +31,10 @@ if ($env:SYSTEM_DEBUG -eq "true") {
     Get-ChildItem -Path Env: -Force -Recurse -Include * -Exclude *TOKEN | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
 }
 
-function Get-OidcRequestUrl()
-{
-    if (!$env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID) {
-        throw "Unable to determine service connection ID"
-    }
-    $apiVersion = "7.1-preview.1"
-    # $oidcRequestUrl = "${env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${env:SYSTEM_TEAMPROJECTID}/_apis/distributedtask/hubs/build/plans/${env:SYSTEM_PLANID}/jobs/${env:SYSTEM_JOBID}/oidctoken?api-version=${apiVersion}&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
-    $oidcRequestUrl = "${env:SYSTEM_OIDCREQUESTURI}?api-version=${apiVersion}&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
-    Write-Debug "OIDC Request URL: ${oidcRequestUrl}"
-    return $oidcRequestUrl
-}
-
 function New-OidcToken()
 {
     Write-Verbose "`nRequesting OIDC token from Azure DevOps..."
-    Get-OidcRequestUrl   | Set-Variable oidcRequestUrl
+    $oidcRequestUrl = "${env:SYSTEM_OIDCREQUESTURI}?api-version=${apiVersion}&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
     Invoke-RestMethod -Headers @{
                         Authorization  = "Bearer ${SystemAccessToken}"
                         'Content-Type' = 'application/json'
