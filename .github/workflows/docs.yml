@@ -1,6 +1,8 @@
 name: Generate terraform docs
 on:
+  - pull_request
   - push
+  - workflow_dispatch
 
 jobs:
   docs:
