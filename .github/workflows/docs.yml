@@ -1,8 +1,6 @@
 name: Generate terraform docs
 on:
-  # - pull_request
   - push
-  # - workflow_dispatch
 
 jobs:
   docs:
@@ -11,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      # with:
-      #   ref: ${{ github.event.pull_request.head.ref }} 
 
     - name: Setup Graphviz
       uses: ts-graphviz/setup-graphviz@v2
