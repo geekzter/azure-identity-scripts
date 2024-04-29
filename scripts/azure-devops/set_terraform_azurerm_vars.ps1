@@ -31,37 +31,23 @@ if ($env:SYSTEM_DEBUG -eq "true") {
     Get-ChildItem -Path Env: -Force -Recurse -Include * -Exclude *TOKEN | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
 }
 
-function Get-OidcRequestUrl()
-{
-    # Get Service Connection ID
-    Get-ChildItem -Path Env: -Recurse -Include ENDPOINT_DATA_* | Select-Object -First 1 -ExpandProperty Name `
-                                                               | ForEach-Object { $_.Split("_")[2] }
-                                                               | Set-Variable serviceConnectionId
-    if (!$serviceConnectionId) {
-        throw "Unable to determine service connection ID"
-    }
-    $oidcRequestUrl = "${env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${env:SYSTEM_TEAMPROJECTID}/_apis/distributedtask/hubs/build/plans/${env:SYSTEM_PLANID}/jobs/${env:SYSTEM_JOBID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionId}"
-    Write-Debug "OIDC Request URL: ${oidcRequestUrl}"
-    return $oidcRequestUrl
-}
-
 function New-OidcToken()
 {
     Write-Verbose "`nRequesting OIDC token from Azure DevOps..."
-    Get-OidcRequestUrl   | Set-Variable oidcRequestUrl
-    Write-Debug "OIDC Request URL: ${oidcRequestUrl}"
+    $oidcRequestUrl = "${env:SYSTEM_OIDCREQUESTURI}?api-version=7.1&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
     Invoke-RestMethod -Headers @{
                         Authorization  = "Bearer ${SystemAccessToken}"
                         'Content-Type' = 'application/json'
                       } `
                       -Uri "${oidcRequestUrl}" `
-                      -Method Post | Set-Variable oidcTokenResponse
+                      -Method Post `
+                      | Set-Variable oidcTokenResponse
     $oidcToken = $oidcTokenResponse.oidcToken
     if (!$oidcToken) {
-        throw "Could not get OIDC token"
+        throw "Could not get OIDC token from ${oidcRequestUrl}"
     }
     if ($oidcToken -notmatch "^ey") {
-        throw "OIDC token in unexpected format"
+        throw "OIDC token from ${oidcRequestUrl} has unexpected format"
     }
     return $oidcToken
 }
