@@ -34,7 +34,7 @@ if ($env:SYSTEM_DEBUG -eq "true") {
 function New-OidcToken()
 {
     Write-Verbose "`nRequesting OIDC token from Azure DevOps..."
-    $oidcRequestUrl = "${env:SYSTEM_OIDCREQUESTURI}?api-version=${apiVersion}&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
+    $oidcRequestUrl = "${env:SYSTEM_OIDCREQUESTURI}?api-version=7.1-preview.1&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
     Invoke-RestMethod -Headers @{
                         Authorization  = "Bearer ${SystemAccessToken}"
                         'Content-Type' = 'application/json'
