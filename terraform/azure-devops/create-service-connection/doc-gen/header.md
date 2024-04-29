@@ -2,20 +2,21 @@
 
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fcreate-service-connection?branchName=main&label=terraform-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=5&branchName=main)
 
-Many large customers have additional requirements around the management of the Entra ID object that a service connection creates and the permissions it is assigned to.
+Many Enterprise customers have requirements around the management of Entra [workload identities](https://learn.microsoft.com/entra/workload-id/workload-identities-overview) (applications, service principals, managed identities) and the permissions they are assigned to.
 
 These are a few common requirements and constraints:
 
 - Specific secret expiration and auto-rotation control
 - Custom role assignments for Azure [data plane](https://learn.microsoft.com/azure/azure-resource-manager/management/control-plane-and-data-plane#data-plane) access e.g. [Key Vault](https://learn.microsoft.com/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations), [Kusto](https://learn.microsoft.com/azure/data-explorer/kusto/access-control/role-based-access-control), [Storage](https://learn.microsoft.com/azure/storage/blobs/assign-azure-role-data-access?tabs=portal)
-- Creation of app registrations is [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications) or the use of Managed Identities for Azure access is explicitly mandated
-- Required ITSM metadata on Entra ID app registration (IT Service Management Reference, naming convention, notes)
-- Co-owners are required to exist for Entra ID app registrations
-- The organization has an IT fulfillment process where identities are automatically created based on a service request
+- Creation of app registrations is [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications) and/or
+the use of Managed Identities for Azure access is mandated
+- ITSM metadata is required on Entra ID objects (service nanagement reference, naming convention, notes)
+- Co-owners are required to exist for Entra ID apps
+- An IT fulfillment process exists where identities are automatically provisioned based on a service request
 
 ## Why Terraform?
 
-Terraform employs a provider model which enable all changes to be made by a single tool and configuration:
+Terraform employs a provider model which enables all changes to be made by a single tool and configuration:
 
 | Service      | Provider | API |
 |--------------|----------|-----|
@@ -23,7 +24,7 @@ Terraform employs a provider model which enable all changes to be made by a sing
 | Azure DevOps | [azuredevops](https://registry.terraform.io/providers/microsoft/azuredevops/latest/docs) | [Azure DevOps REST API](https://learn.microsoft.com/rest/api/azure/devops/serviceendpoint/endpoints) |
 | Entra ID     | [azuread](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs)     | [Microsoft Graph API](https://learn.microsoft.com/graph/use-the-api) |
 
-Terraform is a declarative tool that is capable if inferring dependencies to create resources in the correct order. This is the output from `terraform graph`:
+HCL, the language used, is declarative and the tool is capable if inferring dependencies to create resources in order. This is the output from `terraform graph`:
 ![Terraform graph](graph.png)
 
 More information:
@@ -40,6 +41,13 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 ### Examples
 
 Terraform variable can be provided as a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
+
+#### Default configuration
+
+```hcl
+azdo_organization_url          = "https://dev.azure.com/my-organization"
+azdo_project_name              = "my-project"
+```
 
 #### Managed Identity with Federated Identity Credential and custom RBAC
 
@@ -66,7 +74,7 @@ create_managed_identity        = true
 managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/msi-rg"
 ```
 
-#### App registration with Federated Identity Credential and ITSM information
+#### App registration with Federated Identity Credential and ITSM metadata
 
 ```hcl
 azdo_creates_identity          = false
@@ -98,4 +106,5 @@ entra_secret_expiration_days   = 0 # secret lasts 1 hour
 
 ## Terraform Configuration
 
+The (required) variables and output is listed below.
 Generated with [terraform-docs](https://terraform-docs.io/).
