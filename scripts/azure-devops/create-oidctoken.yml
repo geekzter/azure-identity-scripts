@@ -124,18 +124,7 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        Get-ChildItem -Path Env: -Recurse -Include ENDPOINT_DATA_* | Select-Object -First 1 -ExpandProperty Name `
-                                                                   | ForEach-Object { $_.Split("_")[2] }
-                                                                   | Set-Variable serviceConnectionId
-
-        "{0}{1}/_apis/distributedtask/hubs/build/plans/{2}/jobs/{3}/oidctoken?api-version={4}&serviceConnectionId={5}" -f `
-          "$(System.TeamFoundationCollectionUri)", `
-          "$(System.TeamProjectId)", `
-          "$(System.PlanId)", `
-          "$(System.JobId)", `
-          "7.1-preview.1", `
-          "${serviceConnectionId}" ` 
-          | Set-Variable oidcTokenUrl
+        $oidcTokenUrl = "${env:SYSTEM_OIDCREQUESTURI}?api-version=7.1&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
         Write-Host "oidcTokenUrl: $oidcTokenUrl"
         
         Invoke-RestMethod -Headers @{
