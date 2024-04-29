@@ -7,12 +7,12 @@ Many Enterprise customers have requirements around the management of Entra [work
 
 These are a few common requirements and constraints:
 
-- Specific secret expiration and auto-rotation control
-- Custom role assignments for Azure [data plane](https://learn.microsoft.com/azure/azure-resource-manager/management/control-plane-and-data-plane#data-plane) access e.g. [Key Vault](https://learn.microsoft.com/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations), [Kusto](https://learn.microsoft.com/azure/data-explorer/kusto/access-control/role-based-access-control), [Storage](https://learn.microsoft.com/azure/storage/blobs/assign-azure-role-data-access?tabs=portal)
 - Creation of app registrations is [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications) and/or
 the use of Managed Identities for Azure access is mandated
+- Specific secret expiration and auto-rotation control
 - ITSM metadata is required on Entra ID objects (service nanagement reference, naming convention, notes)
 - Co-owners are required to exist for Entra ID apps
+- Custom role assignments are needed for Azure [data plane](https://learn.microsoft.com/azure/azure-resource-manager/management/control-plane-and-data-plane#data-plane) access e.g. [Key Vault](https://learn.microsoft.com/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations), [Kusto](https://learn.microsoft.com/azure/data-explorer/kusto/access-control/role-based-access-control), [Storage](https://learn.microsoft.com/azure/storage/blobs/assign-azure-role-data-access?tabs=portal)
 - An IT fulfillment process exists where identities are automatically provisioned based on a service request
 
 ## Why Terraform?
