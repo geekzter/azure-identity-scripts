@@ -131,6 +131,7 @@ provider "registry.terraform.io/microsoft/azuredevops" {
   version     = "1.0.1"
   constraints = "~> 1.0"
   hashes = [
+    "h1:OTA/5avCCQ5R//WluD842eefukbguri93T8Ayuqwifo=",
     "h1:iayI7dj5PuVQjkOVFEnuM57fLTH8A0PKSba0xnvpW3Y=",
     "zh:07d6181e3d929255783af56c2a8f84abaf265130a3cf4f7804dbc628c86fce30",
     "zh:0fac4d4c1b5a76c4d77cd4ee8d7e83bc90ead887986c4d3de55fc4a1840331b0",
