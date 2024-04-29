@@ -13,6 +13,7 @@ the use of Managed Identities for Azure access is mandated
 - ITSM metadata is required on Entra ID objects (service nanagement reference, naming convention, notes)
 - Co-owners are required to exist for Entra ID apps
 - Custom role assignments are needed for Azure [data plane](https://learn.microsoft.com/azure/azure-resource-manager/management/control-plane-and-data-plane#data-plane) access e.g. [Key Vault](https://learn.microsoft.com/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations), [Kusto](https://learn.microsoft.com/azure/data-explorer/kusto/access-control/role-based-access-control), [Storage](https://learn.microsoft.com/azure/storage/blobs/assign-azure-role-data-access?tabs=portal)
+- Access needs to be granted to multiple Azure subscriptions that are not part of the same management group
 - An IT fulfillment process exists where identities are automatically provisioned based on a service request
 
 ## Why Terraform?
@@ -25,7 +26,7 @@ Terraform employs a provider model which enables all changes to be made by a sin
 | Azure DevOps | [azuredevops](https://registry.terraform.io/providers/microsoft/azuredevops/latest/docs) | [Azure DevOps REST API](https://learn.microsoft.com/rest/api/azure/devops/serviceendpoint/endpoints) |
 | Entra ID     | [azuread](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs)     | [Microsoft Graph API](https://learn.microsoft.com/graph/use-the-api) |
 
-HCL, the language used, is declarative and the tool is capable if inferring dependencies to create resources in order. This is the output from `terraform graph`:
+[HCL](https://developer.hashicorp.com/terraform/language#about-the-terraform-language), the language used, is declarative and the tool is capable if inferring dependencies to create resources in order. This is the output from `terraform graph`:
 ![Terraform graph](graph.png)
 
 More information:
@@ -107,7 +108,7 @@ entra_secret_expiration_days   = 0 # secret lasts 1 hour
 
 ## Terraform Configuration
 
-The (required) variables and output is listed below.
+The (required) variables and output is listed below. Sensitive outputs are masked by default.
 Generated with [terraform-docs](https://terraform-docs.io/).
 
 ### Providers
