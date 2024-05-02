@@ -105,7 +105,7 @@ This creates a Managed Identity with Federated Identity Credential and custom Az
 azdo_creates_identity          = false
 azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
-azure_role_assignments         = []
+azure_role_assignments         = [] # No direct assignments
 create_federation              = true
 create_managed_identity        = true
 entra_security_group_names     = ["my-security-group"]
@@ -158,6 +158,7 @@ create_federation              = false
 create_managed_identity        = false
 entra_secret_expiration_days   = 0 # secret lasts 1 hour
 ```
+
 Pre-requisites:
 
 - The user can create app registrations i.e.:
