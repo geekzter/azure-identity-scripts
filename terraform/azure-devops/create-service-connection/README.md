@@ -3,11 +3,11 @@
 
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fcreate-service-connection?branchName=main&label=terraform-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=5&branchName=main)
 
-Azure DevOps uses service connections to connect to services that are targets for cloud infrastructure provisioning and application deployment. The most commonly used service connection is the Azure Resource [Manager service connection](https://learn.microsoft.com/azure/devops/pipelines/library/connect-to-azure?view=azure-devops). This creates an object in Azure DevOps, an identity in Entra ID and a role assignment in Azure.
+Azure DevOps uses service connections to connect to services that are targets for cloud infrastructure provisioning and application deployment. The most commonly used service connection is the [Azure Resource Manager service connection](https://learn.microsoft.com/azure/devops/pipelines/library/connect-to-azure?view=azure-devops). This creates an object in Azure DevOps, an identity in Entra ID and a role assignment in Azure.
 
 Many Enterprise customers have requirements around the management of Entra [workload identities](https://learn.microsoft.com/entra/workload-id/workload-identities-overview) (applications, service principals, managed identities) as well as the permissions they are assigned to.
 
-These are a few common requirements and constraints:
+Here are a few common requirements and constraints:
 
 - Creation of app registrations is [disabled in the Entra ID tenant](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications) and/or
 the use of Managed Identities for Azure access is mandated
@@ -97,7 +97,7 @@ Pre-requisites:
 
 #### App registration with FIC and ITSM metadata
 
-This creates an Entra ID app registration with IT service reference and notes fields populated as well as a co-owners specified:
+This creates an Entra ID app registration with IT service reference and notes fields populated as well as specifying co-owners:
 
 ```hcl
 azdo_creates_identity          = false
