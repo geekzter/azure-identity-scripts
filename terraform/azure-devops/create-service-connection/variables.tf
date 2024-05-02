@@ -30,7 +30,7 @@ variable create_federation {
 
 variable create_managed_identity {
   description                  = "Creates a Managed Identity instead of a App Registration"
-  default                      = true
+  default                      = false
   type                         = bool
 }
 
