@@ -47,8 +47,9 @@ variable entra_app_owner_object_ids {
 }
 
 variable entra_security_group_names {
-  default                      = null
+  default                      = []
   description                  = "Names of the security groups to add the service connection identity to"
+  nullable                     = false
   type                         = list(string)
 }
 
