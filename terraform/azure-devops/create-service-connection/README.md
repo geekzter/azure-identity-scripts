@@ -14,6 +14,7 @@ the use of Managed Identities for Azure access is mandated
 - Specific secret expiration and auto-rotation control
 - ITSM metadata is required on Entra ID objects (service nanagement reference, naming convention, notes)
 - Co-owners are required to exist for Entra ID apps
+- Access is managed through Entra ID group membership
 - Custom role assignments are needed for Azure [data plane](https://learn.microsoft.com/azure/azure-resource-manager/management/control-plane-and-data-plane#data-plane) access e.g. [Key Vault](https://learn.microsoft.com/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations), [Kusto](https://learn.microsoft.com/azure/data-explorer/kusto/access-control/role-based-access-control), [Storage](https://learn.microsoft.com/azure/storage/blobs/assign-azure-role-data-access?tabs=portal)
 - Access needs to be granted to multiple Azure subscriptions that are not part of the same management group
 - An IT fulfillment process exists where identities are automatically provisioned based on a service request
@@ -38,13 +39,14 @@ More information:
 
 ## Provisioning
 
-Provisioning is a matter of specifying Terraform [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#inputs) below) and running `terraform apply`. To understand how the Terraform configuration can be created in automation, review
+Provisioning is a matter of specifying Terraform [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#inputs) below) and running `terraform apply`. To set variables, you can create a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
+To understand how the Terraform configuration can be created in automation, review
 [tf_create_azurerm_service_connection.ps1](../../../scripts/azure-devops/tf_create_azurerm_service_connection.ps1) and the
 [CI pipeline](azure-pipelines.yml).  
 
 ### Examples
 
-Terraform variable can be provided as a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
+Below are common configurations. You can mix & match to create your own.
 
 #### Default configuration
 
@@ -95,6 +97,26 @@ Pre-requisites:
 - A resource group to hold the Managed Identity has been pre-created
 - The user is an owner of the Azure scopes to create role assignments on
 
+#### Managed Identity assigned to Entra ID security group
+
+This creates a Managed Identity with Federated Identity Credential and custom Azure RBAC (role-based access control) role assignments:
+
+```hcl
+azdo_creates_identity          = false
+azdo_organization_url          = "https://dev.azure.com/my-organization"
+azdo_project_name              = "my-project"
+azure_role_assignments         = [] # No direct assignments
+create_federation              = true
+create_managed_identity        = true
+entra_security_group_names     = ["my-security-group"]
+managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/msi-rg"
+```
+
+Pre-requisites:
+
+- A resource group to hold the Managed Identity has been pre-created
+- The user is an owner of the security enabled Entra ID group to add the Managed Identity to
+
 #### App registration with FIC and ITSM metadata
 
 This creates an Entra ID app registration with IT service reference and notes fields populated as well as specifying co-owners:
@@ -136,6 +158,7 @@ create_federation              = false
 create_managed_identity        = false
 entra_secret_expiration_days   = 0 # secret lasts 1 hour
 ```
+
 Pre-requisites:
 
 - The user can create app registrations i.e.:
@@ -153,6 +176,7 @@ Generated with [terraform-docs](https://terraform-docs.io/).
 
 | Name | Version |
 |------|---------|
+| <a name="provider_azuread"></a> [azuread](#provider_azuread) | 2.48.0 |
 | <a name="provider_azurerm"></a> [azurerm](#provider_azurerm) | 3.101.0 |
 | <a name="provider_external"></a> [external](#provider_external) | 2.3.3 |
 | <a name="provider_random"></a> [random](#provider_random) | 3.6.1 |
@@ -174,12 +198,13 @@ Generated with [terraform-docs](https://terraform-docs.io/).
 | <a name="input_azdo_organization_url"></a> [azdo_organization_url](#input_azdo_organization_url) | The Azure DevOps organization URL (e.g. https://dev.azure.com/contoso) | `string` | n/a | yes |
 | <a name="input_azdo_project_name"></a> [azdo_project_name](#input_azdo_project_name) | The Azure DevOps project name to create the service connection in | `string` | n/a | yes |
 | <a name="input_azdo_creates_identity"></a> [azdo_creates_identity](#input_azdo_creates_identity) | Let Azure DevOps create identity for service connection | `bool` | `false` | no |
-| <a name="input_azure_role_assignments"></a> [azure_role_assignments](#input_azure_role_assignments) | Role assignments to create for the service connection's identity. If this is empty, the Contributor role will be assigned on the azurerm provider subscription. | `set(object({scope=string, role=string}))` | `[]` | no |
+| <a name="input_azure_role_assignments"></a> [azure_role_assignments](#input_azure_role_assignments) | Role assignments to create for the service connection's identity. If this is empty, the Contributor role will be assigned on the azurerm provider subscription. | `set(object({scope=string, role=string}))` | `null` | no |
 | <a name="input_create_federation"></a> [create_federation](#input_create_federation) | Use workload identity federation instead of a App Registration secret | `bool` | `true` | no |
 | <a name="input_create_managed_identity"></a> [create_managed_identity](#input_create_managed_identity) | Creates a Managed Identity instead of a App Registration | `bool` | `false` | no |
 | <a name="input_entra_app_notes"></a> [entra_app_notes](#input_entra_app_notes) | Description to put in the Entra ID app registration notes field | `string` | `null` | no |
 | <a name="input_entra_app_owner_object_ids"></a> [entra_app_owner_object_ids](#input_entra_app_owner_object_ids) | Object ids of the users that will be co-owners of the Entra ID app registration | `list(string)` | `null` | no |
 | <a name="input_entra_secret_expiration_days"></a> [entra_secret_expiration_days](#input_entra_secret_expiration_days) | Secret expiration in days | `number` | `90` | no |
+| <a name="input_entra_security_group_names"></a> [entra_security_group_names](#input_entra_security_group_names) | Names of the security groups to add the service connection identity to | `list(string)` | `[]` | no |
 | <a name="input_entra_service_management_reference"></a> [entra_service_management_reference](#input_entra_service_management_reference) | IT Service Management Reference to add to the App Registration | `string` | `null` | no |
 | <a name="input_managed_identity_resource_group_id"></a> [managed_identity_resource_group_id](#input_managed_identity_resource_group_id) | The resource group to create the Managed Identity in | `string` | `null` | no |
 | <a name="input_resource_prefix"></a> [resource_prefix](#input_resource_prefix) | The prefix to put in front of resource names created | `string` | `"demo"` | no |
