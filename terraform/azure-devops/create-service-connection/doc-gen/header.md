@@ -13,6 +13,7 @@ the use of Managed Identities for Azure access is mandated
 - Specific secret expiration and auto-rotation control
 - ITSM metadata is required on Entra ID objects (service nanagement reference, naming convention, notes)
 - Co-owners are required to exist for Entra ID apps
+- Access is managed through Entra ID group membership
 - Custom role assignments are needed for Azure [data plane](https://learn.microsoft.com/azure/azure-resource-manager/management/control-plane-and-data-plane#data-plane) access e.g. [Key Vault](https://learn.microsoft.com/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations), [Kusto](https://learn.microsoft.com/azure/data-explorer/kusto/access-control/role-based-access-control), [Storage](https://learn.microsoft.com/azure/storage/blobs/assign-azure-role-data-access?tabs=portal)
 - Access needs to be granted to multiple Azure subscriptions that are not part of the same management group
 - An IT fulfillment process exists where identities are automatically provisioned based on a service request
@@ -94,7 +95,7 @@ Pre-requisites:
 - A resource group to hold the Managed Identity has been pre-created
 - The user is an owner of the Azure scopes to create role assignments on
 
-#### Managed Identity with FIC assigned to Entra ID security group
+#### Managed Identity assigned to Entra ID security group
 
 This creates a Managed Identity with Federated Identity Credential and custom Azure RBAC (role-based access control) role assignments:
 
