@@ -38,13 +38,14 @@ More information:
 
 ## Provisioning
 
-Provisioning is a matter of specifying Terraform [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#inputs) below) and running `terraform apply`. To understand how the Terraform configuration can be created in automation, review
+Provisioning is a matter of specifying Terraform [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#inputs) below) and running `terraform apply`. To set variables, you can create a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
+To understand how the Terraform configuration can be created in automation, review
 [tf_create_azurerm_service_connection.ps1](../../../scripts/azure-devops/tf_create_azurerm_service_connection.ps1) and the
 [CI pipeline](azure-pipelines.yml).  
 
 ### Examples
 
-Terraform variable can be provided as a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
+Below are common configurations. You can mix & match to create your own.
 
 #### Default configuration
 
