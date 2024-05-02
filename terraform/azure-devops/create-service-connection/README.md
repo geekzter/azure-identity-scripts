@@ -204,7 +204,7 @@ Generated with [terraform-docs](https://terraform-docs.io/).
 | <a name="input_entra_app_notes"></a> [entra_app_notes](#input_entra_app_notes) | Description to put in the Entra ID app registration notes field | `string` | `null` | no |
 | <a name="input_entra_app_owner_object_ids"></a> [entra_app_owner_object_ids](#input_entra_app_owner_object_ids) | Object ids of the users that will be co-owners of the Entra ID app registration | `list(string)` | `null` | no |
 | <a name="input_entra_secret_expiration_days"></a> [entra_secret_expiration_days](#input_entra_secret_expiration_days) | Secret expiration in days | `number` | `90` | no |
-| <a name="input_entra_security_group_names"></a> [entra_security_group_names](#input_entra_security_group_names) | Names of the security groups to add the service connection identity to | `list(string)` | `null` | no |
+| <a name="input_entra_security_group_names"></a> [entra_security_group_names](#input_entra_security_group_names) | Names of the security groups to add the service connection identity to | `list(string)` | `[]` | no |
 | <a name="input_entra_service_management_reference"></a> [entra_service_management_reference](#input_entra_service_management_reference) | IT Service Management Reference to add to the App Registration | `string` | `null` | no |
 | <a name="input_managed_identity_resource_group_id"></a> [managed_identity_resource_group_id](#input_managed_identity_resource_group_id) | The resource group to create the Managed Identity in | `string` | `null` | no |
 | <a name="input_resource_prefix"></a> [resource_prefix](#input_resource_prefix) | The prefix to put in front of resource names created | `string` | `"demo"` | no |
