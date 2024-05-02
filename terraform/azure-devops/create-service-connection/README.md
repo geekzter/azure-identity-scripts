@@ -51,6 +51,14 @@ azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 ```
 
+Pre-requisites:
+
+- The user can create app registrations i.e.:
+  - Creation of app registrations is not [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications);
+  or
+  - The user is member of a privileged Entra ID role e.g. [Application Developer](https://learn.microsoft.com/entra/identity/role-based-access-control/permissions-reference#application-developer)
+- The user is an owner of the Azure subscription (so role assignment can be performed)
+
 #### Managed Identity with Federated Identity Credential and custom RBAC
 
 ```hcl
@@ -76,6 +84,11 @@ create_managed_identity        = true
 managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/msi-rg"
 ```
 
+Pre-requisites:
+
+- A resource group to hold the Managed Identity has been pre-created
+- The user is an owner of the Azure scopes so role assignment on
+
 #### App registration with Federated Identity Credential and ITSM metadata
 
 ```hcl
@@ -88,6 +101,14 @@ entra_app_notes                = "Service connection for business application AB
 entra_app_owner_object_ids     = ["00000000-0000-0000-0000-000000000000","11111111-1111-1111-1111-111111111111"]
 entra_service_management_reference = "11111111-1111-1111-1111-111111111111"
 ```
+
+Pre-requisites:
+
+- The user can create app registrations i.e.:
+  - Creation of app registrations is not [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications);
+  or
+  - The user is member of a privileged Entra ID role e.g. [Application Developer](https://learn.microsoft.com/entra/identity/role-based-access-control/permissions-reference#application-developer)
+- The user is an owner of the Azure subscription (so role assignment can be performed)
 
 #### App registration with short-lived secret and constrained RBAC
 
@@ -105,6 +126,13 @@ create_federation              = false
 create_managed_identity        = false
 entra_secret_expiration_days   = 0 # secret lasts 1 hour
 ```
+Pre-requisites:
+
+- The user can create app registrations i.e.:
+  - Creation of app registrations is not [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications);
+  or
+  - The user is member of a privileged Entra ID role e.g. [Application Developer](https://learn.microsoft.com/entra/identity/role-based-access-control/permissions-reference#application-developer)
+- The user is an owner of the Azure resource group (so role assignment can be performed)
 
 ## Terraform Configuration
 
@@ -138,7 +166,7 @@ Generated with [terraform-docs](https://terraform-docs.io/).
 | <a name="input_azdo_creates_identity"></a> [azdo_creates_identity](#input_azdo_creates_identity) | Let Azure DevOps create identity for service connection | `bool` | `false` | no |
 | <a name="input_azure_role_assignments"></a> [azure_role_assignments](#input_azure_role_assignments) | Role assignments to create for the service connection's identity. If this is empty, the Contributor role will be assigned on the azurerm provider subscription. | `set(object({scope=string, role=string}))` | `[]` | no |
 | <a name="input_create_federation"></a> [create_federation](#input_create_federation) | Use workload identity federation instead of a App Registration secret | `bool` | `true` | no |
-| <a name="input_create_managed_identity"></a> [create_managed_identity](#input_create_managed_identity) | Creates a Managed Identity instead of a App Registration | `bool` | `true` | no |
+| <a name="input_create_managed_identity"></a> [create_managed_identity](#input_create_managed_identity) | Creates a Managed Identity instead of a App Registration | `bool` | `false` | no |
 | <a name="input_entra_app_notes"></a> [entra_app_notes](#input_entra_app_notes) | Description to put in the Entra ID app registration notes field | `string` | `null` | no |
 | <a name="input_entra_app_owner_object_ids"></a> [entra_app_owner_object_ids](#input_entra_app_owner_object_ids) | Object ids of the users that will be co-owners of the Entra ID app registration | `list(string)` | `null` | no |
 | <a name="input_entra_secret_expiration_days"></a> [entra_secret_expiration_days](#input_entra_secret_expiration_days) | Secret expiration in days | `number` | `90` | no |
