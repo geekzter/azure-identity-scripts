@@ -1,7 +1,7 @@
 data azurerm_client_config current {}
 data azurerm_subscription current {}
 data azurerm_subscription target {
-  subscription_id              = split("/",tolist(local.azure_role_assignments)[0].scope)[2]
+  subscription_id              = length(local.azure_role_assignments) > 0 ? split("/",tolist(local.azure_role_assignments)[0].scope)[2] : data.azurerm_subscription.current.subscription_id
 }
 
 # Random resource suffix, this will prevent name collisions when creating resources in parallel
@@ -21,7 +21,7 @@ locals {
   azdo_project_url             = "${local.azdo_organization_url}/${urlencode(var.azdo_project_name)}"
   # azdo_service_connection_name = "${replace(data.azurerm_subscription.target.display_name,"/ +/","-")}-${var.azdo_creates_identity ? "aut" : "man"}-${var.create_managed_identity ? "msi" : "sp"}-${var.create_federation ? "oidc" : "secret"}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
   azdo_service_connection_name = "${replace(data.azurerm_subscription.target.display_name,"/ +/","-")}${terraform.workspace == "default" ? "" : format("-%s",terraform.workspace)}-${local.resource_suffix}"
-  azure_role_assignments       = length(var.azure_role_assignments) > 0 ? var.azure_role_assignments : [
+  azure_role_assignments       = var.azure_role_assignments != null ? var.azure_role_assignments : [
     {
       # Default role assignment
       role                     = "Contributor"
@@ -89,19 +89,6 @@ module entra_app {
   service_management_reference = var.entra_service_management_reference
 
   count                        = var.create_managed_identity || var.azdo_creates_identity ? 0 : 1
-}
-
-module azure_role_assignments {
-  providers                    = {
-    azurerm                    = azurerm.target
-  }
-  source                       = "./modules/azure-access"
-  create_role_assignment       = !var.azdo_creates_identity
-  identity_object_id           = local.principal_id
-  resource_id                  = each.value.scope
-  role                         = each.value.role
-
-  for_each                     = { for ra in local.azure_role_assignments : format("%s-%s", ra.scope, ra.role) => ra }
 }
 
 module service_connection {

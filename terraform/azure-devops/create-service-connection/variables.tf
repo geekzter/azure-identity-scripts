@@ -16,9 +16,9 @@ variable azdo_project_name {
 }
 
 variable azure_role_assignments {
-  default                      = []
+  default                      = null
   description                  = "Role assignments to create for the service connection's identity. If this is empty, the Contributor role will be assigned on the azurerm provider subscription."
-  nullable                     = false
+  nullable                     = true
   type                         = set(object({scope=string, role=string}))
 }
 
@@ -43,6 +43,12 @@ variable entra_app_notes {
 variable entra_app_owner_object_ids {
   default                      = null
   description                  = "Object ids of the users that will be co-owners of the Entra ID app registration"
+  type                         = list(string)
+}
+
+variable entra_security_group_names {
+  default                      = null
+  description                  = "Names of the security groups to add the service connection identity to"
   type                         = list(string)
 }
 
