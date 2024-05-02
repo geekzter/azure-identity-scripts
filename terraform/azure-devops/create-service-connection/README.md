@@ -146,7 +146,7 @@ Pre-requisites:
 
 ## Terraform Configuration
 
-The (required) variables and output is listed below. Sensitive outputs are masked by default.
+The (required) variables and output are listed below. Sensitive outputs are masked by default.
 Generated with [terraform-docs](https://terraform-docs.io/).
 
 ### Providers
