@@ -2,11 +2,13 @@
 
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fcreate-service-connection?branchName=main&label=terraform-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=5&branchName=main)
 
-Many Enterprise customers have requirements around the management of Entra [workload identities](https://learn.microsoft.com/entra/workload-id/workload-identities-overview) (applications, service principals, managed identities) and the permissions they are assigned to.
+Azure DevOps uses service connections to connect to services that are targets for cloud infrastructure provisioning and application deployment. The most commonly used service connection is the Azure Resource [Manager service connection](https://learn.microsoft.com/azure/devops/pipelines/library/connect-to-azure?view=azure-devops). This creates an object in Azure DevOps, an identity in Entra ID and a role assignment in Azure.
+
+Many Enterprise customers have requirements around the management of Entra [workload identities](https://learn.microsoft.com/entra/workload-id/workload-identities-overview) (applications, service principals, managed identities) as well as the permissions they are assigned to.
 
 These are a few common requirements and constraints:
 
-- Creation of app registrations is [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications) and/or
+- Creation of app registrations is [disabled in the Entra ID tenant](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications) and/or
 the use of Managed Identities for Azure access is mandated
 - Specific secret expiration and auto-rotation control
 - ITSM metadata is required on Entra ID objects (service nanagement reference, naming convention, notes)
@@ -45,7 +47,7 @@ Terraform variable can be provided as a .auto.tfvars file, see [sample](config.a
 
 #### Default configuration
 
-This creates an App registration with Federated Identity Credential (FIC) and `Contributor` role on the Azure subscription used by the Terraform `azurerm` provider.
+This creates an App registration with Federated Identity Credential and `Contributor` role on the Azure subscription used by the Terraform `azurerm` provider.
 
 ```hcl
 azdo_organization_url          = "https://dev.azure.com/my-organization"
@@ -60,7 +62,9 @@ Pre-requisites:
   - The user is member of a privileged Entra ID role e.g. [Application Developer](https://learn.microsoft.com/entra/identity/role-based-access-control/permissions-reference#application-developer)
 - The user is an owner of the Azure subscription (so role assignment can be performed)
 
-#### Managed Identity with Federated Identity Credential and custom RBAC
+#### Managed Identity with FIC and custom RBAC
+
+This creates a Managed Identity with Federated Identity Credential and custom Azure RBAC (role-based access control) role assignments:
 
 ```hcl
 azdo_creates_identity          = false
@@ -90,7 +94,9 @@ Pre-requisites:
 - A resource group to hold the Managed Identity has been pre-created
 - The user is an owner of the Azure scopes to create role assignments on
 
-#### App registration with Federated Identity Credential and ITSM metadata
+#### App registration with FIC and ITSM metadata
+
+This creates an Entra ID app registration with IT service reference and notes fields populated as well as a co-owners specified:
 
 ```hcl
 azdo_creates_identity          = false
@@ -112,6 +118,8 @@ Pre-requisites:
 - The user is an owner of the Azure subscription (so role assignment can be performed)
 
 #### App registration with short-lived secret and constrained RBAC
+
+This creates an Entra ID app registration with secret that expires after 1 hour:
 
 ```hcl
 azdo_creates_identity          = false
