@@ -36,7 +36,7 @@ More information:
 
 ## Provisioning
 
-Provisioning is a matter of specifying [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#input_azdo_organization_url) below) and running `terraform apply`. To understand how the Terraform configuration can be created in automation, review
+Provisioning is a matter of specifying Terraform [variables](https://developer.hashicorp.com/terraform/language/values/variables) (see [inputs](#inputs) below) and running `terraform apply`. To understand how the Terraform configuration can be created in automation, review
 [tf_create_azurerm_service_connection.ps1](../../../scripts/azure-devops/tf_create_azurerm_service_connection.ps1) and the
 [CI pipeline](azure-pipelines.yml).  
 
@@ -45,6 +45,8 @@ Provisioning is a matter of specifying [variables](https://developer.hashicorp.c
 Terraform variable can be provided as a .auto.tfvars file, see [sample](config.auto.tfvars.sample).
 
 #### Default configuration
+
+This creates an App registration with Federated Identity Credential (FIC) and `Contributor` role on the Azure subscription used by the Terraform `azurerm` provider.
 
 ```hcl
 azdo_organization_url          = "https://dev.azure.com/my-organization"
@@ -87,7 +89,7 @@ managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111
 Pre-requisites:
 
 - A resource group to hold the Managed Identity has been pre-created
-- The user is an owner of the Azure scopes so role assignment on
+- The user is an owner of the Azure scopes to create role assignments on
 
 #### App registration with Federated Identity Credential and ITSM metadata
 
