@@ -50,6 +50,14 @@ azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 ```
 
+Pre-requisites:
+
+- The user can create app registrations i.e.:
+  - Creation of app registrations is not [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications);
+  or
+  - The user is member of a privileged Entra ID role e.g. [Application Developer](https://learn.microsoft.com/entra/identity/role-based-access-control/permissions-reference#application-developer)
+- The user is an owner of the Azure subscription (so role assignment can be performed)
+
 #### Managed Identity with Federated Identity Credential and custom RBAC
 
 ```hcl
@@ -75,6 +83,11 @@ create_managed_identity        = true
 managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/msi-rg"
 ```
 
+Pre-requisites:
+
+- A resource group to hold the Managed Identity has been pre-created
+- The user is an owner of the Azure scopes so role assignment on
+
 #### App registration with Federated Identity Credential and ITSM metadata
 
 ```hcl
@@ -87,6 +100,14 @@ entra_app_notes                = "Service connection for business application AB
 entra_app_owner_object_ids     = ["00000000-0000-0000-0000-000000000000","11111111-1111-1111-1111-111111111111"]
 entra_service_management_reference = "11111111-1111-1111-1111-111111111111"
 ```
+
+Pre-requisites:
+
+- The user can create app registrations i.e.:
+  - Creation of app registrations is not [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications);
+  or
+  - The user is member of a privileged Entra ID role e.g. [Application Developer](https://learn.microsoft.com/entra/identity/role-based-access-control/permissions-reference#application-developer)
+- The user is an owner of the Azure subscription (so role assignment can be performed)
 
 #### App registration with short-lived secret and constrained RBAC
 
@@ -104,6 +125,13 @@ create_federation              = false
 create_managed_identity        = false
 entra_secret_expiration_days   = 0 # secret lasts 1 hour
 ```
+Pre-requisites:
+
+- The user can create app registrations i.e.:
+  - Creation of app registrations is not [disabled in Entra ID](https://learn.microsoft.com/entra/identity/role-based-access-control/delegate-app-roles#restrict-who-can-create-applications);
+  or
+  - The user is member of a privileged Entra ID role e.g. [Application Developer](https://learn.microsoft.com/entra/identity/role-based-access-control/permissions-reference#application-developer)
+- The user is an owner of the Azure resource group (so role assignment can be performed)
 
 ## Terraform Configuration
 
