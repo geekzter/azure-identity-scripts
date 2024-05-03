@@ -6,7 +6,7 @@
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fcreate-service-connection?branchName=main&label=terraform-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=5&branchName=main)
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fterraform-azure-environment-variables?branchName=main&label=create-oidc-token-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=11&branchName=main)
 
-## Terraform
+## Terraform-managed Azure Service Connection
 
 Manage Azure Service Connections with [Terraform](terraform/azure-devops/create-service-connection/README.md) to create Managed Identity, Federated Identity Credential, Entra ID group membership, implement secret rotation, assign co-owners and ITSM metadata.
 
