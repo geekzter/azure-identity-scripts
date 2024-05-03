@@ -69,7 +69,6 @@ Pre-requisites:
 This creates a Managed Identity with Federated Identity Credential and custom Azure RBAC (role-based access control) role assignments:
 
 ```hcl
-azdo_creates_identity          = false
 azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 azure_role_assignments         = [
@@ -101,7 +100,6 @@ Pre-requisites:
 This creates a Managed Identity with Federated Identity Credential and custom Azure RBAC (role-based access control) role assignments:
 
 ```hcl
-azdo_creates_identity          = false
 azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 azure_role_assignments         = [] # No direct assignments
@@ -114,14 +112,13 @@ managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111
 Pre-requisites:
 
 - A resource group to hold the Managed Identity has been pre-created
-- The user is an owner of the security enabled Entra ID group to add the Managed Identity to
+- The user is an owner of the Entra ID security group to add the Managed Identity to
 
 #### App registration with FIC and ITSM metadata
 
 This creates an Entra ID app registration with IT service reference and notes fields populated as well as specifying co-owners:
 
 ```hcl
-azdo_creates_identity          = false
 azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 create_federation              = true
@@ -144,7 +141,6 @@ Pre-requisites:
 This creates an Entra ID app registration with secret that expires after 1 hour:
 
 ```hcl
-azdo_creates_identity          = false
 azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 azure_role_assignments         = [
