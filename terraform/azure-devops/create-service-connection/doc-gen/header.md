@@ -2,6 +2,8 @@
 
 [![Build Status](https://dev.azure.com/geekzter/Pipeline%20Playground/_apis/build/status%2Fcreate-service-connection?branchName=main&label=terraform-ci)](https://dev.azure.com/geekzter/Pipeline%20Playground/_build/latest?definitionId=5&branchName=main)
 
+![](visuals/diagram.png)
+
 Azure DevOps uses service connections to connect to services that are targets for cloud infrastructure provisioning and application deployment. The most commonly used service connection is the [Azure Resource Manager service connection](https://learn.microsoft.com/azure/devops/pipelines/library/connect-to-azure?view=azure-devops). This creates an object in Azure DevOps, an identity in Entra ID and a role assignment in Azure.
 
 Many Enterprise customers have requirements around the management of Entra [workload identities](https://learn.microsoft.com/entra/workload-id/workload-identities-overview) (applications, service principals, managed identities) as well as the permissions they are assigned to.
@@ -69,7 +71,6 @@ Pre-requisites:
 This creates a Managed Identity with Federated Identity Credential and custom Azure RBAC (role-based access control) role assignments:
 
 ```hcl
-azdo_creates_identity          = false
 azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 azure_role_assignments         = [
@@ -101,7 +102,6 @@ Pre-requisites:
 This creates a Managed Identity with Federated Identity Credential and custom Azure RBAC (role-based access control) role assignments:
 
 ```hcl
-azdo_creates_identity          = false
 azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 azure_role_assignments         = [] # No direct assignments
@@ -114,14 +114,13 @@ managed_identity_resource_group_id = "/subscriptions/11111111-1111-1111-1111-111
 Pre-requisites:
 
 - A resource group to hold the Managed Identity has been pre-created
-- The user is an owner of the security enabled Entra ID group to add the Managed Identity to
+- The user is an owner of the Entra ID security group to add the Managed Identity to
 
 #### App registration with FIC and ITSM metadata
 
 This creates an Entra ID app registration with IT service reference and notes fields populated as well as specifying co-owners:
 
 ```hcl
-azdo_creates_identity          = false
 azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 create_federation              = true
@@ -144,7 +143,6 @@ Pre-requisites:
 This creates an Entra ID app registration with secret that expires after 1 hour:
 
 ```hcl
-azdo_creates_identity          = false
 azdo_organization_url          = "https://dev.azure.com/my-organization"
 azdo_project_name              = "my-project"
 azure_role_assignments         = [
