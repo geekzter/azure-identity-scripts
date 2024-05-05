@@ -51,6 +51,8 @@ Below are common configurations. You can mix & match to create your own.
 
 #### Default configuration
 
+![](visuals/app-fic.png)
+
 This creates an App registration with Federated Identity Credential and `Contributor` role on the Azure subscription used by the Terraform `azurerm` provider.
 
 ```hcl
@@ -67,6 +69,8 @@ Pre-requisites:
 - The user is an owner of the Azure subscription (so role assignment can be performed)
 
 #### Managed Identity with FIC and custom RBAC
+
+![](visuals/msi-fic-multi-rbac.png)
 
 This creates a Managed Identity with Federated Identity Credential and custom Azure RBAC (role-based access control) role assignments:
 
@@ -98,6 +102,8 @@ Pre-requisites:
 - The user is an owner of the Azure scopes to create role assignments on
 
 #### Managed Identity assigned to Entra ID security group
+
+![](visuals/msi-fic-group.png)
 
 This creates a Managed Identity with Federated Identity Credential and custom Azure RBAC (role-based access control) role assignments:
 
