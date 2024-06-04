@@ -254,19 +254,42 @@ $identity | Format-List -Property id, clientId, federatedSubject, role, scope, s
                                         
 # Prepare service connection REST API request body
 Write-Verbose "Creating / updating service connection '${ServiceConnectionName}'..."
-Get-Content -Path (Join-Path $PSScriptRoot manualServiceEndpointRequest.json) `
-            | ConvertFrom-Json `
-            | Set-Variable serviceEndpointRequest
-
 $serviceEndpointDescription = "Created by $($MyInvocation.MyCommand.Name). Configured Managed Identity ${IdentityName} (clientId $($identity.clientId)) federated on ${federatedSubject} as ${ServiceConnectionRole} on scope ${ServiceConnectionScope}."
+$serviceEndpointRequest = @{
+    data = @{
+        subscriptionId = $serviceConnectionSubscriptionId
+        subscriptionName = $serviceConnectionSubscriptionName
+        creationMode = 'Manual'
+    }
+    description = $serviceEndpointDescription
+    name = $ServiceConnectionName
+    type = $ServiceConnectionType
+    url = "https://management.azure.com/"
+    authorization = @{
+        parameters = @{
+            tenantid = $identity.tenantId
+            role = $roleAssignment.roleDefinitionId.Split('/')[-1]
+            scope = $ServiceConnectionScope
+            serviceprincipalid = $identity.clientId
+        }
+        scheme = "WorkloadIdentityFederation"
+    }
+    isShared = $false
+    isReady = $false
+    serviceEndpointProjectReferences = @(
+        @{
+            projectReference = @{
+                id = $projectId
+                name = $Project
+            }
+            name = $ServiceConnectionName
+            description = $serviceEndpointDescription
+        }
+    )
+}
+
 if ($ServiceConnectionType -ieq "dockerregistry") {
     Add-Member -InputObject $serviceEndpointRequest.authorization.parameters -NotePropertyName loginServer -NotePropertyValue $acrLoginServer
-}
-$serviceEndpointRequest.authorization.parameters.role = $roleAssignment.roleDefinitionId.Split('/')[-1]
-$serviceEndpointRequest.authorization.parameters.servicePrincipalId = $identity.clientId
-$serviceEndpointRequest.authorization.parameters.scope = $ServiceConnectionScope
-$serviceEndpointRequest.authorization.parameters.tenantId = $identity.tenantId
-if ($ServiceConnectionType -ieq "dockerregistry") {
     Add-Member -InputObject $serviceEndpointRequest.data -NotePropertyName registryId -NotePropertyValue $ServiceConnectionScope
     Add-Member -InputObject $serviceEndpointRequest.data -NotePropertyName registryType -NotePropertyValue "ACR"
 }
@@ -274,17 +297,6 @@ if ($ServiceConnectionType -ieq "AzureRM") {
     Add-Member -InputObject $serviceEndpointRequest.data -NotePropertyName environment -NotePropertyValue "AzureCloud"
     Add-Member -InputObject $serviceEndpointRequest.data -NotePropertyName scopeLevel -NotePropertyValue "Subscription"
 }
-$serviceEndpointRequest.data.subscriptionId = $serviceConnectionSubscriptionId
-$serviceEndpointRequest.data.subscriptionName = $serviceConnectionSubscriptionName
-$serviceEndpointRequest.description = $serviceEndpointDescription
-$serviceEndpointRequest.name = $ServiceConnectionName
-$serviceEndpointRequest.serviceEndpointProjectReferences[0].description = $serviceEndpointDescription
-$serviceEndpointRequest.serviceEndpointProjectReferences[0].name = $ServiceConnectionName
-$serviceEndpointRequest.serviceEndpointProjectReferences[0].projectReference.id = $projectId
-$serviceEndpointRequest.serviceEndpointProjectReferences[0].projectReference.name = $Project
-$serviceEndpointRequest.type = $ServiceConnectionType
-$serviceEndpointRequest | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequestBody
-# Write-Debug "Service connection request body: `n${serviceEndpointRequestBody}"
 
 $apiUri = "${OrganizationUrl}/_apis/serviceendpoint/endpoints"
 if ($serviceEndpointId) {
