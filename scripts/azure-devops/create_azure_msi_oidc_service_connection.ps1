@@ -284,22 +284,26 @@ $serviceEndpointRequest.serviceEndpointProjectReferences[0].projectReference.id 
 $serviceEndpointRequest.serviceEndpointProjectReferences[0].projectReference.name = $Project
 $serviceEndpointRequest.type = $ServiceConnectionType
 $serviceEndpointRequest | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequestBody
-Write-Debug "Service connection request body: `n${serviceEndpointRequestBody}"
+# Write-Debug "Service connection request body: `n${serviceEndpointRequestBody}"
 
 $apiUri = "${OrganizationUrl}/_apis/serviceendpoint/endpoints"
 if ($serviceEndpointId) {
     $apiUri += "/${serviceEndpointId}"
 }
 $apiUri += "?api-version=${apiVersion}"
-Invoke-RestMethod -Uri $apiUri `
-                  -Method ($serviceEndpointId ? 'PUT' : 'POST') `
-                  -Body $serviceEndpointRequestBody `
-                  -ContentType 'application/json' `
-                  -Authentication Bearer `
-                  -Token (ConvertTo-SecureString $accessToken -AsPlainText) `
-                  | Set-Variable serviceEndpoint
-
-$serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
+$serviceEndpointRequestBodyFile = (New-TemporaryFile).FullName
+$serviceEndpointRequest | ConvertTo-Json -Depth 4 | Out-File $serviceEndpointRequestBodyFile
+Write-Debug "Service connection request body file: ${serviceEndpointRequestBodyFile}"
+Get-Content $serviceEndpointRequestBodyFile | Write-Debug
+az rest --method ($serviceEndpointId ? 'PUT' : 'POST') `
+        --uri $apiUri `
+        --body "@$serviceEndpointRequestBodyFile" `
+        --resource 499b84ac-1321-427f-aa17-267ca6975798 `
+        --output json `
+        | Tee-Object -Variable serviceEndpointResponseJson `
+        | ConvertFrom-Json -Depth 4 `
+        | Set-Variable serviceEndpoint
+$serviceEndpointResponseJson | Write-Debug
 if (!$serviceEndpoint) {
     Write-Error "Failed to create / update service connection '${ServiceConnectionName}'"
     exit 1
