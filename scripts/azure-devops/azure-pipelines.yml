@@ -231,8 +231,8 @@ jobs:
             Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
           }
           Write-Host "Create Azure Container Registry.."
-          az acr create --resource-group myResourceGroup `
-                        --name $(resourceGroup.scopeResourceGroupName) `
+          az acr create --resource-group $(resourceGroup.scopeResourceGroupName) `
+                        --name ciacr `
                         --sku Basic `
                         -o json `
                         | ConvertFrom-Json `
