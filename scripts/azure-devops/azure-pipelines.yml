@@ -48,13 +48,14 @@ variables:
   value: true
 - name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
   value: yes_without_prompt
+- name: acrServiceConnectionToCreate
+  value: oidc-msi-test-acr-$(Build.BuildId)
+- name: azureServiceConnectionToCreate
+  value: oidc-msi-test-$(Build.BuildId)
 - name: scriptDirectory
   value: $(Build.SourcesDirectory)/scripts/azure-devops
 - name: organizationName
   value: ${{ split(variables['System.CollectionUri'],'/')[3] }}
-- name: serviceConnectionToCreate
-  value: oidc-msi-test-$(Build.BuildId)
-  # TODO: Convert multiple service connections
 - name: serviceConnectionToConvert
   value: oidc-convert-test-$(Build.BuildId)
 
@@ -178,7 +179,7 @@ jobs:
           Write-Host "##vso[task.setvariable variable=scopeResourceGroupName;isOutput=true]${scopeResourceGroupName}"
 
     - task: AzureCLI@2
-      displayName: 'Create Managed Identity and Service Connection'
+      displayName: 'Create Managed Identity and Azure Service Connection'
       name: identity
       inputs:
         azureSubscription: '$(azureConnection)'
@@ -195,11 +196,55 @@ jobs:
             
             Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
           }
-          ./create_azurerm_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
-                                                           -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
-                                                           -IdentitySubscriptionId $(az account show --query id -o tsv) `
-                                                           -ServiceConnectionName $(serviceConnectionToCreate) `
-                                                           -ServiceConnectionScope $(resourceGroup.scopeResourceGroupId)
+          ./create_azure_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
+                                                         -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
+                                                         -IdentitySubscriptionId $(az account show --query id -o tsv) `
+                                                         -ServiceConnectionName $(azureServiceConnectionToCreate) `
+                                                         -ServiceConnectionRole Reader `
+                                                         -ServiceConnectionScope $(resourceGroup.scopeResourceGroupId) `
+                                                         -ServiceConnectionType AzureRM
+
+          az identity list -g $(resourceGroup.managedIdentityResourceGroupName) `
+                          --query [0].clientId `
+                          -o tsv `
+                          | Set-Variable -Name clientId
+          Write-Host "##vso[task.setvariable variable=clientId;isOutput=true]${clientId}"
+
+        workingDirectory: '$(scriptDirectory)'
+
+    - task: AzureCLI@2
+      displayName: 'Create ACR, Managed Identity and Docker Registry Service Connection'
+      name: acrIdentity
+      inputs:
+        azureSubscription: '$(azureConnection)'
+        failOnStandardError: true
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+          Write-Host "Create Azure Container Registry.."
+          az acr create --resource-group myResourceGroup `
+                        --name $(resourceGroup.scopeResourceGroupName) `
+                        --sku Basic `
+                        -o json `
+                        | ConvertFrom-Json `
+                        | Set-Variable -Name acr
+
+          ./create_azure_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
+                                                         -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
+                                                         -IdentitySubscriptionId $(az account show --query id -o tsv) `
+                                                         -ServiceConnectionName $(acrServiceConnectionToCreate) `
+                                                         -ServiceConnectionRole AcrPull `
+                                                         -ServiceConnectionScope $(acr.id) `
+                                                         -ServiceConnectionType dockerregistry
 
           az identity list -g $(resourceGroup.managedIdentityResourceGroupName) `
                           --query [0].clientId `
@@ -220,7 +265,7 @@ jobs:
 
     steps:
     - task: AzureCLI@2
-      displayName: 'Test Service Connection $(serviceConnectionToCreate)'
+      displayName: 'Test Service Connection $(azureServiceConnectionToCreate)'
       timeoutInMinutes: 5
       inputs:
         azureSubscription: '$(azureConnection)'
@@ -229,7 +274,7 @@ jobs:
         scriptLocation: inlineScript
         workingDirectory: '$(scriptDirectory)'
         inlineScript: |
-          ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToCreate) `
+          ./test_service_connection.ps1 -ServiceConnectionName $(azureServiceConnectionToCreate) `
                                         -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
 
 - ${{ if or(eq(parameters.jobsToRun, 'Non-modifying tests'),eq(parameters.jobsToRun, 'Both')) }}:
@@ -338,7 +383,8 @@ jobs:
       # convertedServiceConnectionId1: $[ dependencies.convertServiceConnection.outputs['job1.convert.serviceConnectionId'] ]
       # convertedServiceConnectionId2: $[ dependencies.convertServiceConnection.outputs['job2.convert.serviceConnectionId'] ]
       convertedServiceConnectionId: $[ dependencies.convertServiceConnection.outputs['convert.serviceConnectionId'] ]
-      createdClientId: $[ dependencies.createServiceConnection.outputs['identity.clientId'] ]
+      createdAzureClientId: $[ dependencies.createServiceConnection.outputs['identity.clientId'] ]
+      createdACRClientId: $[ dependencies.createServiceConnection.outputs['acrIdentity.clientId'] ]
     steps:
     - task: AzureCLI@2
       name: teardownAzure
@@ -390,14 +436,11 @@ jobs:
           $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
           az devops configure --defaults organization="$(System.CollectionUri)" project="$(System.TeamProject)"
 
-          az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(createdClientId)'].id" `
+          az devops service-endpoint list --query "[?authorization.parameters.serviceprincipalid=='$(createdAzureClientId)' || authorization.parameters.serviceprincipalid=='$(createdACRClientId)'].id" `
                                           -o tsv `
-                                          | Set-Variable -Name serviceConnectionId
-          if (!$serviceConnectionId) {
-            Write-Host "No created service connections to remove"
-            exit 0
-          } else {
-            Write-Host "Removing created service connection ${serviceConnectionId}..."
+                                          | Set-Variable -Name serviceConnectionIds
+          foreach ($serviceConnectionId in $serviceConnectionIds) {
+            Write-Host "Removing service connection ${serviceConnectionId}..."
             &{ # az writes information to stderr
               $ErrorActionPreference = 'SilentlyContinue'
               az devops service-endpoint delete --id $serviceConnectionId --yes 2>&1
