@@ -48,6 +48,8 @@ variables:
   value: true
 - name: AZURE_EXTENSION_USE_DYNAMIC_INSTALL
   value: yes_without_prompt
+- name: acrName
+  value: ciacr$(Build.BuildId)
 - name: acrServiceConnectionToCreate
   value: oidc-msi-test-acr-$(Build.BuildId)
 - name: azureServiceConnectionToCreate
@@ -232,7 +234,7 @@ jobs:
           }
           Write-Host "Create Azure Container Registry.."
           az acr create --resource-group $(resourceGroup.scopeResourceGroupName) `
-                        --name ciacr `
+                        --name $(acrName) `
                         --sku Basic `
                         -o json `
                         | ConvertFrom-Json `
