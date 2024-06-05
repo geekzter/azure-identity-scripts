@@ -232,20 +232,20 @@ jobs:
             
             Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
           }
-          Write-Host "Create Azure Container Registry.."
+          Write-Host "Creating Azure Container Registry.."
           az acr create --resource-group $(resourceGroup.scopeResourceGroupName) `
                         --name $(acrName) `
                         --sku Basic `
                         -o json `
                         | ConvertFrom-Json `
-                        | Set-Variable -Name acr
+                        | Tee-Object -Variable acr
 
           ./create_azure_msi_oidc_service_connection.ps1 -IdentityName ${{ variables['organizationName'] }}-service-connection-test-$(Build.BuildId) `
                                                          -IdentityResourceGroupName $(resourceGroup.managedIdentityResourceGroupName) `
                                                          -IdentitySubscriptionId $(az account show --query id -o tsv) `
                                                          -ServiceConnectionName $(acrServiceConnectionToCreate) `
                                                          -ServiceConnectionRole AcrPull `
-                                                         -ServiceConnectionScope $(acr.id) `
+                                                         -ServiceConnectionScope $acr.id `
                                                          -ServiceConnectionType dockerregistry
 
           az identity list -g $(resourceGroup.managedIdentityResourceGroupName) `
