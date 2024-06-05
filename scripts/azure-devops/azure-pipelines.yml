@@ -267,7 +267,7 @@ jobs:
 
     steps:
     - task: AzureCLI@2
-      displayName: 'Test Service Connection $(azureServiceConnectionToCreate)'
+      displayName: 'Test Azure Service Connection $(azureServiceConnectionToCreate)'
       timeoutInMinutes: 5
       inputs:
         azureSubscription: '$(azureConnection)'
