@@ -218,7 +218,7 @@ jobs:
       displayName: 'Create ACR, Managed Identity and Docker Registry Service Connection'
       name: acrIdentity
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         failOnStandardError: true
         scriptType: pscore
         scriptLocation: inlineScript
