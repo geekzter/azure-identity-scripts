@@ -40,12 +40,12 @@ jobs:
     displayName: 'Scripted with addSpnToEnvironment'
     inputs:
       addSpnToEnvironment: true
-      azureSubscription: '$(azureConnection)'
+      azureSubscription: '$(azureConnectionWIF)'
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        Write-Host "Using Service Connection $(azureConnection)"
-        az account show -o json >"$(azureConnection).json"
+        Write-Host "Using Service Connection $(azureConnectionWIF)"
+        az account show -o json >"$(azureConnectionWIF).json"
         $(scriptDirectory)/set_terraform_azurerm_vars.ps1
 
         Write-Host "##vso[task.setvariable variable=ARM_CLIENT_ID;isoutput=true]${env:ARM_CLIENT_ID}"
@@ -56,7 +56,7 @@ jobs:
         Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]${env:ARM_USE_OIDC}"
 
         if ($env:ARM_USE_OIDC -ine 'true') {
-          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection '$(azureConnection)' is not using federation"
+          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection '$(azureConnectionWIF)' is not using federation"
         }
       failOnStandardError: true
       workingDirectory: $(Build.ArtifactStagingDirectory)
@@ -81,11 +81,11 @@ jobs:
     displayName: 'Scripted with REST API'
     inputs:
       addSpnToEnvironment: true
-      azureSubscription: '$(azureConnection)'
+      azureSubscription: '$(azureConnectionWIF)'
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        Write-Host "Using Service Connection $(azureConnection)"
+        Write-Host "Using Service Connection $(azureConnectionWIF)"
         $(scriptDirectory)/set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
 
         Write-Host "##vso[task.setvariable variable=ARM_CLIENT_ID;isoutput=true]${env:ARM_CLIENT_ID}"
@@ -97,7 +97,7 @@ jobs:
         Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]${env:ARM_USE_OIDC}"
 
         if ($env:ARM_USE_OIDC -ine 'true') {
-          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection '$(azureConnection)' is not using federation"
+          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection '$(azureConnectionWIF)' is not using federation"
         }
       failOnStandardError: true
       workingDirectory: $(Build.ArtifactStagingDirectory)
@@ -120,22 +120,25 @@ jobs:
   - task: AzureCLI@2
     displayName: 'Inline script'
     inputs:
-      azureSubscription: '$(azureConnection)'
+      azureSubscription: '$(azureConnectionWIF)'
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        Get-ChildItem -Path Env: -Recurse -Include ENDPOINT_DATA_* | Select-Object -First 1 -ExpandProperty Name `
-                                                                   | ForEach-Object { $_.Split("_")[2] }
-                                                                   | Set-Variable serviceConnectionId
+        Write-Host "Service Connection ID: ${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
+        Write-Host "Service Connection endpoint data:"
+        Get-ChildItem -Path Env: -Recurse `
+                                -Include AZURESUBSCRIPTION_*, SYSTEM_OIDC* `
+                                | Sort-Object -Property Name `
+                                | ForEach-Object { 
+                                    if ($_.Name -match 'SECRET|TOKEN') {
+                                      $_.Value = '***'
+                                    } 
+                                    $_
+                                  } `
+                                | Format-Table -HideTableHeaders -Property @{Expression='Name';Width=75}, @{Expression='Value';Width=175} -Wrap `
+                                | Out-String -Width 256
 
-        "{0}{1}/_apis/distributedtask/hubs/build/plans/{2}/jobs/{3}/oidctoken?api-version={4}&serviceConnectionId={5}" -f `
-          "$(System.TeamFoundationCollectionUri)", `
-          "$(System.TeamProjectId)", `
-          "$(System.PlanId)", `
-          "$(System.JobId)", `
-          "7.1-preview.1", `
-          "${serviceConnectionId}" ` 
-          | Set-Variable oidcTokenUrl
+        $oidcTokenUrl = "${env:SYSTEM_OIDCREQUESTURI}?api-version=7.1&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
         Write-Host "oidcTokenUrl: $oidcTokenUrl"
         
         Invoke-RestMethod -Headers @{
@@ -157,4 +160,4 @@ jobs:
 
   - publish: $(Build.ArtifactStagingDirectory)
     displayName: 'Publish json files'
-    artifact: $(azureConnection)
+    artifact: $(azureConnectionWIF)
