@@ -127,7 +127,7 @@ jobs:
         Write-Host "Service Connection ID: ${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
         Write-Host "Service Connection endpoint data:"
         Get-ChildItem -Path Env: -Recurse `
-                                -Include AZURESUBSCRIPTION_*, ENDPOINT_DATA_*, SYSTEM_OIDC* `
+                                -Include AZURESUBSCRIPTION_*, SYSTEM_OIDC* `
                                 | Sort-Object -Property Name `
                                 | ForEach-Object { 
                                     if ($_.Name -match 'SECRET|TOKEN') {
