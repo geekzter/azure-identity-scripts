@@ -74,7 +74,7 @@ jobs:
     - task: AzureCLI@2
       displayName: 'rename_service_connection_applications.ps1'
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
@@ -89,7 +89,7 @@ jobs:
     - task: AzureCLI@2
       displayName: 'list_service_connections.ps1'
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
@@ -104,7 +104,7 @@ jobs:
     - task: AzureCLI@2
       displayName: 'list_service_connection_identities.ps1'
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
@@ -119,7 +119,7 @@ jobs:
     - task: AzureCLI@2
       displayName: 'list_identities_using_issuer.ps1'
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
@@ -135,7 +135,7 @@ jobs:
       displayName: 'set_terraform_azurerm_vars.ps1'
       inputs:
         addSpnToEnvironment: true
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: ./set_terraform_azurerm_vars.ps1
@@ -154,7 +154,7 @@ jobs:
       displayName: 'Create resource groups for Managed Identity and scope'
       name: resourceGroup
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         failOnStandardError: true
         scriptType: pscore
         scriptLocation: inlineScript
@@ -184,7 +184,7 @@ jobs:
       displayName: 'Create Managed Identity and Azure Service Connection'
       name: identity
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         failOnStandardError: true
         scriptType: pscore
         scriptLocation: inlineScript
@@ -270,7 +270,7 @@ jobs:
       displayName: 'Test Azure Service Connection $(azureServiceConnectionToCreate)'
       timeoutInMinutes: 5
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         failOnStandardError: true
         scriptType: pscore
         scriptLocation: inlineScript
@@ -296,7 +296,7 @@ jobs:
     - task: AzureCLI@2
       displayName: 'Convert (WhatIf)'
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionSecret)'
         failOnStandardError: true
         scriptType: pscore
         scriptLocation: inlineScript
@@ -338,7 +338,7 @@ jobs:
     - task: AzureCLI@2
       displayName: 'Convert simple (WhatIf)'
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionSecret)'
         failOnStandardError: true
         scriptType: pscore
         scriptLocation: inlineScript
@@ -392,7 +392,7 @@ jobs:
       name: teardownAzure
       displayName: 'Tear down Azure resources'
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
@@ -431,7 +431,7 @@ jobs:
       name: teardownAzDO
       condition: succeededOrFailed()
       inputs:
-        azureSubscription: '$(azureConnection)'
+        azureSubscription: '$(azureConnectionWIF)'
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
