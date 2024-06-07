@@ -120,7 +120,6 @@ jobs:
   - task: AzureCLI@2
     displayName: 'Inline script'
     inputs:
-      addSpnToEnvironment: true
       azureSubscription: '$(azureConnection)'
       scriptType: pscore
       scriptLocation: inlineScript
