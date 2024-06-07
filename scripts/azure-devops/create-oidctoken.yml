@@ -125,6 +125,20 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
+        Write-Host "Service Connection ID: ${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
+        Write-Host "Service Connection endpoint data:"
+        Get-ChildItem -Path Env: -Recurse `
+                                -Include AZURESUBSCRIPTION_*, ENDPOINT_DATA_*, SYSTEM_OIDC* `
+                                | Sort-Object -Property Name `
+                                | ForEach-Object { 
+                                    if ($_.Name -match 'SECRET|TOKEN') {
+                                      $_.Value = '***'
+                                    } 
+                                    $_
+                                  } `
+                                | Format-Table -HideTableHeaders -Property @{Expression='Name';Width=75}, @{Expression='Value';Width=175} -Wrap `
+                                | Out-String -Width 256
+
         $oidcTokenUrl = "${env:SYSTEM_OIDCREQUESTURI}?api-version=7.1&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
         Write-Host "oidcTokenUrl: $oidcTokenUrl"
         
