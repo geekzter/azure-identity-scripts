@@ -40,12 +40,12 @@ jobs:
     displayName: 'Scripted with addSpnToEnvironment'
     inputs:
       addSpnToEnvironment: true
-      azureSubscription: '$(azureConnection)'
+      azureSubscription: '$(azureConnectionWIF)'
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        Write-Host "Using Service Connection $(azureConnection)"
-        az account show -o json >"$(azureConnection).json"
+        Write-Host "Using Service Connection $(azureConnectionWIF)"
+        az account show -o json >"$(azureConnectionWIF).json"
         $(scriptDirectory)/set_terraform_azurerm_vars.ps1
 
         Write-Host "##vso[task.setvariable variable=ARM_CLIENT_ID;isoutput=true]${env:ARM_CLIENT_ID}"
@@ -56,7 +56,7 @@ jobs:
         Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]${env:ARM_USE_OIDC}"
 
         if ($env:ARM_USE_OIDC -ine 'true') {
-          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection '$(azureConnection)' is not using federation"
+          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection '$(azureConnectionWIF)' is not using federation"
         }
       failOnStandardError: true
       workingDirectory: $(Build.ArtifactStagingDirectory)
@@ -81,11 +81,11 @@ jobs:
     displayName: 'Scripted with REST API'
     inputs:
       addSpnToEnvironment: true
-      azureSubscription: '$(azureConnection)'
+      azureSubscription: '$(azureConnectionWIF)'
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
-        Write-Host "Using Service Connection $(azureConnection)"
+        Write-Host "Using Service Connection $(azureConnectionWIF)"
         $(scriptDirectory)/set_terraform_azurerm_vars.ps1 -RequestNewToken -SystemAccessToken $(System.AccessToken)
 
         Write-Host "##vso[task.setvariable variable=ARM_CLIENT_ID;isoutput=true]${env:ARM_CLIENT_ID}"
@@ -97,7 +97,7 @@ jobs:
         Write-Host "##vso[task.setvariable variable=ARM_USE_OIDC;isoutput=true]${env:ARM_USE_OIDC}"
 
         if ($env:ARM_USE_OIDC -ine 'true') {
-          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection '$(azureConnection)' is not using federation"
+          Write-Host "##vso[task.logissue type=warning]Skipping OIDC test because service connection '$(azureConnectionWIF)' is not using federation"
         }
       failOnStandardError: true
       workingDirectory: $(Build.ArtifactStagingDirectory)
@@ -120,7 +120,7 @@ jobs:
   - task: AzureCLI@2
     displayName: 'Inline script'
     inputs:
-      azureSubscription: '$(azureConnection)'
+      azureSubscription: '$(azureConnectionWIF)'
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
@@ -160,4 +160,4 @@ jobs:
 
   - publish: $(Build.ArtifactStagingDirectory)
     displayName: 'Publish json files'
-    artifact: $(azureConnection)
+    artifact: $(azureConnectionWIF)
