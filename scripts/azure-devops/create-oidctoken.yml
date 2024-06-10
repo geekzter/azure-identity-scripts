@@ -31,7 +31,8 @@ jobs:
   displayName: 'Create Terraform environment variables'
 
   pool:
-    name: 'Azure Pipelines'
+    # name: 'Azure Pipelines'
+    name: 'Linux scale set agents'
     vmImage: ubuntu-latest
 
   steps:
@@ -162,7 +163,7 @@ jobs:
     displayName: 'AzurePowerShell script'
     inputs:
       azureSubscription: '$(azureConnectionWIF)'
-      pwsh: false
+      # pwsh: true
       scriptType: InlineScript
       inline: |
         Write-Host "Service Connection ID: ${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
