@@ -150,8 +150,7 @@ jobs:
 
         $oidcToken = $oidcTokenResponse.oidcToken
         if ($oidcToken -match "^ey") {
-          Write-Host "idToken (masked):"
-          $oidcToken -replace '.','*' 
+          Write-Host "REST API returned a JWT token"
         } elseif ($oidcToken) {
           throw "OIDC token in unexpected format"
         } else {
@@ -194,8 +193,7 @@ jobs:
 
         $oidcToken = $oidcTokenResponse.oidcToken
         if ($oidcToken -match "^ey") {
-          Write-Host "idToken (masked):"
-          $oidcToken -replace '.','*' 
+          Write-Host "REST API returned a JWT token"
         } elseif ($oidcToken) {
           throw "OIDC token in unexpected format"
         } else {
