@@ -213,7 +213,8 @@ jobs:
     displayName: 'AzurePowerShell script'
     inputs:
       azureSubscription: '$(azureConnectionWIF)'
-      # pwsh: true
+      azurePowerShellVersion: LatestVersion
+      pwsh: true
       scriptType: InlineScript
       inline: |
         Write-Host "Service Connection ID: ${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
