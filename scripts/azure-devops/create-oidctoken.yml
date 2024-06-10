@@ -207,7 +207,7 @@ jobs:
   pool:
     name: 'Azure Pipelines'
     vmImage: ubuntu-latest
-  container: mcr.microsoft.com/azure-powershell
+  container: mcr.microsoft.com/azure-powershell:latest
   steps:
   - task: AzurePowerShell@5
     displayName: 'AzurePowerShell script'
