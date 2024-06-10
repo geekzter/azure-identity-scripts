@@ -31,8 +31,7 @@ jobs:
   displayName: 'Create Terraform environment variables'
 
   pool:
-    # name: 'Azure Pipelines'
-    name: 'Linux scale set agents'
+    name: 'Azure Pipelines'
     vmImage: ubuntu-latest
 
   steps:
@@ -203,3 +202,50 @@ jobs:
   - publish: $(Build.ArtifactStagingDirectory)
     displayName: 'Publish json files'
     artifact: $(azureConnectionWIF)
+
+- job: AzurePowerShell
+  pool:
+    name: 'Azure Pipelines'
+    vmImage: ubuntu-latest
+  container: mcr.microsoft.com/azure-powershell
+  steps:
+  - task: AzurePowerShell@5
+    displayName: 'AzurePowerShell script'
+    inputs:
+      azureSubscription: '$(azureConnectionWIF)'
+      # pwsh: true
+      scriptType: InlineScript
+      inline: |
+        Write-Host "Service Connection ID: ${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
+        Write-Host "Service Connection endpoint data:"
+        Get-ChildItem -Path Env: -Recurse `
+                                -Include AZURESUBSCRIPTION_*, SYSTEM_OIDC* `
+                                | Sort-Object -Property Name `
+                                | ForEach-Object { 
+                                    if ($_.Name -match 'SECRET|TOKEN') {
+                                      $_.Value = '***'
+                                    } 
+                                    $_
+                                  } `
+                                | Format-Table -HideTableHeaders -Property @{Expression='Name';Width=75}, @{Expression='Value';Width=175} -Wrap `
+                                | Out-String -Width 256
+
+        $oidcTokenUrl = "${env:SYSTEM_OIDCREQUESTURI}?api-version=7.1&serviceConnectionId=${env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID}"
+        Write-Host "oidcTokenUrl: $oidcTokenUrl"
+        
+        Invoke-RestMethod -Headers @{
+                            Authorization  = "Bearer $(System.AccessToken)"
+                            'Content-Type' = 'application/json'
+                          } `
+                          -Uri $oidcTokenUrl `
+                          -Method Post | Set-Variable oidcTokenResponse
+
+        $oidcToken = $oidcTokenResponse.oidcToken
+        if ($oidcToken) {
+          Write-Host "idToken (masked):"
+          $oidcToken -replace '.','*' 
+        } else {
+          throw "Failed to request OIDC token"
+        }
+      failOnStandardError: true
+      workingDirectory: $(Build.ArtifactStagingDirectory)
