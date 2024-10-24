@@ -83,7 +83,7 @@ if (!(az extension list --query "[?name=='azure-devops'].version" -o tsv)) {
     Write-Host "Adding Azure CLI extension 'azure-devops'..."
     az extension add -n azure-devops -y -o none
 }
-$accessToken | az devops login --organization $OrganizationUrl
+Write-Output "${accessToken}" | az devops login --organization $OrganizationUrl
 if ($lastexitcode -ne 0) {
     Write-Error "$($account.user.name) failed to log in to Azure DevOps organization '${OrganizationUrl}'"
     exit $lastexitcode
