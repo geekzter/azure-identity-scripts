@@ -75,6 +75,16 @@ jobs:
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+
           Write-Host "`nSimulating renaming service connection applications to defaults"
           ./rename_service_connection_applications.ps1 -Reset -WhatIf
 
@@ -90,6 +100,16 @@ jobs:
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+
           az account show -o json | ConvertFrom-Json | Set-Variable account
 
           Write-Host "`nList Service Connection in subscription '$($account.name)'"
@@ -105,6 +125,16 @@ jobs:
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+
           az account show -o json | ConvertFrom-Json | Set-Variable account
 
           Write-Host "`nList Service Connection Identities in tenant '$($account.name)'"
@@ -120,6 +150,16 @@ jobs:
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+
           ./list_identities_using_issuer.ps1
           ./list_identities_using_issuer.ps1 -Issuer https://app.vstoken.visualstudio.com -Type Application
           ./list_identities_using_issuer.ps1 -Issuer https://app.vstoken.visualstudio.com -Type ManagedIdentity
@@ -156,6 +196,16 @@ jobs:
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+
           $tags=@("application=$(application)","provisioner=azure-cli","runId=$(Build.BuildId)")
           $managedIdentityResourceGroupName="${{ variables['organizationName'] }}-service-connections-$(Build.BuildId)"
           Write-Host "Creating Managed Identity resource group `"$managedIdentityResourceGroupName`"..."
@@ -186,6 +236,16 @@ jobs:
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+
           if ($env:SYSTEM_DEBUG -eq "true") {
             $InformationPreference = "Continue"
             $VerbosePreference = "Continue"
@@ -229,6 +289,16 @@ jobs:
         scriptLocation: inlineScript
         workingDirectory: '$(scriptDirectory)'
         inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+
           ./test_service_connection.ps1 -ServiceConnectionName $(serviceConnectionToCreate) `
                                         -ServiceConnectionTestPipelineId $(serviceConnectionTestPipelineId)
 
@@ -267,6 +337,16 @@ jobs:
           ./convert_azurerm_service_connection_to_oidc.ps1 -Force -WhatIf
 
     - pwsh: |
+        if ($env:SYSTEM_DEBUG -eq "true") {
+          $InformationPreference = "Continue"
+          $VerbosePreference = "Continue"
+          $DebugPreference = "Continue"
+
+          Set-PSDebug -Trace 1
+          
+          Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+        }
+
         Write-Host "`npwsh version: $($PSVersionTable.PSVersion)"
         if ($PSVersionTable.PSVersion -lt 7.3) {
           Write-Host "convert_azurerm_service_connection_to_oidc_simple.ps1 requires `$PSNativeCommandArgumentPassing"
@@ -348,6 +428,16 @@ jobs:
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+
           $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
           # Build JMESPath expression
           $tagQuery = "[?tags.application == '$(application)' && tags.runId == '$(Build.BuildId)' && properties.provisioningState != 'Deleting'].id"
@@ -387,6 +477,16 @@ jobs:
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
+          if ($env:SYSTEM_DEBUG -eq "true") {
+            $InformationPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $DebugPreference = "Continue"
+
+            Set-PSDebug -Trace 1
+            
+            Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+          }
+
           $ErrorActionPreference = "Continue" # Continue to remove resources if remove by resource group fails
           az devops configure --defaults organization="$(System.CollectionUri)" project="$(System.TeamProject)"
 

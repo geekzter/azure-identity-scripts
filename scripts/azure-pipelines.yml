@@ -47,6 +47,16 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
+        if ($env:SYSTEM_DEBUG -eq "true") {
+          $InformationPreference = "Continue"
+          $VerbosePreference = "Continue"
+          $DebugPreference = "Continue"
+
+          Set-PSDebug -Trace 1
+          
+          Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+        }
+
         az account show -o json | ConvertFrom-Json | Set-Variable account
 
         az ad sp list --filter "appId eq '$($account.user.name)'" `
@@ -87,6 +97,16 @@ jobs:
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
+        if ($env:SYSTEM_DEBUG -eq "true") {
+          $InformationPreference = "Continue"
+          $VerbosePreference = "Continue"
+          $DebugPreference = "Continue"
+
+          Set-PSDebug -Trace 1
+          
+          Get-ChildItem -Path Env: -Force -Recurse -Include * | Sort-Object -Property Name | Format-Table -AutoSize | Out-String
+        }
+
         az account show -o json | ConvertFrom-Json | Set-Variable account
 
         Write-Host "`nList Managed Identities in subscription '$($account.name)'"
