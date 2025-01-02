@@ -69,6 +69,18 @@ jobs:
 
     steps:
     - task: AzureCLI@2
+      displayName: 'enable_service_connection.ps1'
+      inputs:
+        azureSubscription: '$(azureConnectionWIF)'
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          Write-Host "`nSimulating enabling currently used service connection"
+          ./enable_service_connection.ps1 -ServiceConnectionId $env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID
+        failOnStandardError: true
+        workingDirectory: '$(scriptDirectory)'
+
+    - task: AzureCLI@2
       displayName: 'rename_service_connection_applications.ps1'
       inputs:
         azureSubscription: '$(azureConnectionWIF)'
