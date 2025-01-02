@@ -30,6 +30,7 @@ This repo contains a few [PowerShell](https://github.com/PowerShell/PowerShell) 
 - List identities for Azure DevOps Service Connections in Entra ID pertaining to Azure DevOps organization and (optionally) project: [list_service_connection_identities.ps1](scripts/azure-devops/list_service_connection_identities.ps1)
 - List Azure DevOps Service Connections in an Azure DevOps organization and project: [list_service_connections.ps1](scripts/azure-devops/list_service_connections.ps1)
 - 'Pretty-name' Entra ID applications created for Service Connections, so the Service Connection name is included in the application display name: [rename_service_connection_applications.ps1](scripts/azure-devops/rename_service_connection_applications.ps1)
+- Enable a disabled Service Connection with [enable_service_connection.ps1](scripts/azure-devops/enable_service_connection.ps1)
   
 ### Terraform-managed Azure Service Connection
 
