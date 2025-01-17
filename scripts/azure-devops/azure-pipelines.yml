@@ -250,12 +250,12 @@ jobs:
     strategy:
       matrix:
         linux:
-          vmImage: $[ coalesce(variables.vmImage,'ubuntu-latest') ]
+          vmImage: ubuntu-latest
         windows:
           vmImage: windows-latest
     pool:
       name: $[ coalesce(variables.pool,'Azure Pipelines') ]
-      vmImage: $(vmImage)
+      vmImage: $[ coalesce(variables.vmImage,'ubuntu-latest') ]
 
     steps:
     - task: AzureCLI@2
