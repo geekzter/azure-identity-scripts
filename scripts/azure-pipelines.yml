@@ -43,7 +43,7 @@ jobs:
   - task: AzureCLI@2
     displayName: 'find_workload_identity.ps1'
     inputs:
-      azureSubscription: '$(azureConnection)'
+      azureSubscription: '$(azureConnectionWIF)'
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
@@ -83,7 +83,7 @@ jobs:
   - task: AzureCLI@2
     displayName: 'list_managed_identities.ps1'
     inputs:
-      azureSubscription: '$(azureConnection)'
+      azureSubscription: '$(azureConnectionWIF)'
       scriptType: pscore
       scriptLocation: inlineScript
       inlineScript: |
