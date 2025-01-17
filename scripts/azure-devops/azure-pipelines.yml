@@ -64,8 +64,8 @@ jobs:
     displayName: 'Non-modifying tests'
 
     pool:
-      name: 'Azure Pipelines'
-      vmImage: ubuntu-latest
+      name: $[ coalesce(variables.pool,'Azure Pipelines') ]
+      vmImage: $[ coalesce(variables.vmImage,'ubuntu-latest') ]
 
     steps:
     - task: AzureCLI@2
@@ -155,8 +155,8 @@ jobs:
   - job: createServiceConnection
     displayName: 'Create Service Connection'
     pool:
-      name: 'Azure Pipelines'
-      vmImage: ubuntu-latest
+      name: $[ coalesce(variables.pool,'Azure Pipelines') ]
+      vmImage: $[ coalesce(variables.vmImage,'ubuntu-latest') ]
 
     steps:
     - task: AzureCLI@2
@@ -227,8 +227,8 @@ jobs:
     dependsOn: createServiceConnection
     displayName: 'Test created Service Connection'
     pool:
-      name: 'Azure Pipelines'
-      vmImage: ubuntu-latest
+      name: $[ coalesce(variables.pool,'Azure Pipelines') ]
+      vmImage: $[ coalesce(variables.vmImage,'ubuntu-latest') ]
 
     steps:
     - task: AzureCLI@2
@@ -254,8 +254,8 @@ jobs:
         windows:
           pool: windows-latest
     pool:
-      name: 'Azure Pipelines'
-      vmImage: $(pool)
+      name: $[ coalesce(variables.pool,'Azure Pipelines') ]
+      vmImage: $[ coalesce(variables.vmImage,'ubuntu-latest') ]
 
     steps:
     - task: AzureCLI@2
@@ -343,8 +343,8 @@ jobs:
     # - testConvertedServiceConnection
     - testCreatedServiceConnection
     pool:
-      name: 'Azure Pipelines'
-      vmImage: ubuntu-latest
+      name: $[ coalesce(variables.pool,'Azure Pipelines') ]
+      vmImage: $[ coalesce(variables.vmImage,'ubuntu-latest') ]
     variables:
       # TODO: Take outputs of multiple jobs dependencies.convertServiceConnection.outputs['job2.convert.serviceConnectionId']
       # convertedServiceConnectionId1: $[ dependencies.convertServiceConnection.outputs['job1.convert.serviceConnectionId'] ]

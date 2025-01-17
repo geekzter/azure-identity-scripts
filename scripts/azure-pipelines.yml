@@ -36,8 +36,8 @@ jobs:
 - job: find_workload_identity
 
   pool:
-    name: 'Azure Pipelines'
-    vmImage: ubuntu-latest
+    name: $[ coalesce(variables.pool,'Azure Pipelines') ]
+    vmImage: $[ coalesce(variables.vmImage,'ubuntu-latest') ]
 
   steps:
   - task: AzureCLI@2
@@ -76,8 +76,8 @@ jobs:
 - job: list_managed_identities
 
   pool:
-    name: 'Azure Pipelines'
-    vmImage: ubuntu-latest
+    name: $[ coalesce(variables.pool,'Azure Pipelines') ]
+    vmImage: $[ coalesce(variables.vmImage,'ubuntu-latest') ]
 
   steps:
   - task: AzureCLI@2
