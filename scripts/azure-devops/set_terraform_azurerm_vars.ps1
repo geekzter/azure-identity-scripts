@@ -70,6 +70,7 @@ if ($RequestNewToken -and !$env:servicePrincipalKey) {
 
 $env:ARM_CLIENT_ID       ??= $account.user.name
 $env:ARM_CLIENT_SECRET   ??= $env:servicePrincipalKey # requires addSpnToEnvironment: true
+$env:ARM_OIDC_AZURE_SERVICE_CONNECTION_ID ??= $env:AZURESUBSCRIPTION_SERVICE_CONNECTION_ID
 $env:ARM_OIDC_TOKEN        = $idToken
 $env:ARM_SUBSCRIPTION_ID ??= $account.id  
 $env:ARM_TENANT_ID       ??= $account.tenantId
