@@ -2,8 +2,6 @@
     "data": {
         "subscriptionId": "",
         "subscriptionName": "",
-        "environment": "AzureCloud",
-        "scopeLevel": "Subscription",
         "creationMode": "Manual"
     },
     "description": "",
@@ -13,6 +11,8 @@
     "authorization": {
         "parameters": {
             "tenantid": "",
+            "role": "",
+            "scope": "",
             "serviceprincipalid": ""
         },
         "scheme": "WorkloadIdentityFederation"

@@ -45,6 +45,11 @@ param (
     [ValidatePattern("^$|(?i)/subscriptions/[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(/resourcegroups/(.+?))?")]
     $ServiceConnectionScope,
 
+    [parameter(Mandatory=$false)]
+    [string]
+    [ValidateSet("AzureRM","dockerregistry")]
+    $ServiceConnectionType="AzureRM",
+    
     [parameter(Mandatory=$false,HelpMessage="Name of the Azure DevOps Project")]
     [string]
     [ValidateNotNullOrEmpty()]
@@ -57,7 +62,27 @@ param (
 ) 
 Write-Verbose $MyInvocation.line 
 . (Join-Path $PSScriptRoot .. functions.ps1)
-$apiVersion = "7.1-preview.4"
+$apiVersion = "7.2-preview"
+
+#-----------------------------------------------------------
+# Validate parameters
+switch ($ServiceConnectionType)
+{
+    AzureRM {
+        # Nothing to do
+    }
+    dockerregistry {
+        if (!$ServiceConnectionScope) {
+            Write-Error "Parameter ServiceConnectionScope is required for ServiceConnectionType 'dockerregistry'"
+            exit 1
+        }
+        if ($ServiceConnectionScope -notmatch "/Microsoft.ContainerRegistry/registries/") {
+            Write-Error "Parameter ServiceConnectionScope must be a container registry scope for ServiceConnectionType 'dockerregistry'"
+            exit 1
+        }
+        "{0}.azurecr.io" -f $ServiceConnectionScope.Split('/')[8] | Set-Variable acrLoginServer
+    }
+}
 
 #-----------------------------------------------------------
 # Log in to Azure
@@ -141,7 +166,7 @@ if ($resourceGroup) {
         $IdentityLocation = (az config get defaults.location --query value -o tsv)
     }
     if (!$IdentityLocation) {
-        # Azure location doesn't really matter for MI; the object is in AAD which is a global service
+        # Azure location doesn't really matter for MI; the actual object is in Entra ID which is a global service
         $IdentityLocation = "southcentralus"
     }
     az group create -g $IdentityResourceGroupName -l $IdentityLocation -o json | ConvertFrom-Json | Set-Variable resourceGroup
@@ -184,11 +209,11 @@ do {
             $ServiceConnectionName = $ServiceConnectionNameBefore
         }
         if ($ServiceConnectionName -ieq $ServiceConnectionNameBefore) {
-            Write-Verbose "Service connection '${ServiceConnectionName}' (${serviceEndpointId}) wil be updated"
+            Write-Verbose "Service connection '${ServiceConnectionName}' (${serviceEndpointId}) will be updated"
             break
         }
     } else {
-        Write-Verbose "Service connection '${ServiceConnectionName}' (${serviceEndpointId}) wil be created"
+        Write-Verbose "Service connection '${ServiceConnectionName}' (${serviceEndpointId}) will be created"
     }
 } while ($serviceEndpointId)
 
@@ -197,84 +222,104 @@ do {
 if (!$IdentityName) {
     $IdentityName = "${organizationName}-${Project}-${ServiceConnectionName}"
 }
-Write-Verbose "Creating Managed Identity '${IdentityName}' in resource group '${IdentityResourceGroupName}'..."
+Write-Host "Creating Managed Identity '${IdentityName}' in resource group '${IdentityResourceGroupName}'..."
 Write-Debug "az identity create -n $IdentityName -g $IdentityResourceGroupName -l $IdentityLocation --subscription $IdentitySubscriptionId"
 az identity create -n $IdentityName `
                    -g $IdentityResourceGroupName `
                    -l $IdentityLocation `
                    --subscription $IdentitySubscriptionId `
                    -o json `
+                   | Tee-Object -Variable identityJson `
                    | ConvertFrom-Json `
                    | Set-Variable identity
+$identityJson | Write-Debug
 Write-Verbose "Created Managed Identity $($identity.id)"
 $identity | Format-List | Out-String | Write-Debug
 
-Write-Verbose "Creating role assignment for Managed Identity '${IdentityName}' on subscription '$($subscription.name)'..."
+Write-Host "Creating role assignment for Managed Identity '${IdentityName}' on scope '${ServiceConnectionScope}'..."
 az role assignment create --assignee-object-id $identity.principalId `
                           --assignee-principal-type ServicePrincipal `
                           --role $ServiceConnectionRole `
                           --scope $ServiceConnectionScope `
                           --subscription $serviceConnectionSubscriptionId `
                           -o json `
+                          | Tee-Object -Variable roleAssignmentJson `
                           | ConvertFrom-Json `
                           | Set-Variable roleAssignment
+$roleAssignmentJson | Write-Debug
 Write-Verbose "Created role assignment $($roleAssignment.id)"
-
-Write-Host "`nManaged Identity '$($identity.name)':"
-$identity | Format-List -Property id, clientId, federatedSubject, role, scope, subscriptionId, tenantId
-
-#-----------------------------------------------------------
-# TODO: Create the service connection (Azure CLI)
-# az devops service-endpoint azurerm create --azure-rm-service-principal-id $identity.clientId `
-#                                           --azure-rm-subscription-id $serviceConnectionSubscriptionId `
-#                                           --azure-rm-subscription-name $ServiceConnectionName `
-#                                           --azure-rm-tenant-id $identity.tenantId `
-#                                           --name $IdentityName `
-#                                           --organization $OrganizationUrl `
-#                                           --project $Project `
                                         
 # Prepare service connection REST API request body
-Write-Verbose "Creating / updating service connection '${ServiceConnectionName}'..."
-Get-Content -Path (Join-Path $PSScriptRoot manualServiceEndpointRequest.json) `
-            | ConvertFrom-Json `
-            | Set-Variable serviceEndpointRequest
-
-$serviceEndpointDescription = "Created by $($MyInvocation.MyCommand.Name). Configured Managed Identity ${IdentityName} (clientId $($identity.clientId)) federated on ${federatedSubject} as ${ServiceConnectionRole} on scope ${ServiceConnectionScope}."
-$serviceEndpointRequest.authorization.parameters.servicePrincipalId = $identity.clientId
-$serviceEndpointRequest.authorization.parameters.tenantId = $identity.tenantId
-$serviceEndpointRequest.data.subscriptionId = $serviceConnectionSubscriptionId
-$serviceEndpointRequest.data.subscriptionName = $serviceConnectionSubscriptionName
-$serviceEndpointRequest.description = $serviceEndpointDescription
-$serviceEndpointRequest.name = $ServiceConnectionName
-$serviceEndpointRequest.serviceEndpointProjectReferences[0].description = $serviceEndpointDescription
-$serviceEndpointRequest.serviceEndpointProjectReferences[0].name = $ServiceConnectionName
-$serviceEndpointRequest.serviceEndpointProjectReferences[0].projectReference.id = $projectId
-$serviceEndpointRequest.serviceEndpointProjectReferences[0].projectReference.name = $Project
-$serviceEndpointRequest | ConvertTo-Json -Depth 4 | Set-Variable serviceEndpointRequestBody
-Write-Debug "Service connection request body: `n${serviceEndpointRequestBody}"
+Write-Host "Creating / updating service connection '${ServiceConnectionName}'..."
+$serviceEndpointDescription = "Created by $($MyInvocation.MyCommand.Name). Configured Managed Identity ${IdentityName} (clientId $($identity.clientId)) as ${ServiceConnectionRole} on scope ${ServiceConnectionScope}."
+$serviceEndpointRequest = @{
+    data = @{
+        subscriptionId = $serviceConnectionSubscriptionId
+        subscriptionName = $serviceConnectionSubscriptionName
+        creationMode = 'Manual'
+    }
+    description = $serviceEndpointDescription
+    name = $ServiceConnectionName
+    type = $ServiceConnectionType
+    url = "https://management.azure.com/"
+    authorization = @{
+        parameters = @{
+            tenantid = $identity.tenantId
+            role = $roleAssignment.roleDefinitionId.Split('/')[-1]
+            scope = $ServiceConnectionScope
+            serviceprincipalid = $identity.clientId
+        }
+        scheme = "WorkloadIdentityFederation"
+    }
+    isShared = $false
+    isReady = $false
+    serviceEndpointProjectReferences = @(
+        @{
+            projectReference = @{
+                id = $projectId
+                name = $Project
+            }
+            name = $ServiceConnectionName
+            description = $serviceEndpointDescription
+        }
+    )
+}
+if ($ServiceConnectionType -ieq "dockerregistry") {
+    Add-Member -InputObject $serviceEndpointRequest.authorization.parameters -NotePropertyName loginServer -NotePropertyValue $acrLoginServer
+    Add-Member -InputObject $serviceEndpointRequest.data -NotePropertyName registryId -NotePropertyValue $ServiceConnectionScope
+    Add-Member -InputObject $serviceEndpointRequest.data -NotePropertyName registryType -NotePropertyValue "ACR"
+}
+if ($ServiceConnectionType -ieq "AzureRM") {
+    Add-Member -InputObject $serviceEndpointRequest.data -NotePropertyName environment -NotePropertyValue "AzureCloud"
+    Add-Member -InputObject $serviceEndpointRequest.data -NotePropertyName scopeLevel -NotePropertyValue "Subscription"
+}
 
 $apiUri = "${OrganizationUrl}/_apis/serviceendpoint/endpoints"
 if ($serviceEndpointId) {
     $apiUri += "/${serviceEndpointId}"
 }
 $apiUri += "?api-version=${apiVersion}"
-Invoke-RestMethod -Uri $apiUri `
-                  -Method ($serviceEndpointId ? 'PUT' : 'POST') `
-                  -Body $serviceEndpointRequestBody `
-                  -ContentType 'application/json' `
-                  -Authentication Bearer `
-                  -Token (ConvertTo-SecureString $accessToken -AsPlainText) `
-                  | Set-Variable serviceEndpoint
-
-$serviceEndpoint | ConvertTo-Json -Depth 4 | Write-Debug
+$serviceEndpointRequestBodyFile = (New-TemporaryFile).FullName
+$serviceEndpointRequest | ConvertTo-Json -Depth 4 | Out-File $serviceEndpointRequestBodyFile
+Write-Debug "Service connection request body file: ${serviceEndpointRequestBodyFile}"
+Get-Content $serviceEndpointRequestBodyFile | Write-Debug
+az rest --method ($serviceEndpointId ? 'PUT' : 'POST') `
+        --uri $apiUri `
+        --body "@$serviceEndpointRequestBodyFile" `
+        --resource 499b84ac-1321-427f-aa17-267ca6975798 `
+        --output json `
+        | Tee-Object -Variable serviceEndpointResponseJson `
+        | ConvertFrom-Json -Depth 4 `
+        | Set-Variable serviceEndpoint
+$serviceEndpointResponseJson | Write-Debug
 if (!$serviceEndpoint) {
     Write-Error "Failed to create / update service connection '${ServiceConnectionName}'"
     exit 1
 }
 if ($serviceEndpointId) {
-    Write-Host "Service connection '${ServiceConnectionName}' updated:"
+    Write-Host "Service connection '${ServiceConnectionName}' updated."
 } else {
-    Write-Host "Service connection '${ServiceConnectionName}' created:"
+    Write-Host "Service connection '${ServiceConnectionName}' created."
 }
 Write-Debug "Service connection data:"
 $serviceEndpoint.data | Format-List | Out-String | Write-Debug
@@ -282,7 +327,7 @@ Write-Debug "Service connection authorization parameters:"
 $serviceEndpoint.authorization.parameters | Format-List | Out-String | Write-Debug
 
 # Create Federated Credential
-Write-Verbose "Configuring Managed Identity '${IdentityName}' with federated subject '$($serviceEndpoint.authorization.parameters.workloadIdentityFederationSubject)'..."
+Write-Host "Configuring Managed Identity '${IdentityName}' with federated subject '$($serviceEndpoint.authorization.parameters.workloadIdentityFederationSubject)'..."
 az identity federated-credential create --name $IdentityName `
                                         --identity-name $IdentityName  `
                                         --resource-group $IdentityResourceGroupName `
@@ -290,8 +335,10 @@ az identity federated-credential create --name $IdentityName `
                                         --subject $serviceEndpoint.authorization.parameters.workloadIdentityFederationSubject `
                                         --subscription $IdentitySubscriptionId `
                                         -o json `
+                                        | Tee-Object -Variable federatedCredentialJson `
                                         | ConvertFrom-Json `
                                         | Set-Variable federatedCredential
+$federatedCredentialJson | Write-Debug
 Write-Verbose "Created federated credential $($federatedCredential.id)"
 $identity | Add-Member -NotePropertyName federatedSubject -NotePropertyValue $serviceEndpoint.authorization.parameters.workloadIdentityFederationSubject
 $identity | Add-Member -NotePropertyName role -NotePropertyValue $ServiceConnectionRole
@@ -299,13 +346,17 @@ $identity | Add-Member -NotePropertyName scope -NotePropertyValue $ServiceConnec
 $identity | Add-Member -NotePropertyName subscriptionId -NotePropertyValue $IdentitySubscriptionId
 $identity | Format-List | Out-String | Write-Debug
 
+Write-Host "`nService Connection '$($serviceEndpoint.name)':"
+
 $serviceEndpoint | Select-Object -Property authorization, data, id, name, description, type, createdBy `
                  | ForEach-Object { 
                  $_.createdBy = $_.createdBy.uniqueName
                  $_ | Add-Member -NotePropertyName clientId -NotePropertyValue $_.authorization.parameters.serviceprincipalid
                  $_ | Add-Member -NotePropertyName creationMode -NotePropertyValue $_.data.creationMode
+                 $_ | Add-Member -NotePropertyName managedIdentityPortalLink -NotePropertyValue ("https://portal.azure.com/#@{0}/resource{1}" -f $identity.tenantId, $identity.id)
                  $_ | Add-Member -NotePropertyName scheme -NotePropertyValue $_.authorization.scheme
-                 $_ | Add-Member -NotePropertyName scopeLevel -NotePropertyValue $_.data.scopeLevel
+                 $_ | Add-Member -NotePropertyName scopePortalLink -NotePropertyValue ("https://portal.azure.com/#@{0}/resource{1}" -f $identity.tenantId, $ServiceConnectionScope)
+                 $_ | Add-Member -NotePropertyName serviceConnectionPortalLink -NotePropertyValue ("{0}/{1}/_settings/adminservices?resourceId={2}" -f $OrganizationUrl, $Project, $serviceEndpoint.id)
                  $_ | Add-Member -NotePropertyName subscriptionName -NotePropertyValue $_.data.subscriptionName
                  $_ | Add-Member -NotePropertyName subscriptionId -NotePropertyValue $_.data.subscriptionId
                  $_ | Add-Member -NotePropertyName tenantid -NotePropertyValue $_.authorization.parameters.tenantid
