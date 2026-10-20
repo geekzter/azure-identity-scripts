@@ -13,7 +13,7 @@
 .EXAMPLE
     ./convert_azdo_issuer_service_connection.ps1 -OrganizationUrl https://dev.azure.com/foo -Project bar
 
-    .EXAMPLE
+.EXAMPLE
     ./convert_azdo_issuer_service_connection.ps1 -OrganizationUrl https://dev.azure.com/foo -Project $null
 #> 
 #Requires -Version 7.2
